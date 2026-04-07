@@ -2,6 +2,54 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.1.
 
+## Pré-requisitos
+
+Antes de começar, você precisa ter instalado em sua máquina:
+
+- **Node.js** (versão 18.x ou superior) - [Download Node.js](https://nodejs.org/)
+- **npm** (versão 11.9.0 ou superior) - já vem incluído com o Node.js
+- **Angular CLI** (versão 21.2.1) - será instalado globalmente
+
+## Como instalar e rodar o projeto
+
+### 1. Instalar o Node.js
+
+Baixe e instale o Node.js do site oficial: https://nodejs.org/
+
+Para verificar se foi instalado corretamente, execute:
+
+```bash
+node --version
+npm --version
+```
+
+### 2. Instalar o Angular CLI globalmente
+
+```bash
+npm install -g @angular/cli@21.2.1
+```
+
+### 3. Clonar o repositório
+
+```bash
+git clone <url-do-repositorio>
+cd angular-app
+```
+
+### 4. Instalar as dependências do projeto
+
+```bash
+npm install
+```
+
+### 5. Rodar o projeto
+
+```bash
+ng serve
+```
+
+O projeto estará disponível em `http://localhost:4200/`
+
 ## Development server
 
 To start a local development server, run:
