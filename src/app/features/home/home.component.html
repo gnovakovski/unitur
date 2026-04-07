@@ -1,0 +1,186 @@
+<!-- Banner Carousel -->
+<section class="banner-carousel">
+  <div class="carousel-container">
+    <div class="carousel-slides" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
+      @for (image of bannerImages; track image; let i = $index) {
+        <div class="carousel-slide">
+          <img [src]="image" [alt]="'Destino ' + (i + 1)">
+          <div class="carousel-overlay">
+            <div class="carousel-content">
+              <h1 class="carousel-title animate-fade-in">Descubra o Mundo com Unitur</h1>
+              <p class="carousel-subtitle animate-fade-in-delay">Experiências únicas e inesquecíveis</p>
+              <button class="cta-button animate-fade-in-delay-2">Explorar Destinos</button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    
+    <button class="carousel-btn prev" (click)="prevSlide()" aria-label="Anterior">
+      <span>‹</span>
+    </button>
+    <button class="carousel-btn next" (click)="nextSlide()" aria-label="Próximo">
+      <span>›</span>
+    </button>
+    
+    <div class="carousel-indicators">
+      @for (image of bannerImages; track image; let i = $index) {
+        <button 
+          class="indicator" 
+          [class.active]="currentSlide === i"
+          (click)="goToSlide(i)"
+          [attr.aria-label]="'Ir para slide ' + (i + 1)">
+        </button>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Search Bar -->
+<section class="search-section">
+  <div class="search-card">
+    <h2>Encontre sua próxima aventura</h2>
+    <div class="search-form">
+      <div class="search-input">
+        <span class="icon">📍</span>
+        <input type="text" placeholder="Para onde você quer ir?">
+      </div>
+      <div class="search-input">
+        <span class="icon">📅</span>
+        <input type="date" placeholder="Data de ida">
+      </div>
+      <div class="search-input">
+        <span class="icon">📅</span>
+        <input type="date" placeholder="Data de volta">
+      </div>
+      <button class="search-button">Buscar</button>
+    </div>
+  </div>
+</section>
+
+<!-- Próximas Peregrinações -->
+<section class="peregrinacoes-section">
+  <div class="section-header">
+    <h2 class="section-title">Próximas Peregrinações</h2>
+    <p class="section-subtitle">Jornadas espirituais que transformam vidas</p>
+  </div>
+  
+  <div class="peregrinacoes-grid">
+    @for (peregrinacao of peregrinacoes; track peregrinacao.title) {
+      <div class="peregrinacao-card">
+        <div class="card-image">
+          <img [src]="peregrinacao.image" [alt]="peregrinacao.title">
+          <div class="card-badge-top">{{ peregrinacao.spots }}</div>
+          <div class="card-overlay">
+            <button class="card-button">Saiba Mais</button>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="card-header">
+            <h3>{{ peregrinacao.title }}</h3>
+            <span class="location">{{ peregrinacao.location }}</span>
+          </div>
+          <div class="card-info">
+            <span class="info-item">📅 {{ peregrinacao.date }}</span>
+            <span class="info-item">⏱️ {{ peregrinacao.duration }}</span>
+          </div>
+          <div class="card-footer">
+            <span class="price">{{ peregrinacao.price }}</span>
+            <button class="btn-reserve">Reservar</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Conheça o Mundo -->
+<section class="world-section">
+  <div class="section-header">
+    <h2 class="section-title">Conheça o Mundo com a Unitur</h2>
+    <p class="section-subtitle">Destinos incríveis para todos os perfis de viajantes</p>
+  </div>
+  
+  <div class="world-grid">
+    @for (destination of destinations; track destination.title) {
+      <div class="world-card">
+        <div class="card-image">
+          <img [src]="destination.image" [alt]="destination.title">
+          <div class="card-badge-duration">{{ destination.days }}</div>
+          <div class="card-overlay">
+            <button class="card-button">Explorar</button>
+          </div>
+        </div>
+        <div class="card-content">
+          <h3>{{ destination.title }}</h3>
+          <p>{{ destination.description }}</p>
+          <div class="card-footer">
+            <span class="price">{{ destination.price }}</span>
+            <button class="btn-secondary">Ver Pacote</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Curadoria Unitur -->
+<section class="curadoria-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Curadoria Unitur</h2>
+      <p class="section-subtitle">Selecionamos as melhores experiências para você</p>
+    </div>
+  </div>
+  
+  <div class="curadoria-list">
+    @for (item of curadoria; track item.title; let i = $index) {
+      <div class="curadoria-card" [class.reverse]="i % 2 !== 0">
+        <div class="curadoria-content">
+          <div class="curator-badge">{{ item.curator }}</div>
+          <h3>{{ item.title }}</h3>
+          <h4>{{ item.subtitle }}</h4>
+          <p>{{ item.description }}</p>
+          <div class="tags">
+            @for (tag of item.tags; track tag) {
+              <span class="tag">{{ tag }}</span>
+            }
+          </div>
+          <button class="btn-curadoria">Quero Conhecer</button>
+        </div>
+        <div class="curadoria-image">
+          <img [src]="item.image" [alt]="item.title">
+          <div class="curadoria-overlay"></div>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="testimonials-section">
+  <div class="section-header">
+    <h2 class="section-title">Depoimentos</h2>
+    <p class="section-subtitle">O que nossos viajantes têm a dizer</p>
+  </div>
+  
+  <div class="testimonials-grid">
+    @for (testimonial of testimonials; track testimonial.name) {
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <img [src]="testimonial.image" [alt]="testimonial.name" class="testimonial-avatar">
+          <div>
+            <h4>{{ testimonial.name }}</h4>
+            <span class="trip-name">{{ testimonial.trip }}</span>
+            <div class="rating">
+              @for (star of [1,2,3,4,5]; track star) {
+                <span class="star">★</span>
+              }
+            </div>
+          </div>
+        </div>
+        <p class="testimonial-text">"{{ testimonial.text }}"</p>
+      </div>
+    }
+  </div>
+</section>
