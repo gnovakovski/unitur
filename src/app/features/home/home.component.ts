@@ -50,34 +50,79 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   ];
 
-  destinations = [
+  continents = [
     {
-      title: 'Europa Clássica',
-      description: 'Paris, Roma, Londres e Barcelona',
-      image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=350&fit=crop',
-      price: 'R$ 9.999',
-      days: '14 dias'
+      name: 'Europa',
+      icon: '🏰',
+      destinations: [
+        {
+          title: 'Europa Clássica',
+          description: 'Paris, Roma, Londres e Barcelona',
+          image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=350&fit=crop',
+          price: 'R$ 9.999',
+          days: '14 dias'
+        },
+        {
+          title: 'Grécia e Turquia',
+          description: 'Atenas, Santorini e Istambul',
+          image: 'https://images.unsplash.com/photo-1503152394-c571994fd383?w=500&h=350&fit=crop',
+          price: 'R$ 8.499',
+          days: '12 dias'
+        }
+      ]
     },
     {
-      title: 'Caribe Paradisíaco',
-      description: 'Cancún, Punta Cana e Aruba',
-      image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=500&h=350&fit=crop',
-      price: 'R$ 5.499',
-      days: '7 dias'
+      name: 'Américas',
+      icon: '🌎',
+      destinations: [
+        {
+          title: 'América do Sul',
+          description: 'Machu Picchu, Patagônia e Buenos Aires',
+          image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=500&h=350&fit=crop',
+          price: 'R$ 6.799',
+          days: '10 dias'
+        },
+        {
+          title: 'Caribe Paradisíaco',
+          description: 'Cancún, Punta Cana e Aruba',
+          image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=500&h=350&fit=crop',
+          price: 'R$ 5.499',
+          days: '7 dias'
+        }
+      ]
     },
     {
-      title: 'Ásia Mística',
-      description: 'Tailândia, Japão e Bali',
-      image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=500&h=350&fit=crop',
-      price: 'R$ 11.999',
-      days: '16 dias'
+      name: 'Ásia',
+      icon: '🏯',
+      destinations: [
+        {
+          title: 'Ásia Mística',
+          description: 'Tailândia, Japão e Bali',
+          image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=500&h=350&fit=crop',
+          price: 'R$ 11.999',
+          days: '16 dias'
+        },
+        {
+          title: 'Maldivas + Dubai',
+          description: 'Praias paradisíacas e luxo no deserto',
+          image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=500&h=350&fit=crop',
+          price: 'R$ 14.999',
+          days: '12 dias'
+        }
+      ]
     },
     {
-      title: 'América do Sul',
-      description: 'Machu Picchu, Patagônia e Buenos Aires',
-      image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=500&h=350&fit=crop',
-      price: 'R$ 6.799',
-      days: '10 dias'
+      name: 'Oceania',
+      icon: '🦘',
+      destinations: [
+        {
+          title: 'Nova Zelândia',
+          description: 'Auckland, Queenstown e Fiordland',
+          image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=500&h=350&fit=crop',
+          price: 'R$ 13.499',
+          days: '14 dias'
+        }
+      ]
     }
   ];
 

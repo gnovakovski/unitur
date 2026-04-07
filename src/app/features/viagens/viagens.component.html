@@ -1,0 +1,47 @@
+<section class="viagens-hero">
+  <div class="hero-content">
+    <h1>Nossas Viagens</h1>
+    <p>Encontre a viagem perfeita para você</p>
+  </div>
+</section>
+
+<section class="viagens-section">
+  <div class="container">
+    <div class="filters">
+      @for (cat of categories; track cat) {
+        <button
+          class="filter-btn"
+          [class.active]="selectedCategory === cat"
+          (click)="selectCategory(cat)">
+          {{ cat }}
+        </button>
+      }
+    </div>
+
+    <div class="viagens-grid">
+      @for (viagem of filtered; track viagem.title) {
+        <div class="viagem-card">
+          <div class="card-image">
+            <img [src]="viagem.image" [alt]="viagem.title">
+            <span class="badge-category">{{ viagem.category }}</span>
+            <span class="badge-spots">{{ viagem.spots }}</span>
+          </div>
+          <div class="card-content">
+            <div class="card-header">
+              <h3>{{ viagem.title }}</h3>
+              <span class="location">📍 {{ viagem.location }}</span>
+            </div>
+            <div class="card-info">
+              <span>📅 {{ viagem.date }}</span>
+              <span>⏱️ {{ viagem.duration }}</span>
+            </div>
+            <div class="card-footer">
+              <span class="price">{{ viagem.price }}</span>
+              <button class="btn-reserve">Reservar</button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

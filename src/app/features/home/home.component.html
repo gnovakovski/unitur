@@ -100,28 +100,33 @@
     <h2 class="section-title">Conheça o Mundo com a Unitur</h2>
     <p class="section-subtitle">Destinos incríveis para todos os perfis de viajantes</p>
   </div>
-  
-  <div class="world-grid">
-    @for (destination of destinations; track destination.title) {
-      <div class="world-card">
-        <div class="card-image">
-          <img [src]="destination.image" [alt]="destination.title">
-          <div class="card-badge-duration">{{ destination.days }}</div>
-          <div class="card-overlay">
-            <button class="card-button">Explorar</button>
+
+  @for (continent of continents; track continent.name) {
+    <div class="continent-block">
+      <h3 class="continent-title">{{ continent.icon }} {{ continent.name }}</h3>
+      <div class="world-grid">
+        @for (destination of continent.destinations; track destination.title) {
+          <div class="world-card">
+            <div class="card-image">
+              <img [src]="destination.image" [alt]="destination.title">
+              <div class="card-badge-duration">{{ destination.days }}</div>
+              <div class="card-overlay">
+                <button class="card-button">Explorar</button>
+              </div>
+            </div>
+            <div class="card-content">
+              <h3>{{ destination.title }}</h3>
+              <p>{{ destination.description }}</p>
+              <div class="card-footer">
+                <span class="price">{{ destination.price }}</span>
+                <button class="btn-secondary">Ver Pacote</button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="card-content">
-          <h3>{{ destination.title }}</h3>
-          <p>{{ destination.description }}</p>
-          <div class="card-footer">
-            <span class="price">{{ destination.price }}</span>
-            <button class="btn-secondary">Ver Pacote</button>
-          </div>
-        </div>
+        }
       </div>
-    }
-  </div>
+    </div>
+  }
 </section>
 
 <!-- Curadoria Unitur -->
