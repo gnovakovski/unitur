@@ -1,11 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
@@ -23,30 +22,36 @@ export class HomeComponent implements OnInit, OnDestroy {
   peregrinacoes = [
     {
       title: 'Terra Santa',
-      location: 'Israel',
+      country: 'Israel',
       date: 'Junho 2026',
       duration: '12 dias',
       image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=350&fit=crop',
       price: 'R$ 8.999',
-      spots: '8 vagas'
+      spots: '8 vagas',
+      guide: 'Pe. João Batista',
+      guideRole: 'Guia Espiritual'
     },
     {
       title: 'Caminho de Santiago',
-      location: 'Espanha',
+      country: 'Espanha',
       date: 'Agosto 2026',
       duration: '15 dias',
       image: 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=500&h=350&fit=crop',
       price: 'R$ 6.499',
-      spots: '12 vagas'
+      spots: '12 vagas',
+      guide: 'Pe. Carlos Mendes',
+      guideRole: 'Guia Espiritual'
     },
     {
       title: 'Fátima e Lourdes',
-      location: 'Portugal e França',
+      country: 'Portugal e França',
       date: 'Setembro 2026',
       duration: '10 dias',
       image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=500&h=350&fit=crop',
       price: 'R$ 7.299',
-      spots: '15 vagas'
+      spots: '15 vagas',
+      guide: 'Pe. André Lima',
+      guideRole: 'Guia Espiritual'
     }
   ];
 
@@ -54,75 +59,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     {
       name: 'Europa',
       icon: '🏰',
-      destinations: [
-        {
-          title: 'Europa Clássica',
-          description: 'Paris, Roma, Londres e Barcelona',
-          image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=350&fit=crop',
-          price: 'R$ 9.999',
-          days: '14 dias'
-        },
-        {
-          title: 'Grécia e Turquia',
-          description: 'Atenas, Santorini e Istambul',
-          image: 'https://images.unsplash.com/photo-1503152394-c571994fd383?w=500&h=350&fit=crop',
-          price: 'R$ 8.499',
-          days: '12 dias'
-        }
-      ]
+      image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+      description: 'Paris, Roma, Lisboa e muito mais'
     },
     {
       name: 'Américas',
       icon: '🌎',
-      destinations: [
-        {
-          title: 'América do Sul',
-          description: 'Machu Picchu, Patagônia e Buenos Aires',
-          image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=500&h=350&fit=crop',
-          price: 'R$ 6.799',
-          days: '10 dias'
-        },
-        {
-          title: 'Caribe Paradisíaco',
-          description: 'Cancún, Punta Cana e Aruba',
-          image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=500&h=350&fit=crop',
-          price: 'R$ 5.499',
-          days: '7 dias'
-        }
-      ]
+      image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=600&h=400&fit=crop',
+      description: 'Machu Picchu, Patagônia e Caribe'
     },
     {
       name: 'Ásia',
       icon: '🏯',
-      destinations: [
-        {
-          title: 'Ásia Mística',
-          description: 'Tailândia, Japão e Bali',
-          image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=500&h=350&fit=crop',
-          price: 'R$ 11.999',
-          days: '16 dias'
-        },
-        {
-          title: 'Maldivas + Dubai',
-          description: 'Praias paradisíacas e luxo no deserto',
-          image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=500&h=350&fit=crop',
-          price: 'R$ 14.999',
-          days: '12 dias'
-        }
-      ]
+      image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=600&h=400&fit=crop',
+      description: 'Japão, Tailândia, Bali e Dubai'
     },
     {
       name: 'Oceania',
       icon: '🦘',
-      destinations: [
-        {
-          title: 'Nova Zelândia',
-          description: 'Auckland, Queenstown e Fiordland',
-          image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=500&h=350&fit=crop',
-          price: 'R$ 13.499',
-          days: '14 dias'
-        }
-      ]
+      image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=600&h=400&fit=crop',
+      description: 'Austrália, Nova Zelândia e ilhas do Pacífico'
     }
   ];
 
@@ -174,6 +130,30 @@ export class HomeComponent implements OnInit, OnDestroy {
       rating: 5,
       image: 'https://i.pravatar.cc/150?img=5',
       trip: 'Maldivas'
+    }
+  ];
+
+  blogPosts = [
+    {
+      title: 'Os melhores destinos para peregrinação em 2026',
+      excerpt: 'Descubra os roteiros espirituais mais procurados e como se preparar para essa jornada transformadora.',
+      image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=300&fit=crop',
+      date: 'Março 2026',
+      category: 'Peregrinação'
+    },
+    {
+      title: 'Dicas essenciais para viajar pela Europa',
+      excerpt: 'Tudo o que você precisa saber antes de embarcar na sua aventura europeia: documentos, moeda e muito mais.',
+      image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=300&fit=crop',
+      date: 'Fevereiro 2026',
+      category: 'Dicas'
+    },
+    {
+      title: 'Caribe: o paraíso que você precisa conhecer',
+      excerpt: 'Praias de areia branca, águas cristalinas e uma cultura vibrante esperam por você nesse destino incrível.',
+      image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=500&h=300&fit=crop',
+      date: 'Janeiro 2026',
+      category: 'Destinos'
     }
   ];
 
