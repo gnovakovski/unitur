@@ -78,11 +78,15 @@
         <div class="card-content">
           <div class="card-header">
             <h3>{{ peregrinacao.title }}</h3>
-            <span class="location">{{ peregrinacao.location }}</span>
+            <span class="location">📍 {{ peregrinacao.country }}</span>
           </div>
           <div class="card-info">
             <span class="info-item">📅 {{ peregrinacao.date }}</span>
             <span class="info-item">⏱️ {{ peregrinacao.duration }}</span>
+          </div>
+          <div class="card-guide">
+            <span class="guide-role">{{ peregrinacao.guideRole }}</span>
+            <span class="guide-name">{{ peregrinacao.guide }}</span>
           </div>
           <div class="card-footer">
             <span class="price">{{ peregrinacao.price }}</span>
@@ -100,24 +104,16 @@
     <h2 class="section-title">Conheça o Mundo com a Unitur</h2>
     <p class="section-subtitle">Destinos incríveis para todos os perfis de viajantes</p>
   </div>
-  
-  <div class="world-grid">
-    @for (destination of destinations; track destination.title) {
-      <div class="world-card">
-        <div class="card-image">
-          <img [src]="destination.image" [alt]="destination.title">
-          <div class="card-badge-duration">{{ destination.days }}</div>
-          <div class="card-overlay">
-            <button class="card-button">Explorar</button>
-          </div>
-        </div>
-        <div class="card-content">
-          <h3>{{ destination.title }}</h3>
-          <p>{{ destination.description }}</p>
-          <div class="card-footer">
-            <span class="price">{{ destination.price }}</span>
-            <button class="btn-secondary">Ver Pacote</button>
-          </div>
+
+  <div class="continents-grid">
+    @for (continent of continents; track continent.name) {
+      <div class="continent-card">
+        <img [src]="continent.image" [alt]="continent.name">
+        <div class="continent-overlay">
+          <span class="continent-icon">{{ continent.icon }}</span>
+          <h3>{{ continent.name }}</h3>
+          <p>{{ continent.description }}</p>
+          <button class="btn-continent">Explorar</button>
         </div>
       </div>
     }
@@ -182,5 +178,58 @@
         <p class="testimonial-text">"{{ testimonial.text }}"</p>
       </div>
     }
+  </div>
+</section>
+
+<!-- Blog -->
+<section class="blog-section">
+  <div class="section-header">
+    <h2 class="section-title">Blog Unitur</h2>
+    <p class="section-subtitle">Dicas, destinos e histórias de quem viaja</p>
+  </div>
+  <div class="blog-grid">
+    @for (post of blogPosts; track post.title) {
+      <div class="blog-card">
+        <div class="blog-image">
+          <img [src]="post.image" [alt]="post.title">
+          <span class="blog-category">{{ post.category }}</span>
+        </div>
+        <div class="blog-content">
+          <span class="blog-date">{{ post.date }}</span>
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.excerpt }}</p>
+          <button class="btn-blog">Ler mais</button>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Sobre -->
+<section class="about-section">
+  <div class="about-content">
+    <div class="about-text">
+      <h2 class="section-title">Sobre a Unitur</h2>
+      <p>Somos uma agência especializada em viagens de peregrinação e turismo, com mais de 5 anos de experiência levando pessoas a destinos que transformam vidas.</p>
+      <p>Nossa missão é proporcionar experiências únicas, com segurança, conforto e um atendimento personalizado do início ao fim da sua jornada.</p>
+      <div class="about-stats">
+        <div class="stat">
+          <span class="stat-number">5000+</span>
+          <span class="stat-label">Viajantes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">50+</span>
+          <span class="stat-label">Destinos</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">5</span>
+          <span class="stat-label">Anos de experiência</span>
+        </div>
+      </div>
+      <button class="btn-about">Conheça nossa história</button>
+    </div>
+    <div class="about-image">
+      <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&h=500&fit=crop" alt="Sobre a Unitur">
+    </div>
   </div>
 </section>

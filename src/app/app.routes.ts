@@ -10,6 +10,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent)
   },
   {
+    path: 'viagens',
+    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+  },
+  {
     path: '**',
     redirectTo: ''
   }
