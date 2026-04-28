@@ -1,0 +1,134 @@
+<div class="login-container">
+  <!-- Background Decorations -->
+  <div class="background-decoration">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+  </div>
+
+  <div class="login-wrapper">
+    <!-- Left Side - Branding -->
+    <div class="login-branding">
+      <div class="branding-content">
+        <img src="/logo.jpeg" alt="UNITUR" class="brand-logo">
+        <h2>UNITUR</h2>
+        <p class="brand-tagline">Sistema de Gerenciamento</p>
+        <div class="brand-features">
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <span>Gerencie Posts do Blog</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <span>Controle de Viagens</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <span>Administração Completa</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side - Login Form -->
+    <div class="login-card">
+      <div class="login-header">
+        <h1>Bem-vindo de volta!</h1>
+        <p>Entre com suas credenciais para acessar o painel</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        @if (error) {
+          <div class="alert alert-error">
+            <span class="alert-icon">⚠️</span>
+            <span>{{ error }}</span>
+          </div>
+        }
+
+        <div class="form-group">
+          <label for="email">
+            <span class="label-icon">📧</span>
+            Email
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            formControlName="email"
+            placeholder="seu@email.com"
+            [class.invalid]="email?.invalid && email?.touched"
+            autocomplete="email">
+          @if (email?.invalid && email?.touched) {
+            <span class="error-message">
+              @if (email?.errors?.['required']) {
+                Email é obrigatório
+              }
+              @if (email?.errors?.['email']) {
+                Email inválido
+              }
+            </span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="password">
+            <span class="label-icon">🔒</span>
+            Senha
+          </label>
+          <div class="password-wrapper">
+            <input 
+              [type]="showPassword ? 'text' : 'password'"
+              id="password" 
+              formControlName="password"
+              placeholder="••••••••"
+              [class.invalid]="password?.invalid && password?.touched"
+              autocomplete="current-password">
+            <button 
+              type="button" 
+              class="toggle-password"
+              (click)="togglePasswordVisibility()">
+              {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+            </button>
+          </div>
+          @if (password?.invalid && password?.touched) {
+            <span class="error-message">
+              @if (password?.errors?.['required']) {
+                Senha é obrigatória
+              }
+              @if (password?.errors?.['minlength']) {
+                Senha deve ter no mínimo 6 caracteres
+              }
+            </span>
+          }
+        </div>
+
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" formControlName="rememberMe">
+            <span>Lembrar-me</span>
+          </label>
+          <a href="#" class="forgot-password">Esqueceu a senha?</a>
+        </div>
+
+        <button 
+          type="submit" 
+          class="btn-login"
+          [disabled]="loading || loginForm.invalid">
+          @if (loading) {
+            <span class="spinner"></span>
+            Entrando...
+          } @else {
+            <span>Entrar no Painel</span>
+            <span class="btn-arrow">→</span>
+          }
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <a routerLink="/" class="back-link">
+          <span class="back-icon">←</span>
+          Voltar ao site
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $orange: #ff812c;
 $blue: #3a75c3;
 $white: #FFFFFF;
@@ -280,7 +282,7 @@ $dark: #1a1a2e;
 }
 
 .search-button {
-  background: linear-gradient(135deg, $blue 0%, darken($blue, 10%) 100%);
+  background: linear-gradient(135deg, $blue 0%, color.adjust($blue, $lightness: -10%) 100%);
   color: $white;
   border: none;
   padding: 1rem 2rem;

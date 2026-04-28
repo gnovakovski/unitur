@@ -1,0 +1,58 @@
+<div class="admin-container" [class.sidebar-closed]="!sidebarOpen">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="/logo.jpeg" alt="UNITUR" class="logo">
+      <h2>UNITUR Admin</h2>
+    </div>
+
+    <nav class="sidebar-nav">
+      @for (item of menuItems; track item.route) {
+        <a 
+          [routerLink]="item.route" 
+          routerLinkActive="active"
+          class="nav-item">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-site" (click)="goToSite()">
+        <span>🌐</span>
+        Ver Site
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <button class="btn-toggle" (click)="toggleSidebar()">
+        <span class="hamburger"></span>
+      </button>
+
+      <div class="topbar-right">
+        @if (currentUser) {
+          <div class="user-menu">
+            <div class="user-info">
+              <span class="user-name">{{ currentUser.name }}</span>
+              <span class="user-role">{{ currentUser.role }}</span>
+            </div>
+            <button class="btn-logout" (click)="logout()">
+              <span>🚪</span>
+              Sair
+            </button>
+          </div>
+        }
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

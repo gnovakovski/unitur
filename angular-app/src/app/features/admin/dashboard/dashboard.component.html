@@ -1,0 +1,44 @@
+<div class="dashboard">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Visão geral do sistema</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    @for (stat of stats; track stat.label) {
+      <div class="stat-card" [style.border-left-color]="stat.color">
+        <div class="stat-icon" [style.background]="stat.color + '20'">
+          {{ stat.icon }}
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-label">{{ stat.label }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h2>Ações Rápidas</h2>
+    <div class="actions-grid">
+      <a routerLink="/admin/posts/novo" class="action-card">
+        <span class="action-icon">📝</span>
+        <span class="action-label">Novo Post</span>
+      </a>
+      <a routerLink="/admin/viagens/nova" class="action-card">
+        <span class="action-icon">✈️</span>
+        <span class="action-label">Nova Viagem</span>
+      </a>
+      <a routerLink="/admin/banners/novo" class="action-card">
+        <span class="action-icon">🖼️</span>
+        <span class="action-label">Novo Banner</span>
+      </a>
+      <a routerLink="/admin/depoimentos" class="action-card">
+        <span class="action-icon">💬</span>
+        <span class="action-label">Ver Depoimentos</span>
+      </a>
+    </div>
+  </div>
+</div>

@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $orange: #ff812c;
 $blue: #3a75c3;
 $white: #FFFFFF;
@@ -5,7 +7,7 @@ $gray: #6C757D;
 $dark: #1a1a2e;
 
 .footer {
-  background: linear-gradient(135deg, $dark 0%, darken($blue, 25%) 100%);
+  background: linear-gradient(135deg, $dark 0%, color.adjust($blue, $lightness: -25%) 100%);
   color: $white;
   padding: 3rem 0 1rem;
   margin-top: auto;
