@@ -1,14 +1,128 @@
-<div class="about">
-  <h1>Sobre Nós</h1>
-  <p>Esta é uma aplicação Angular moderna construída com as melhores práticas.</p>
-  
-  <div class="info-section">
-    <h2>Tecnologias Utilizadas</h2>
-    <ul>
-      <li>Angular 21+</li>
-      <li>TypeScript</li>
-      <li>SCSS</li>
-      <li>Standalone Components</li>
-    </ul>
+<!-- Hero Section -->
+<section class="about-hero">
+  <div class="hero-overlay">
+    <div class="hero-content">
+      <h1 class="hero-title animate-fade-in">Sobre Nós</h1>
+      <p class="hero-subtitle animate-fade-in-delay">Servindo com espírito fraterno desde 1995</p>
+    </div>
   </div>
-</div>
+</section>
+
+<!-- Mission Section -->
+<section class="mission-section">
+  <div class="container">
+    <div class="mission-grid">
+      <div class="mission-card scroll-animate" style="animation-delay: 0s">
+        <div class="mission-icon">🎯</div>
+        <h3>Nossa Missão</h3>
+        <p>Servir nossos clientes com espírito fraterno e profissional buscando o bem comum. Proporcionar uma ótima viagem, seja ela de fé, lazer, cultural ou de negócios, atendendo suas expectativas com responsabilidade, ética, transparência e preço justo.</p>
+      </div>
+      <div class="mission-card scroll-animate" style="animation-delay: 0.2s">
+        <div class="mission-icon">🌟</div>
+        <h3>Nossa Visão</h3>
+        <p>Ser reconhecida internacionalmente pela qualidade dos serviços prestados, mantendo sempre nossa essência de proximidade e confiança com os clientes.</p>
+      </div>
+      <div class="mission-card scroll-animate" style="animation-delay: 0.4s">
+        <div class="mission-icon">✝️</div>
+        <h3>Movimento dos Focolares</h3>
+        <p>Possuímos forte vínculo com o Movimento dos Focolares, de origem católica, que tem como carisma a unidade através do diálogo com igrejas cristãs, religiões e cultura contemporânea.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+  <div class="container">
+    <div class="stats-grid">
+      @for (stat of stats; track stat.label; let i = $index) {
+        <div class="stat-card scroll-animate scroll-scale" [style.animation-delay]="(i * 0.15) + 's'">
+          <div class="stat-number">{{ stat.number }}</div>
+          <div class="stat-label">{{ stat.label }}</div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Story Section -->
+<section class="story-section">
+  <div class="container">
+    <div class="section-header scroll-animate">
+      <h2 class="section-title">Nossa História</h2>
+      <p class="section-subtitle">Uma jornada de dedicação e crescimento</p>
+    </div>
+    
+    <div class="story-content">
+      <div class="story-text scroll-animate scroll-slide-right">
+        <p>A UNITUR está presente no mercado desde 1995, quando sucedeu as atividades da RAPTIM no extremo sul do Brasil, uma empresa especializada em passagens de baixo custo para missionários. Por esse motivo, desde o seu início, a UNITUR atende a uma grande clientela ligada ao meio religioso, que vai desde empresas e entidades eclesiais até a realização de grupos de peregrinações para os mais diversos santuários.</p>
+        
+        <p>Presente no mercado desde 1995, a Unitur adota como premissa básica para sua atuação uma relação de proximidade e confiança com os seus clientes. Com o passar do tempo, começamos a atender diversos tipos de público, oferecendo uma infinidade de serviços ligados a viagens, seja por lazer, negócio ou fé.</p>
+        
+        <p>Estamos inseridos nas práticas da chamada Economia de Comunhão (EdC), na qual todas as nossas atividades estão baseadas. Atualmente organizamos grupos de peregrinação com origem em qualquer região do Brasil, permanentemente atualizados com as novas tecnologias do mercado, visando atender cada vez melhor aos nossos clientes e amigos.</p>
+        
+        <p>Toda viagem precisa ser bem organizada e a UNITUR busca promover, com uma equipe de ótimos profissionais, o planejamento e realização de sua viagem em todas as suas etapas.</p>
+      </div>
+      
+      <div class="story-image scroll-animate scroll-slide-left">
+        <img src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=600&fit=crop" alt="Nossa História">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Timeline Section -->
+<section class="timeline-section">
+  <div class="container">
+    <div class="section-header scroll-animate">
+      <h2 class="section-title">Nossa Trajetória</h2>
+      <p class="section-subtitle">Marcos importantes da nossa história</p>
+    </div>
+    
+    <div class="timeline">
+      @for (item of timeline; track item.year; let i = $index) {
+        <div class="timeline-item scroll-animate" [class.left]="i % 2 === 0" [class.right]="i % 2 !== 0" [style.animation-delay]="(i * 0.2) + 's'">
+          <div class="timeline-content">
+            <div class="timeline-year">{{ item.year }}</div>
+            <h3>{{ item.event }}</h3>
+            <p>{{ item.description }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Values Section -->
+<section class="values-section">
+  <div class="container">
+    <div class="section-header scroll-animate">
+      <h2 class="section-title">Nossos Valores</h2>
+      <p class="section-subtitle">Os pilares que sustentam nosso trabalho</p>
+    </div>
+    
+    <div class="values-grid">
+      @for (value of values; track value.title; let i = $index) {
+        <div class="value-card scroll-animate scroll-scale" [style.animation-delay]="(i * 0.15) + 's'">
+          <div class="value-icon">{{ value.icon }}</div>
+          <h3>{{ value.title }}</h3>
+          <p>{{ value.description }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-content scroll-animate scroll-scale">
+      <h2>Pronto para sua próxima aventura?</h2>
+      <p>Entre em contato conosco e descubra como podemos tornar sua viagem dos sonhos realidade.</p>
+      <div class="cta-buttons">
+        <button class="btn-primary">Fale Conosco</button>
+        <button class="btn-secondary">Ver Pacotes</button>
+      </div>
+    </div>
+  </div>
+</section>
