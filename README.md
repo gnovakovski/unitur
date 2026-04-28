@@ -4,6 +4,8 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Pré-requisitos
 
+
+
 Antes de começar, você precisa ter instalado em sua máquina:
 
 - **Node.js** (versão 18.x ou superior) - [Download Node.js](https://nodejs.org/)
