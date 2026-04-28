@@ -1,0 +1,32 @@
+export interface Post {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  featuredImage?: string;
+  categoryId: number;
+  category?: Category;
+  tags: string[];
+  relatedTrips?: number[];
+  status: 'draft' | 'published';
+  publishedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  author: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  type: 'blog' | 'trip' | 'both';
+  color?: string;
+  icon?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -1,0 +1,154 @@
+<div class="blog-detail-page">
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Carregando post...</p>
+    </div>
+  }
+
+  @if (error && !loading) {
+    <div class="error-container">
+      <div class="error-icon">😕</div>
+      <h2>{{ error }}</h2>
+      <p>O post que você está procurando não existe ou foi removido.</p>
+      <a routerLink="/blog" class="btn-primary">Voltar para o Blog</a>
+    </div>
+  }
+
+  @if (post && !loading) {
+    <!-- Hero com Imagem -->
+    <section class="post-hero">
+      @if (post.featuredImage) {
+        <div class="hero-image">
+          <img [src]="post.featuredImage" [alt]="post.title">
+          <div class="hero-overlay"></div>
+        </div>
+      }
+      <div class="hero-content">
+        <div class="container">
+          <a routerLink="/blog" class="back-link">← Voltar para o Blog</a>
+          
+          @if (post.category) {
+            <span class="post-category">{{ post.category.name }}</span>
+          }
+          
+          <h1 class="post-title">{{ post.title }}</h1>
+          
+          <div class="post-meta">
+            <div class="meta-item">
+              <span class="meta-icon">📅</span>
+              <span>{{ formatDate(post.publishedAt || post.createdAt) }}</span>
+            </div>
+            @if (post.author) {
+              <div class="meta-item">
+                <span class="meta-icon">✍️</span>
+                <span>{{ post.author.name }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Conteúdo do Post -->
+    <article class="post-content-wrapper">
+      <div class="container">
+        <div class="content-grid">
+          <!-- Conteúdo Principal -->
+          <div class="main-content">
+            <!-- Resumo -->
+            @if (post.excerpt) {
+              <div class="post-excerpt">
+                <p>{{ post.excerpt }}</p>
+              </div>
+            }
+
+            <!-- Conteúdo -->
+            <div class="post-body">
+              <p [innerHTML]="post.content"></p>
+            </div>
+
+            <!-- Tags -->
+            @if (post.tags && post.tags.length > 0) {
+              <div class="post-tags-section">
+                <h3>Tags</h3>
+                <div class="tags-list">
+                  @for (tag of post.tags; track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Compartilhar -->
+            <div class="share-section">
+              <h3>Compartilhe este post</h3>
+              <div class="share-buttons">
+                <button class="share-btn facebook" (click)="shareOnFacebook()">
+                  <span class="share-icon">f</span>
+                  Facebook
+                </button>
+                <button class="share-btn twitter" (click)="shareOnTwitter()">
+                  <span class="share-icon">𝕏</span>
+                  Twitter
+                </button>
+                <button class="share-btn whatsapp" (click)="shareOnWhatsApp()">
+                  <span class="share-icon">💬</span>
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="sidebar">
+            <!-- Sobre o Autor -->
+            @if (post.author) {
+              <div class="sidebar-card author-card">
+                <h3>Sobre o Autor</h3>
+                <div class="author-info">
+                  <div class="author-avatar">
+                    {{ post.author.name.charAt(0) }}
+                  </div>
+                  <div class="author-details">
+                    <h4>{{ post.author.name }}</h4>
+                    <p>Especialista em turismo e viagens</p>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Posts Relacionados -->
+            @if (relatedPosts.length > 0) {
+              <div class="sidebar-card related-posts">
+                <h3>Posts Relacionados</h3>
+                <div class="related-list">
+                  @for (relatedPost of relatedPosts; track relatedPost.id) {
+                    <a [routerLink]="['/blog', relatedPost.slug]" class="related-item">
+                      @if (relatedPost.featuredImage) {
+                        <img [src]="relatedPost.featuredImage" [alt]="relatedPost.title">
+                      } @else {
+                        <div class="related-no-image">📝</div>
+                      }
+                      <div class="related-content">
+                        <h4>{{ relatedPost.title }}</h4>
+                        <span class="related-date">{{ formatDate(relatedPost.createdAt) }}</span>
+                      </div>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- CTA -->
+            <div class="sidebar-card cta-card">
+              <h3>Planeje sua Viagem</h3>
+              <p>Conheça nossos pacotes e destinos incríveis!</p>
+              <a routerLink="/" class="btn-cta">Ver Viagens</a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </article>
+  }
+</div>

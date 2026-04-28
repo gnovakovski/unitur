@@ -1,0 +1,154 @@
+<div class="blog-page">
+  <!-- Hero Section -->
+  <section class="blog-hero">
+    <div class="hero-content">
+      <h1 class="hero-title">Blog UNITUR</h1>
+      <p class="hero-subtitle">Curiosidades, dicas e histórias sobre os melhores destinos</p>
+    </div>
+    <div class="hero-decoration">
+      <div class="decoration-circle circle-1"></div>
+      <div class="decoration-circle circle-2"></div>
+      <div class="decoration-circle circle-3"></div>
+    </div>
+  </section>
+
+  <div class="container">
+    <!-- Filtros de Categoria -->
+    <section class="categories-filter">
+      <button 
+        class="category-btn"
+        [class.active]="selectedCategory === null"
+        (click)="filterByCategory(null)">
+        Todos
+      </button>
+      @for (category of categories; track category.id) {
+        <button 
+          class="category-btn"
+          [class.active]="selectedCategory === category.id"
+          (click)="filterByCategory(category.id)">
+          {{ category.name }}
+        </button>
+      }
+    </section>
+
+    <!-- Loading State -->
+    @if (loading) {
+      <div class="loading-grid">
+        @for (item of [1,2,3,4,5,6]; track item) {
+          <div class="skeleton-card">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+              <div class="skeleton-line"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Posts Grid -->
+    @if (!loading && posts.length > 0) {
+      <div class="posts-grid">
+        @for (post of posts; track post.id) {
+          <article class="post-card" [routerLink]="['/blog', post.slug]">
+            <div class="post-image">
+              @if (post.featuredImage) {
+                <img [src]="post.featuredImage" [alt]="post.title">
+              } @else {
+                <div class="no-image">
+                  <span class="no-image-icon">📝</span>
+                </div>
+              }
+              @if (post.category) {
+                <span class="post-category-badge">{{ post.category.name }}</span>
+              }
+            </div>
+            <div class="post-content">
+              <div class="post-meta">
+                <span class="post-date">{{ formatDate(post.publishedAt || post.createdAt) }}</span>
+                @if (post.author) {
+                  <span class="post-author">Por {{ post.author.name }}</span>
+                }
+              </div>
+              <h2 class="post-title">{{ post.title }}</h2>
+              <p class="post-excerpt">{{ post.excerpt }}</p>
+              <div class="post-footer">
+                @if (post.tags && post.tags.length > 0) {
+                  <div class="post-tags">
+                    @for (tag of post.tags.slice(0, 3); track tag) {
+                      <span class="tag">{{ tag }}</span>
+                    }
+                  </div>
+                }
+                <span class="read-more">
+                  Ler mais →
+                </span>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+
+      <!-- Paginação -->
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button 
+            class="pagination-btn"
+            [disabled]="currentPage === 1"
+            (click)="changePage(currentPage - 1)">
+            ← Anterior
+          </button>
+          
+          <div class="pagination-numbers">
+            @if (currentPage > 3) {
+              <button class="pagination-number" (click)="changePage(1)">1</button>
+              <span class="pagination-dots">...</span>
+            }
+            
+            @for (page of getPageNumbers(); track page) {
+              <button 
+                class="pagination-number"
+                [class.active]="page === currentPage"
+                (click)="changePage(page)">
+                {{ page }}
+              </button>
+            }
+            
+            @if (currentPage < totalPages - 2) {
+              <span class="pagination-dots">...</span>
+              <button class="pagination-number" (click)="changePage(totalPages)">{{ totalPages }}</button>
+            }
+          </div>
+          
+          <button 
+            class="pagination-btn"
+            [disabled]="currentPage === totalPages"
+            (click)="changePage(currentPage + 1)">
+            Próxima →
+          </button>
+        </div>
+      }
+    }
+
+    <!-- Empty State -->
+    @if (!loading && posts.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>Nenhum post encontrado</h3>
+        <p>
+          @if (selectedCategory) {
+            Não há posts nesta categoria ainda.
+          } @else {
+            Em breve teremos novos conteúdos por aqui!
+          }
+        </p>
+        @if (selectedCategory) {
+          <button class="btn-primary" (click)="filterByCategory(null)">
+            Ver todos os posts
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>
