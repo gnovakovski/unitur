@@ -1,0 +1,38 @@
+
+> angular-app@0.0.0 start
+> ng serve --host 127.0.0.1 --port 4202
+
+[33m>[39m Building...
+[32m√[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m                     [2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m                      [2m | [22m[36m32.97 kB[39m[2m | [22m
+[32mchunk-V32CVNJS.js[39m  [2m | [22m[2m-[22m                         [2m | [22m [36m3.79 kB[39m[2m | [22m
+[32mchunk-AYNH5OF7.js[39m  [2m | [22m[2m-[22m                         [2m | [22m [36m2.32 kB[39m[2m | [22m
+[32mchunk-CZJLB7T5.js[39m  [2m | [22m[2m-[22m                         [2m | [22m [36m1.08 kB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m                    [2m | [22m [36m1.06 kB[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m             [2m | [22m[1m41.21 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m                     [2m | [22m[1mRaw size[22m
+[32mchunk-G3SIDU6P.js[39m  [2m | [22m[2mhome-component[22m            [2m | [22m[36m78.31 kB[39m[2m | [22m
+[32mchunk-NOIAO7PV.js[39m  [2m | [22m[2mabout-component[22m           [2m | [22m[36m67.06 kB[39m[2m | [22m
+[32mchunk-G7UC7YGW.js[39m  [2m | [22m[2mblog-list-component[22m       [2m | [22m[36m50.74 kB[39m[2m | [22m
+[32mchunk-KDFP3MF2.js[39m  [2m | [22m[2mblog-detail-component[22m     [2m | [22m[36m48.78 kB[39m[2m | [22m
+[32mchunk-EOLJYCVP.js[39m  [2m | [22m[2mpost-form-component[22m       [2m | [22m[36m47.13 kB[39m[2m | [22m
+[32mchunk-AVCUVRQN.js[39m  [2m | [22m[2mposts-list-component[22m      [2m | [22m[36m45.23 kB[39m[2m | [22m
+[32mchunk-LKKSS6UZ.js[39m  [2m | [22m[2mproduct-detail-component[22m  [2m | [22m[36m40.13 kB[39m[2m | [22m
+[32mchunk-4BG4PNIF.js[39m  [2m | [22m[2mlogin-component[22m           [2m | [22m[36m38.60 kB[39m[2m | [22m
+[32mchunk-DZPOZB5J.js[39m  [2m | [22m[2mcategorias-list-component[22m [2m | [22m[36m28.00 kB[39m[2m | [22m
+[32mchunk-4ZFFPTP6.js[39m  [2m | [22m[2madmin-layout-component[22m    [2m | [22m[36m21.10 kB[39m[2m | [22m
+[32mchunk-6JPKM4LJ.js[39m  [2m | [22m[2mdashboard-component[22m       [2m | [22m[36m12.52 kB[39m[2m | [22m
+[32mchunk-6FWDZMQ2.js[39m  [2m | [22m[2mviagens-list-component[22m    [2m | [22m [36m6.11 kB[39m[2m | [22m
+[32mchunk-COMW7K27.js[39m  [2m | [22m[2mdepoimentos-list-component[22m[2m | [22m [36m6.07 kB[39m[2m | [22m
+[32mchunk-B6YLCP3V.js[39m  [2m | [22m[2mbanners-list-component[22m    [2m | [22m [36m5.95 kB[39m[2m | [22m
+[32mchunk-7HVT7O3I.js[39m  [2m | [22m[2m-[22m                         [2m | [22m [36m4.55 kB[39m[2m | [22m
+[2m...and 1 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [2.979 seconds] - 2026-04-28T13:32:16.841Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4202[22m/[39m

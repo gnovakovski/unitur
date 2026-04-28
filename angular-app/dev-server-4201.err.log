@@ -30,3 +30,24 @@
          ╵                                       [32m~~~~~~~[0m
 
 [39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of HomeComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/home/home.component.ts:8:26:
+[37m      8 │   imports: [CommonModule, [32mRouterLink[37m],
+        ╵                           [32m~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2307: Cannot find module './features/product/product-detail.component' or its corresponding type declarations.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/app.routes.ts:24:32:
+[37m      24 │ ...=> import([32m'./features/product/product-detail.component'[37m).then(m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "./features/product/product-detail.component"[0m
+
+    src/app/app.routes.ts:22:36:
+[37m      22 │ ...=> import([32m'./features/product/product-detail.component'[37m).then(m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

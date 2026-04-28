@@ -5,7 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { PostService, PostFilters } from '../../../core/services/post.service';
 import { CategoryService } from '../../../core/services/category.service';
 import { Post, Category } from '../../../core/models/post.model';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, finalize, of, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-posts-list',
@@ -65,11 +65,17 @@ export class PostsListComponent implements OnInit {
   }
 
   loadCategories() {
-    this.categoryService.getAllCategories().subscribe({
+    this.categoryService.getAllCategories().pipe(
+      timeout(8000),
+      catchError((err) => {
+        console.error('Erro ao carregar categorias', err);
+        this.error = 'Erro ao carregar categorias. Verifique login e regras do Firestore.';
+        return of([]);
+      })
+    ).subscribe({
       next: (categories) => {
         this.categories = categories.filter(c => c.type === 'blog' || c.type === 'both');
-      },
-      error: (err) => console.error('Erro ao carregar categorias', err)
+      }
     });
   }
 
@@ -90,17 +96,27 @@ export class PostsListComponent implements OnInit {
       }
     });
 
-    this.postService.getPosts(filters).subscribe({
+    this.postService.getPosts(filters).pipe(
+      timeout(8000),
+      catchError((err) => {
+        console.error('Erro ao carregar posts', err);
+        this.error = 'Erro ao carregar posts. Verifique login e regras do Firestore.';
+        return of({
+          data: [],
+          total: 0,
+          page: this.currentPage,
+          limit: this.itemsPerPage,
+          totalPages: 1
+        });
+      }),
+      finalize(() => {
+        this.loading = false;
+      })
+    ).subscribe({
       next: (response) => {
         this.posts = response.data;
         this.totalItems = response.total;
         this.totalPages = response.totalPages;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = 'Erro ao carregar posts';
-        this.loading = false;
-        console.error(err);
       }
     });
   }

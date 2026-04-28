@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
@@ -21,6 +22,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   peregrinacoes = [
     {
+      slug: 'terra-santa',
       title: 'Terra Santa',
       location: 'Israel',
       date: 'Junho 2026',
@@ -30,6 +32,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       spots: '8 vagas'
     },
     {
+      slug: 'caminho-de-santiago',
       title: 'Caminho de Santiago',
       location: 'Espanha',
       date: 'Agosto 2026',
@@ -39,6 +42,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       spots: '12 vagas'
     },
     {
+      slug: 'fatima-e-lourdes',
       title: 'Fátima e Lourdes',
       location: 'Portugal e França',
       date: 'Setembro 2026',
@@ -51,6 +55,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   destinations = [
     {
+      slug: 'europa-classica',
       title: 'Europa Clássica',
       description: 'Paris, Roma, Londres e Barcelona',
       image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=350&fit=crop',
@@ -58,6 +63,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       days: '14 dias'
     },
     {
+      slug: 'caribe-paradisiaco',
       title: 'Caribe Paradisíaco',
       description: 'Cancún, Punta Cana e Aruba',
       image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=500&h=350&fit=crop',
@@ -65,6 +71,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       days: '7 dias'
     },
     {
+      slug: 'asia-mistica',
       title: 'Ásia Mística',
       description: 'Tailândia, Japão e Bali',
       image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=500&h=350&fit=crop',
@@ -72,6 +79,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       days: '16 dias'
     },
     {
+      slug: 'america-do-sul',
       title: 'América do Sul',
       description: 'Machu Picchu, Patagônia e Buenos Aires',
       image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=500&h=350&fit=crop',

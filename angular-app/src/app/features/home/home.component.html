@@ -67,12 +67,12 @@
   
   <div class="peregrinacoes-grid">
     @for (peregrinacao of peregrinacoes; track peregrinacao.title) {
-      <div class="peregrinacao-card">
+      <a class="peregrinacao-card" [routerLink]="['/viagens', peregrinacao.slug]">
         <div class="card-image">
           <img [src]="peregrinacao.image" [alt]="peregrinacao.title">
           <div class="card-badge-top">{{ peregrinacao.spots }}</div>
           <div class="card-overlay">
-            <button class="card-button">Saiba Mais</button>
+            <span class="card-button">Saiba Mais</span>
           </div>
         </div>
         <div class="card-content">
@@ -86,10 +86,10 @@
           </div>
           <div class="card-footer">
             <span class="price">{{ peregrinacao.price }}</span>
-            <button class="btn-reserve">Reservar</button>
+            <span class="btn-reserve">Reservar</span>
           </div>
         </div>
-      </div>
+      </a>
     }
   </div>
 </section>
@@ -103,12 +103,12 @@
   
   <div class="world-grid">
     @for (destination of destinations; track destination.title) {
-      <div class="world-card">
+      <a class="world-card" [routerLink]="['/viagens', destination.slug]">
         <div class="card-image">
           <img [src]="destination.image" [alt]="destination.title">
           <div class="card-badge-duration">{{ destination.days }}</div>
           <div class="card-overlay">
-            <button class="card-button">Explorar</button>
+            <span class="card-button">Explorar</span>
           </div>
         </div>
         <div class="card-content">
@@ -116,10 +116,10 @@
           <p>{{ destination.description }}</p>
           <div class="card-footer">
             <span class="price">{{ destination.price }}</span>
-            <button class="btn-secondary">Ver Pacote</button>
+            <span class="btn-secondary">Ver Pacote</span>
           </div>
         </div>
-      </div>
+      </a>
     }
   </div>
 </section>

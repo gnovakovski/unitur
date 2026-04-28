@@ -19,6 +19,10 @@ export const routes: Routes = [
     path: 'blog/:slug',
     loadComponent: () => import('./features/blog/blog-detail.component').then(m => m.BlogDetailComponent)
   },
+  {
+    path: 'viagens/:slug',
+    loadComponent: () => import('./features/product/product-detail.component').then(m => m.ProductDetailComponent)
+  },
   
   // Admin routes
   {

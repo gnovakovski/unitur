@@ -16,6 +16,7 @@ export class FirebaseService {
   }
 
   get firestore(): Firestore {
+    getAuth(this.getApp());
     return getFirestore(this.getApp());
   }
 

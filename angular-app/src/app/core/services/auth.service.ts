@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, from, Observable, switchMap, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
 
 export interface LoginCredentials {
@@ -74,6 +74,31 @@ export class AuthService {
     
     // Verifica se token está expirado
     return !this.isTokenExpired(token);
+  }
+
+  waitForAuthenticatedUser(): Promise<boolean> {
+    if (!this.isAuthenticated()) {
+      return Promise.resolve(false);
+    }
+
+    const auth = this.firebaseService.auth;
+
+    if (auth.currentUser) {
+      return Promise.resolve(true);
+    }
+
+    return new Promise(resolve => {
+      const timeoutId = window.setTimeout(() => {
+        unsubscribe();
+        resolve(false);
+      }, 3000);
+
+      const unsubscribe = onAuthStateChanged(auth, user => {
+        window.clearTimeout(timeoutId);
+        unsubscribe();
+        resolve(!!user);
+      });
+    });
   }
 
   getToken(): string | null {
