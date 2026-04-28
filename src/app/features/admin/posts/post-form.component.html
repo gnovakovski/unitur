@@ -1,0 +1,225 @@
+<div class="post-form">
+  <div class="page-header">
+    <div>
+      <h1>{{ isEditMode ? 'Editar Post' : 'Novo Post' }}</h1>
+      <p>{{ isEditMode ? 'Atualize as informações do post' : 'Crie um novo post para o blog' }}</p>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Carregando post...</p>
+    </div>
+  }
+
+  @if (!loading) {
+    <form [formGroup]="postForm" (ngSubmit)="onSubmit()">
+      <div class="form-grid">
+        <!-- Coluna Principal -->
+        <div class="main-column">
+          <!-- Título -->
+          <div class="form-card">
+            <div class="form-group">
+              <label for="title" class="form-label">
+                Título <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="title"
+                formControlName="title"
+                class="form-control"
+                [class.invalid]="isFieldInvalid('title')"
+                placeholder="Digite o título do post">
+              @if (isFieldInvalid('title')) {
+                <div class="error-message">{{ getFieldError('title') }}</div>
+              }
+            </div>
+
+            <!-- Slug -->
+            <div class="form-group">
+              <label for="slug" class="form-label">
+                Slug (URL) <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="slug"
+                formControlName="slug"
+                class="form-control"
+                [class.invalid]="isFieldInvalid('slug')"
+                placeholder="slug-do-post">
+              @if (isFieldInvalid('slug')) {
+                <div class="error-message">{{ getFieldError('slug') }}</div>
+              }
+              <small class="form-hint">Gerado automaticamente a partir do título</small>
+            </div>
+          </div>
+
+          <!-- Resumo -->
+          <div class="form-card">
+            <div class="form-group">
+              <label for="excerpt" class="form-label">
+                Resumo <span class="required">*</span>
+              </label>
+              <textarea 
+                id="excerpt"
+                formControlName="excerpt"
+                class="form-control"
+                [class.invalid]="isFieldInvalid('excerpt')"
+                rows="3"
+                placeholder="Breve descrição do post (máx. 200 caracteres)"></textarea>
+              @if (isFieldInvalid('excerpt')) {
+                <div class="error-message">{{ getFieldError('excerpt') }}</div>
+              }
+              <small class="form-hint">
+                {{ postForm.get('excerpt')?.value?.length || 0 }}/200 caracteres
+              </small>
+            </div>
+          </div>
+
+          <!-- Conteúdo -->
+          <div class="form-card">
+            <div class="form-group">
+              <label for="content" class="form-label">
+                Conteúdo <span class="required">*</span>
+              </label>
+              <textarea 
+                id="content"
+                formControlName="content"
+                class="form-control content-editor"
+                [class.invalid]="isFieldInvalid('content')"
+                rows="15"
+                placeholder="Escreva o conteúdo completo do post..."></textarea>
+              @if (isFieldInvalid('content')) {
+                <div class="error-message">{{ getFieldError('content') }}</div>
+              }
+              <small class="form-hint">Mínimo de 50 caracteres</small>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="form-card">
+            <div class="form-group">
+              <label for="tags" class="form-label">Tags</label>
+              <input 
+                type="text" 
+                id="tags"
+                formControlName="tags"
+                class="form-control"
+                placeholder="viagem, turismo, dicas (separadas por vírgula)">
+              <small class="form-hint">Separe as tags com vírgulas</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna Lateral -->
+        <div class="sidebar-column">
+          <!-- Imagem Destacada -->
+          <div class="form-card">
+            <h3 class="card-title">Imagem Destacada</h3>
+            <div class="form-group">
+              <label for="featuredImage" class="form-label">URL da imagem</label>
+              <input
+                type="url"
+                id="featuredImage"
+                formControlName="featuredImage"
+                class="form-control"
+                placeholder="https://exemplo.com/imagem.jpg">
+              <small class="form-hint">Use uma URL pública enquanto o Firebase Storage estiver desativado.</small>
+            </div>
+
+            @if (postForm.get('featuredImage')?.value) {
+              <div class="image-url-preview">
+                <img [src]="postForm.get('featuredImage')?.value" alt="Prévia da imagem destacada">
+              </div>
+            }
+          </div>
+
+          <!-- Categoria -->
+          <div class="form-card">
+            <h3 class="card-title">Categoria</h3>
+            <div class="form-group">
+              <select 
+                formControlName="categoryId"
+                class="form-control"
+                [class.invalid]="isFieldInvalid('categoryId')">
+                <option value="">Selecione uma categoria</option>
+                @for (category of categories; track category.id) {
+                  <option [value]="category.id">{{ category.name }}</option>
+                }
+              </select>
+              @if (isFieldInvalid('categoryId')) {
+                <div class="error-message">{{ getFieldError('categoryId') }}</div>
+              }
+            </div>
+          </div>
+
+          <!-- Viagens Relacionadas -->
+          <div class="form-card">
+            <h3 class="card-title">Viagens Relacionadas</h3>
+            <div class="form-group">
+              <select 
+                formControlName="relatedTrips"
+                class="form-control"
+                multiple
+                size="5">
+                @for (trip of trips; track trip.id) {
+                  <option [value]="trip.id">{{ trip.title }}</option>
+                }
+              </select>
+              <small class="form-hint">Segure Ctrl/Cmd para selecionar múltiplas</small>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="form-card">
+            <h3 class="card-title">Status</h3>
+            <div class="form-group">
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="status" 
+                    value="draft">
+                  <span>Rascunho</span>
+                </label>
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="status" 
+                    value="published">
+                  <span>Publicado</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações -->
+          <div class="form-card">
+            <div class="form-actions">
+              <button 
+                type="button" 
+                (click)="onCancel()"
+                class="btn btn-secondary btn-block"
+                [disabled]="saving">
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                class="btn btn-primary btn-block"
+                [disabled]="saving || postForm.invalid">
+                {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar' : 'Criar Post') }}
+              </button>
+            </div>
+          </div>
+
+          @if (error) {
+            <div class="error-alert">
+              {{ error }}
+            </div>
+          }
+        </div>
+      </div>
+    </form>
+  }
+</div>
