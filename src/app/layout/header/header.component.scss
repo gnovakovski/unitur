@@ -61,14 +61,14 @@ $shadow: rgba(0, 0, 0, 0.1);
   font-weight: 500;
   transition: all 0.3s ease;
   position: relative;
-  padding: 0.5rem 1rem;
+  padding: 0.65rem 1.1rem;
   
   &::before {
     content: '';
     position: absolute;
     inset: 0;
     background: rgba($white, 0.1);
-    border-radius: 8px;
+    border-radius: 999px;
     opacity: 0;
     transition: opacity 0.3s ease;
   }

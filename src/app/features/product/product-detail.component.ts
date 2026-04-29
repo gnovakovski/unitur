@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { catchError, of, timeout } from 'rxjs';
+import { Trip } from '../../core/models/trip.model';
+import { TripService } from '../../core/services/trip.service';
 
 interface ProductTrip {
   slug: string;
@@ -11,6 +14,9 @@ interface ProductTrip {
   duration: string;
   price: string;
   spots: string;
+  guide: string;
+  coordinator: string;
+  operator: string;
   image: string;
   summary: string;
   highlights: string[];
@@ -39,6 +45,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '12 dias',
       price: 'R$ 8.999',
       spots: '8 vagas',
+      guide: 'Pe. JoÃ£o Batista',
+      coordinator: 'Ana Silva',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1600&h=900&fit=crop',
       summary: 'Uma jornada espiritual pelos lugares centrais da fé cristã, com acompanhamento especializado, roteiro equilibrado e suporte em todos os deslocamentos.',
       highlights: ['Jerusalém antiga', 'Mar da Galileia', 'Belém', 'Nazaré', 'Monte das Bem-Aventuranças'],
@@ -60,6 +69,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '15 dias',
       price: 'R$ 6.499',
       spots: '12 vagas',
+      guide: 'Pe. Carlos Mendes',
+      coordinator: 'Carlos Mendes',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=1600&h=900&fit=crop',
       summary: 'Uma experiência de caminhada, contemplação e convivência pelo tradicional Caminho de Santiago, com logística organizada e ritmo pensado para o grupo.',
       highlights: ['Santiago de Compostela', 'Vilarejos históricos', 'Caminhadas guiadas', 'Credencial do peregrino'],
@@ -80,6 +92,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '10 dias',
       price: 'R$ 7.299',
       spots: '15 vagas',
+      guide: 'Pe. Andre Lima',
+      coordinator: 'Marina Costa',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1600&h=900&fit=crop',
       summary: 'Um roteiro por dois grandes santuários marianos da Europa, combinando espiritualidade, cultura, história e acompanhamento cuidadoso.',
       highlights: ['Santuário de Fátima', 'Lourdes', 'Lisboa', 'Experiências de oração', 'Cidades históricas'],
@@ -100,6 +115,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '14 dias',
       price: 'R$ 9.999',
       spots: 'Vagas limitadas',
+      guide: 'A definir',
+      coordinator: 'Equipe Unitur',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&h=900&fit=crop',
       summary: 'Um circuito para conhecer alguns dos destinos mais icônicos da Europa com conforto, organização e tempo para viver cada cidade.',
       highlights: ['Paris', 'Roma', 'Londres', 'Barcelona', 'Museus e monumentos'],
@@ -120,6 +138,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '7 dias',
       price: 'R$ 5.499',
       spots: 'Vagas limitadas',
+      guide: 'A definir',
+      coordinator: 'Equipe Unitur',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=1600&h=900&fit=crop',
       summary: 'Uma viagem para descansar em praias de águas cristalinas, com estrutura completa e curadoria de experiências para aproveitar sem pressa.',
       highlights: ['Praias caribenhas', 'Resorts selecionados', 'Passeios náuticos', 'Tempo livre'],
@@ -140,6 +161,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '16 dias',
       price: 'R$ 11.999',
       spots: 'Vagas limitadas',
+      guide: 'A definir',
+      coordinator: 'Equipe Unitur',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=1600&h=900&fit=crop',
       summary: 'Um roteiro para descobrir templos, sabores, tradições e paisagens marcantes da Ásia, com uma curadoria que equilibra cultura e contemplação.',
       highlights: ['Templos', 'Gastronomia local', 'Tradições orientais', 'Paisagens tropicais'],
@@ -160,6 +184,9 @@ export class ProductDetailComponent implements OnInit {
       duration: '10 dias',
       price: 'R$ 6.799',
       spots: 'Vagas limitadas',
+      guide: 'A definir',
+      coordinator: 'Equipe Unitur',
+      operator: 'Unitur',
       image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=1600&h=900&fit=crop',
       summary: 'Um roteiro para viver paisagens intensas e cidades cheias de história, com experiências selecionadas no continente sul-americano.',
       highlights: ['Machu Picchu', 'Patagônia', 'Buenos Aires', 'Cultura andina', 'Paisagens naturais'],
@@ -173,13 +200,144 @@ export class ProductDetailComponent implements OnInit {
     }
   ];
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute,
+    private tripService: TripService
+  ) {}
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
-      this.trip = this.trips.find(item => item.slug === slug) || null;
+      this.loadTrip(slug);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  private loadTrip(slug: string | null) {
+    if (!slug) {
+      this.trip = null;
+      return;
+    }
+
+    const queryTrip = this.getTripFromQuery(slug);
+    if (queryTrip) {
+      this.trip = queryTrip;
+      return;
+    }
+
+    const fallback = this.trips.find(item => item.slug === slug) || null;
+
+    this.tripService.getTrips({ limit: 100 }).pipe(
+      timeout(10000),
+      catchError(() => of({ data: [], total: 0, page: 1, limit: 100, totalPages: 1 }))
+    ).subscribe(response => {
+      const firestoreTrip = response.data.find(item => this.matchesSlug(item, slug));
+      this.trip = firestoreTrip ? this.mapFirestoreTrip(firestoreTrip) : fallback;
+    });
+  }
+
+  private getTripFromQuery(slug: string): ProductTrip | null {
+    const query = this.route.snapshot.queryParamMap;
+    const title = query.get('title');
+
+    if (!title) {
+      return null;
+    }
+
+    const destination = query.get('destination') || 'A definir';
+    const duration = query.get('duration') || 'A definir';
+    const date = query.get('date') || 'A definir';
+    const operator = query.get('operator') || 'Unitur';
+
+    return {
+      slug,
+      title,
+      eyebrow: query.get('category') || 'Viagem Unitur',
+      destination,
+      date,
+      duration,
+      price: query.get('price') || 'Consulte',
+      spots: query.get('spots') || 'Vagas limitadas',
+      guide: query.get('guide') || 'A definir',
+      coordinator: query.get('coordinator') || 'Equipe Unitur',
+      operator,
+      image: query.get('image') || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=900&fit=crop',
+      summary: `Uma experiencia organizada pela Unitur para ${destination}, com roteiro planejado, acompanhamento e suporte em todas as etapas da viagem.`,
+      highlights: [destination, date, duration, operator],
+      itinerary: [
+        { day: 'Etapa 1', title: 'Preparacao e embarque', description: 'Orientacoes iniciais, alinhamento do grupo e inicio da experiencia.' },
+        { day: 'Etapa 2', title: 'Vivencia no destino', description: 'Roteiro conduzido conforme a proposta da viagem, com suporte da equipe Unitur.' },
+        { day: 'Etapa 3', title: 'Encerramento', description: 'Finalizacao da programacao e retorno com acompanhamento.' }
+      ],
+      included: ['Acompanhamento Unitur', 'Roteiro organizado', 'Suporte durante a viagem', 'Orientacoes antes do embarque'],
+      notIncluded: ['Despesas pessoais', 'Documentacao', 'Servicos nao mencionados', 'Passeios opcionais']
+    };
+  }
+
+  private matchesSlug(trip: Trip, slug: string) {
+    return [
+      trip.slug,
+      this.tripService.generateSlug(trip.title),
+      String(trip.id)
+    ].filter(Boolean).includes(slug);
+  }
+
+  private mapFirestoreTrip(trip: Trip): ProductTrip {
+    const destination = trip.country || trip.destination || 'A definir';
+    const duration = trip.duration ? `${trip.duration} dias` : 'A definir';
+    const price = trip.price ? `R$ ${Number(trip.price).toLocaleString('pt-BR')}` : 'Consulte';
+    const summary = trip.shortDescription || trip.description || 'Roteiro organizado pela Unitur com acompanhamento e suporte em todas as etapas.';
+
+    return {
+      slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      title: trip.title,
+      eyebrow: this.getTripTypeLabel(trip.tripType),
+      destination,
+      date: trip.period || this.formatPeriod(trip.startDate),
+      duration,
+      price,
+      spots: `${Number(trip.availableSpots || 0)} vagas`,
+      guide: trip.spiritualGuide || 'A definir',
+      coordinator: trip.coordinator || 'Equipe Unitur',
+      operator: trip.operator || 'Unitur',
+      image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=900&fit=crop',
+      summary,
+      highlights: [destination, trip.period || 'Periodo a definir', duration, trip.operator || 'Unitur'],
+      itinerary: trip.itinerary
+        ? [{ day: 'Roteiro', title: 'Programacao da viagem', description: trip.itinerary }]
+        : [
+            { day: 'Etapa 1', title: 'Preparacao e embarque', description: 'Orientacoes iniciais, alinhamento do grupo e inicio da experiencia.' },
+            { day: 'Etapa 2', title: 'Vivencia no destino', description: 'Roteiro conduzido conforme a proposta da viagem, com suporte da equipe.' },
+            { day: 'Etapa 3', title: 'Encerramento', description: 'Finalizacao da programacao e retorno com acompanhamento Unitur.' }
+          ],
+      included: trip.included?.length ? trip.included : ['Acompanhamento Unitur', 'Suporte durante a viagem', 'Roteiro organizado'],
+      notIncluded: trip.notIncluded?.length ? trip.notIncluded : ['Despesas pessoais', 'Documentacao', 'Servicos nao mencionados']
+    };
+  }
+
+  private getTripTypeLabel(type?: Trip['tripType']) {
+    const labels: Record<string, string> = {
+      peregrinacao: 'Viagens de Peregrinacao',
+      regular: 'Viagens Regulares',
+      curadoria: 'Viagens de Curadoria'
+    };
+
+    return labels[type || 'regular'];
+  }
+
+  private formatPeriod(date?: Date): string {
+    if (!date) {
+      return 'A definir';
+    }
+
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'A definir';
+    }
+
+    return parsedDate.toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric'
     });
   }
 }

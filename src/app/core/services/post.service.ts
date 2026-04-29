@@ -29,17 +29,22 @@ export class PostService {
   constructor(private firebaseService: FirebaseService) {}
 
   getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
-    return from(getDocs(query(
+    const request = getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('createdAt', 'desc')
-    ))).pipe(
+    ));
+
+    return from(this.firebaseService.withTimeout(request, 'Tempo esgotado ao carregar posts do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post)),
       map(posts => this.applyFilters(posts, filters))
     );
   }
 
   getPost(id: number): Observable<Post> {
-    return from(getDocs(collection(this.firebaseService.firestore, this.collectionName))).pipe(
+    return from(this.firebaseService.withTimeout(
+      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      'Tempo esgotado ao carregar post do Firestore.'
+    )).pipe(
       map(snapshot => {
         const item = snapshot.docs
           .map(docSnap => this.firebaseService.normalizeDates(docSnap.data()) as Post)
@@ -74,7 +79,10 @@ export class PostService {
       author: post.author || { id: 1, name: 'Administrador' }
     };
 
-    return from(setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)).then(() => newPost));
+    return from(this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)).then(() => newPost),
+      'Tempo esgotado ao salvar post no Firestore.'
+    ));
   }
 
   updatePost(id: number, post: Partial<Post>): Observable<Post> {
@@ -84,14 +92,20 @@ export class PostService {
       updatedAt: new Date()
     };
 
-    return from(updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedPost)).then(() => ({
-      id,
-      ...updatedPost
-    } as Post)));
+    return from(this.firebaseService.withTimeout(
+      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedPost)).then(() => ({
+        id,
+        ...updatedPost
+      } as Post)),
+      'Tempo esgotado ao atualizar post no Firestore.'
+    ));
   }
 
   deletePost(id: number): Observable<void> {
-    return from(deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))));
+    return from(this.firebaseService.withTimeout(
+      deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
+      'Tempo esgotado ao excluir post no Firestore.'
+    ));
   }
 
   generateSlug(title: string): string {
@@ -142,4 +156,5 @@ export class PostService {
   private cleanUndefined<T extends object>(data: T): Record<string, unknown> {
     return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
   }
+
 }

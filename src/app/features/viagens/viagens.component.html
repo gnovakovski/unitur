@@ -1,7 +1,7 @@
 <section class="viagens-hero">
   <div class="hero-content">
-    <h1>Nossas Viagens</h1>
-    <p>Encontre a viagem perfeita para você</p>
+    <h1>{{ selectedCategory }}</h1>
+    <p>Encontre a viagem perfeita para voce</p>
   </div>
 </section>
 
@@ -18,6 +18,18 @@
       }
     </div>
 
+    @if (loading) {
+      <div class="state-message">Carregando viagens...</div>
+    }
+
+    @if (error) {
+      <div class="state-message warning">{{ error }}</div>
+    }
+
+    @if (!loading && filtered.length === 0) {
+      <div class="state-message">Nenhuma viagem cadastrada nesta categoria.</div>
+    }
+
     <div class="viagens-grid">
       @for (viagem of filtered; track viagem.title) {
         <div class="viagem-card">
@@ -29,15 +41,20 @@
           <div class="card-content">
             <div class="card-header">
               <h3>{{ viagem.title }}</h3>
-              <span class="location">📍 {{ viagem.location }}</span>
+              <span class="location">Pais principal: {{ viagem.location }}</span>
             </div>
             <div class="card-info">
-              <span>📅 {{ viagem.date }}</span>
-              <span>⏱️ {{ viagem.duration }}</span>
+              <span><strong>Periodo</strong>{{ viagem.date }}</span>
+              <span><strong>Dias</strong>{{ viagem.duration }}</span>
+            </div>
+            <div class="card-team">
+              <span><strong>Guia Espiritual</strong>{{ viagem.guide }}</span>
+              <span><strong>Coordenador</strong>{{ viagem.coordinator }}</span>
+              <span><strong>Operadora</strong>{{ viagem.operator }}</span>
             </div>
             <div class="card-footer">
               <span class="price">{{ viagem.price }}</span>
-              <button class="btn-reserve">Reservar</button>
+              <a class="btn-reserve" [routerLink]="['/viagens', viagem.slug]" [queryParams]="getTripQuery(viagem)">Ver viagem</a>
             </div>
           </div>
         </div>

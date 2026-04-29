@@ -11,7 +11,7 @@
       <div class="error-icon">😕</div>
       <h2>{{ error }}</h2>
       <p>O post que você está procurando não existe ou foi removido.</p>
-      <a routerLink="/blog" class="btn-primary">Voltar para o Blog</a>
+      <a href="/" class="btn-primary" (click)="goBackToHomeBlog($event)">Voltar para o Blog</a>
     </div>
   }
 
@@ -26,7 +26,7 @@
       }
       <div class="hero-content">
         <div class="container">
-          <a routerLink="/blog" class="back-link">← Voltar para o Blog</a>
+          <a href="/" class="back-link" (click)="goBackToHomeBlog($event)">← Voltar para o Blog</a>
           
           @if (post.category) {
             <span class="post-category">{{ post.category.name }}</span>
@@ -102,22 +102,6 @@
 
           <!-- Sidebar -->
           <aside class="sidebar">
-            <!-- Sobre o Autor -->
-            @if (post.author) {
-              <div class="sidebar-card author-card">
-                <h3>Sobre o Autor</h3>
-                <div class="author-info">
-                  <div class="author-avatar">
-                    {{ post.author.name.charAt(0) }}
-                  </div>
-                  <div class="author-details">
-                    <h4>{{ post.author.name }}</h4>
-                    <p>Especialista em turismo e viagens</p>
-                  </div>
-                </div>
-              </div>
-            }
-
             <!-- Posts Relacionados -->
             @if (relatedPosts.length > 0) {
               <div class="sidebar-card related-posts">

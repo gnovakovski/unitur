@@ -51,7 +51,7 @@
     @if (!loading && posts.length > 0) {
       <div class="posts-grid">
         @for (post of posts; track post.id) {
-          <article class="post-card" [routerLink]="['/blog', post.slug]">
+          <article class="post-card" [routerLink]="['/blog', post.slug]" [queryParams]="{ origin: blogOrigin }">
             <div class="post-image">
               @if (post.featuredImage) {
                 <img [src]="post.featuredImage" [alt]="post.title">

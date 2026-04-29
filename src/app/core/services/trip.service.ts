@@ -29,17 +29,20 @@ export class TripService {
   constructor(private firebaseService: FirebaseService) {}
 
   getTrips(filters?: TripFilters): Observable<PaginatedResponse<Trip>> {
-    return from(getDocs(query(
+    return from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('createdAt', 'desc')
-    ))).pipe(
+    )), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip)),
       map(trips => this.applyFilters(trips, filters))
     );
   }
 
   getTrip(id: number): Observable<Trip> {
-    return from(getDocs(collection(this.firebaseService.firestore, this.collectionName))).pipe(
+    return from(this.firebaseService.withTimeout(
+      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      'Tempo esgotado ao carregar viagem do Firestore.'
+    )).pipe(
       map(snapshot => {
         const trip = snapshot.docs
           .map(item => this.firebaseService.normalizeDates(item.data()) as Trip)
@@ -61,7 +64,10 @@ export class TripService {
       id,
       title: trip.title || '',
       slug: trip.slug || this.generateSlug(trip.title || ''),
+      tripType: trip.tripType || 'regular',
       destination: trip.destination || '',
+      country: trip.country || trip.destination || '',
+      period: trip.period || '',
       description: trip.description || '',
       shortDescription: trip.shortDescription || '',
       categoryId: Number(trip.categoryId),
@@ -72,6 +78,9 @@ export class TripService {
       duration: Number(trip.duration || 0),
       price: Number(trip.price || 0),
       availableSpots: Number(trip.availableSpots || 0),
+      spiritualGuide: trip.spiritualGuide || '',
+      coordinator: trip.coordinator || '',
+      operator: trip.operator || 'Unitur',
       included: trip.included || [],
       notIncluded: trip.notIncluded || [],
       itinerary: trip.itinerary,
@@ -81,24 +90,34 @@ export class TripService {
       updatedAt: now
     };
 
-    return from(setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newTrip)).then(() => newTrip));
+    return from(this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newTrip)).then(() => newTrip),
+      'Tempo esgotado ao salvar viagem no Firestore.'
+    ));
   }
 
   updateTrip(id: number, trip: Partial<Trip>): Observable<Trip> {
     const updatedTrip = {
       ...trip,
+      slug: trip.slug || (trip.title ? this.generateSlug(trip.title) : trip.slug),
       categoryId: trip.categoryId ? Number(trip.categoryId) : trip.categoryId,
       updatedAt: new Date()
     };
 
-    return from(updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedTrip)).then(() => ({
-      id,
-      ...updatedTrip
-    } as Trip)));
+    return from(this.firebaseService.withTimeout(
+      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedTrip)).then(() => ({
+        id,
+        ...updatedTrip
+      } as Trip)),
+      'Tempo esgotado ao atualizar viagem no Firestore.'
+    ));
   }
 
   deleteTrip(id: number): Observable<void> {
-    return from(deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))));
+    return from(this.firebaseService.withTimeout(
+      deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
+      'Tempo esgotado ao excluir viagem no Firestore.'
+    ));
   }
 
   generateSlug(title: string): string {

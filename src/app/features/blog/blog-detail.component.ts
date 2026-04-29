@@ -17,6 +17,7 @@ export class BlogDetailComponent implements OnInit {
   relatedPosts: Post[] = [];
   loading = true;
   error: string | null = null;
+  origin: 'home' | 'footer' | 'blog' = 'blog';
 
   private readonly fallbackPosts: Post[] = [
     {
@@ -106,6 +107,10 @@ export class BlogDetailComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    const origin = this.route.snapshot.queryParamMap.get('origin');
+    this.origin = origin === 'home' || origin === 'footer' ? origin : 'blog';
+
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
       if (slug) {
@@ -204,5 +209,25 @@ export class BlogDetailComponent implements OnInit {
     const url = encodeURIComponent(window.location.href);
     const text = encodeURIComponent(this.post?.title || '');
     window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+  }
+
+  goBackToHomeBlog(event: Event) {
+    event.preventDefault();
+
+    if (this.origin === 'footer' || this.origin === 'blog') {
+      this.router.navigate(['/blog'], {
+        queryParams: this.origin === 'footer' ? { origin: 'footer' } : undefined
+      });
+      return;
+    }
+
+    this.router.navigate(['/']).then(() => {
+      window.setTimeout(() => {
+        document.getElementById('blog-unitur')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      });
+    });
   }
 }

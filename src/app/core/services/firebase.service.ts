@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { initializeApp, FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore, Timestamp } from 'firebase/firestore';
+import { Firestore, getFirestore, initializeFirestore, Timestamp } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { environment } from '../../../environments/environment';
 
@@ -10,14 +10,25 @@ import { environment } from '../../../environments/environment';
 })
 export class FirebaseService {
   private app: FirebaseApp | null = null;
+  private firestoreDb: Firestore | null = null;
 
   get auth(): Auth {
     return getAuth(this.getApp());
   }
 
   get firestore(): Firestore {
-    getAuth(this.getApp());
-    return getFirestore(this.getApp());
+    if (!this.firestoreDb) {
+      try {
+        this.firestoreDb = initializeFirestore(this.getApp(), {
+          experimentalForceLongPolling: true,
+          useFetchStreams: false
+        } as Parameters<typeof initializeFirestore>[1]);
+      } catch {
+        this.firestoreDb = getFirestore(this.getApp());
+      }
+    }
+
+    return this.firestoreDb;
   }
 
   get storage(): FirebaseStorage {
@@ -33,6 +44,15 @@ export class FirebaseService {
       (result as Record<string, unknown>)[key] = value instanceof Timestamp ? value.toDate() : value;
       return result;
     }, { ...(data as Record<string, unknown>) }) as T;
+  }
+
+  withTimeout<T>(promise: Promise<T>, message = 'Tempo esgotado ao consultar o Firestore.', ms = 10000): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        window.setTimeout(() => reject(new Error(message)), ms);
+      })
+    ]);
   }
 
   private getApp(): FirebaseApp {

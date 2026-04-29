@@ -57,7 +57,7 @@ $dark: #1a1a2e;
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  border-radius: 8px;
+  border-radius: 999px;
   font-weight: 700;
 }
 
@@ -87,7 +87,7 @@ $dark: #1a1a2e;
     padding: 0.75rem 1rem;
     background: rgba($white, 0.14);
     border: 1px solid rgba($white, 0.22);
-    border-radius: 8px;
+    border-radius: 999px;
     font-weight: 700;
   }
 }
@@ -105,9 +105,9 @@ $dark: #1a1a2e;
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   background: $white;
-  border-radius: 14px;
+  border-radius: 28px;
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.18);
   overflow: hidden;
 }
@@ -151,7 +151,7 @@ $dark: #1a1a2e;
 .section-block,
 .booking-panel {
   background: $white;
-  border-radius: 14px;
+  border-radius: 28px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.08);
 }
 
@@ -173,7 +173,7 @@ $dark: #1a1a2e;
     justify-content: center;
     background: rgba($orange, 0.12);
     color: $orange;
-    border-radius: 8px;
+    border-radius: 50%;
     font-weight: 900;
   }
 
@@ -190,6 +190,33 @@ $dark: #1a1a2e;
   &.muted span {
     background: rgba($blue, 0.1);
     color: $blue;
+  }
+}
+
+.team-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+
+  article {
+    background: linear-gradient(135deg, rgba($blue, 0.08), rgba($orange, 0.08));
+    border: 1px solid rgba($blue, 0.12);
+    border-radius: 24px;
+    padding: 1.25rem;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  span {
+    color: $orange;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: $blue;
+    font-size: 1rem;
   }
 }
 
@@ -225,7 +252,7 @@ $dark: #1a1a2e;
   gap: 1rem;
   padding: 1.25rem;
   border: 1px solid #edf0f2;
-  border-radius: 12px;
+  border-radius: 24px;
 
   h3 {
     margin: 0 0 0.35rem;
@@ -306,7 +333,7 @@ $dark: #1a1a2e;
   justify-content: center;
   align-items: center;
   min-height: 48px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -341,7 +368,8 @@ $dark: #1a1a2e;
 
   .summary-band,
   .content-grid,
-  .inclusions-grid {
+  .inclusions-grid,
+  .team-cards {
     grid-template-columns: 1fr;
   }
 

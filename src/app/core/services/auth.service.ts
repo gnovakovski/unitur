@@ -67,6 +67,10 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
+    if (this.firebaseService.auth.currentUser) {
+      return true;
+    }
+
     const token = this.getToken();
     if (!token) {
       return false;
@@ -77,14 +81,21 @@ export class AuthService {
   }
 
   waitForAuthenticatedUser(): Promise<boolean> {
-    if (!this.isAuthenticated()) {
-      return Promise.resolve(false);
-    }
-
     const auth = this.firebaseService.auth;
 
     if (auth.currentUser) {
-      return Promise.resolve(true);
+      return auth.currentUser.getIdToken().then(token => {
+        this.setSession({
+          token,
+          user: {
+            id: auth.currentUser!.uid,
+            name: auth.currentUser!.displayName || auth.currentUser!.email || 'Administrador',
+            email: auth.currentUser!.email || '',
+            role: 'admin'
+          }
+        });
+        return true;
+      });
     }
 
     return new Promise(resolve => {
@@ -96,7 +107,27 @@ export class AuthService {
       const unsubscribe = onAuthStateChanged(auth, user => {
         window.clearTimeout(timeoutId);
         unsubscribe();
-        resolve(!!user);
+
+        if (!user) {
+          localStorage.removeItem(this.TOKEN_KEY);
+          localStorage.removeItem(this.USER_KEY);
+          this.currentUserSubject.next(null);
+          resolve(false);
+          return;
+        }
+
+        user.getIdToken().then(token => {
+          this.setSession({
+            token,
+            user: {
+              id: user.uid,
+              name: user.displayName || user.email || 'Administrador',
+              email: user.email || '',
+              role: 'admin'
+            }
+          });
+          resolve(true);
+        }).catch(() => resolve(false));
       });
     });
   }

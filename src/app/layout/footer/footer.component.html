@@ -8,6 +8,7 @@
         </h3>
         <p>Transformando sonhos em viagens inesquecíveis desde 2020.</p>
         <div class="social-links">
+          <a routerLink="/blog" [queryParams]="{ origin: 'footer' }" aria-label="Blog" class="blog-social">Blog</a>
           <a href="#" aria-label="Facebook">📘</a>
           <a href="#" aria-label="Instagram">📷</a>
           <a href="#" aria-label="Twitter">🐦</a>
@@ -38,10 +39,10 @@
       <div class="footer-section">
         <h4>Blog</h4>
         <ul>
-          <li><a routerLink="/blog">Últimas Notícias</a></li>
-          <li><a routerLink="/blog">Dicas de Viagem</a></li>
-          <li><a routerLink="/blog">Destinos em Alta</a></li>
-          <li><a routerLink="/blog">Peregrinações</a></li>
+          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Últimas Notícias</a></li>
+          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Dicas de Viagem</a></li>
+          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Destinos em Alta</a></li>
+          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Peregrinações</a></li>
         </ul>
       </div>
       
@@ -60,3 +61,4 @@
     </div>
   </div>
 </footer>
+

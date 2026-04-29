@@ -100,7 +100,9 @@ export class PostsListComponent implements OnInit {
       timeout(8000),
       catchError((err) => {
         console.error('Erro ao carregar posts', err);
-        this.error = 'Erro ao carregar posts. Verifique login e regras do Firestore.';
+        this.error = err?.message?.includes('Tempo esgotado')
+          ? 'Tempo esgotado ao carregar posts. Verifique conexÃ£o, login e regras do Firestore.'
+          : 'Erro ao carregar posts. Verifique login e regras do Firestore.';
         return of({
           data: [],
           total: 0,

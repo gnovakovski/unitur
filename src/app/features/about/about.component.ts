@@ -51,7 +51,9 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private elementRef: ElementRef) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
 
   ngAfterViewInit() {
     this.setupScrollAnimations();
