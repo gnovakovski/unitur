@@ -28,20 +28,20 @@ export class CategoryService {
   constructor(private firebaseService: FirebaseService) {}
 
   getCategories(filters?: CategoryFilters): Observable<PaginatedResponse<Category>> {
-    return from(getDocs(query(
+    return from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('createdAt', 'desc')
-    ))).pipe(
+    )), 'Tempo esgotado ao carregar categorias do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Category)),
       map(categories => this.applyFilters(categories, filters))
     );
   }
 
   getAllCategories(): Observable<Category[]> {
-    return from(getDocs(query(
+    return from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('name', 'asc')
-    ))).pipe(
+    )), 'Tempo esgotado ao carregar categorias do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Category))
     );
   }
@@ -75,7 +75,10 @@ export class CategoryService {
       updatedAt: now
     };
 
-    return from(setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newCategory)).then(() => newCategory));
+    return from(this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newCategory)).then(() => newCategory),
+      'Tempo esgotado ao salvar categoria no Firestore.'
+    ));
   }
 
   updateCategory(id: number, category: Partial<Category>): Observable<Category> {
@@ -84,14 +87,20 @@ export class CategoryService {
       updatedAt: new Date()
     };
 
-    return from(updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedCategory)).then(() => ({
-      id,
-      ...updatedCategory
-    } as Category)));
+    return from(this.firebaseService.withTimeout(
+      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedCategory)).then(() => ({
+        id,
+        ...updatedCategory
+      } as Category)),
+      'Tempo esgotado ao atualizar categoria no Firestore.'
+    ));
   }
 
   deleteCategory(id: number): Observable<void> {
-    return from(deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))));
+    return from(this.firebaseService.withTimeout(
+      deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
+      'Tempo esgotado ao excluir categoria no Firestore.'
+    ));
   }
 
   generateSlug(name: string): string {

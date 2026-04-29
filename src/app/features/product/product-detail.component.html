@@ -3,7 +3,7 @@
     <img [src]="trip.image" [alt]="trip.title">
     <div class="hero-shade"></div>
     <div class="hero-content">
-      <a routerLink="/" class="back-link">Voltar</a>
+      <a routerLink="/viagens" class="back-link">Voltar para viagens</a>
       <span class="eyebrow">{{ trip.eyebrow }}</span>
       <h1>{{ trip.title }}</h1>
       <p>{{ trip.summary }}</p>
@@ -11,6 +11,7 @@
         <span>{{ trip.destination }}</span>
         <span>{{ trip.date }}</span>
         <span>{{ trip.duration }}</span>
+        <span>{{ trip.spots }}</span>
       </div>
     </div>
   </section>
@@ -33,6 +34,10 @@
         <span>A partir de</span>
         <strong>{{ trip.price }}</strong>
       </div>
+      <div class="summary-item">
+        <span>Vagas</span>
+        <strong>{{ trip.spots }}</strong>
+      </div>
     </section>
 
     <section class="content-grid">
@@ -53,6 +58,27 @@
         <section class="section-block">
           <div class="section-heading">
             <span>02</span>
+            <h2>Equipe da viagem</h2>
+          </div>
+          <div class="team-cards">
+            <article>
+              <span>Guia Espiritual</span>
+              <strong>{{ trip.guide }}</strong>
+            </article>
+            <article>
+              <span>Coordenador</span>
+              <strong>{{ trip.coordinator }}</strong>
+            </article>
+            <article>
+              <span>Operadora</span>
+              <strong>{{ trip.operator }}</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <span>03</span>
             <h2>Roteiro</h2>
           </div>
           <div class="timeline">
@@ -71,7 +97,7 @@
         <section class="section-block inclusions-grid">
           <div>
             <div class="section-heading compact">
-              <span>03</span>
+              <span>04</span>
               <h2>Incluso</h2>
             </div>
             <ul class="check-list">
@@ -82,7 +108,7 @@
           </div>
           <div>
             <div class="section-heading compact muted">
-              <span>04</span>
+              <span>05</span>
               <h2>Não incluso</h2>
             </div>
             <ul class="plain-list">
@@ -99,7 +125,7 @@
         <h2>{{ trip.price }}</h2>
         <p>Converse com a equipe Unitur para confirmar disponibilidade, formas de pagamento e próximos passos.</p>
         <a class="primary-cta" href="https://wa.me/5500000000000" target="_blank" rel="noopener">Reservar agora</a>
-        <a class="secondary-cta" routerLink="/">Ver outras viagens</a>
+        <a class="secondary-cta" routerLink="/viagens">Ver outras viagens</a>
       </aside>
     </section>
   </main>

@@ -63,6 +63,7 @@ $dark: #1a1a2e;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
 }
 
 .btn-reserve, .btn-secondary {
@@ -251,6 +252,10 @@ $dark: #1a1a2e;
   @media (max-width: 768px) { padding: 6rem 1.5rem; }
 }
 
+.regulares-section {
+  background: $white;
+}
+
 .peregrinacoes-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -327,14 +332,37 @@ $dark: #1a1a2e;
 }
 
 .card-guide {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 0.55rem;
   background: rgba($blue, 0.06);
-  border-radius: 12px;
-  padding: 0.5rem 0.9rem;
+  border-radius: 22px;
+  padding: 0.8rem;
   margin-bottom: 1rem;
-  .guide-role { font-size: 0.7rem; color: $orange; font-weight: 700; text-transform: uppercase; }
-  .guide-name { font-size: 0.9rem; color: $blue; font-weight: 600; }
+
+  span {
+    display: grid;
+    gap: 0.15rem;
+    color: $blue;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  strong {
+    color: $orange;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+}
+
+.info-item {
+  display: grid;
+  gap: 0.15rem;
+
+  strong {
+    color: $orange;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
 }
 
 // ── World / Continents ───────────────────────────────────
@@ -569,6 +597,8 @@ $dark: #1a1a2e;
 }
 
 .btn-blog {
+  display: inline-flex;
+  text-decoration: none;
   background: transparent;
   color: $blue;
   border: 2px solid $blue;
@@ -613,6 +643,8 @@ $dark: #1a1a2e;
 }
 
 .btn-about {
+  display: inline-flex;
+  text-decoration: none;
   background: $blue;
   color: $white;
   border: none;

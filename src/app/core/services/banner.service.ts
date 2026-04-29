@@ -13,10 +13,10 @@ export class BannerService {
   constructor(private firebaseService: FirebaseService) {}
 
   getBanners(): Observable<Banner[]> {
-    return from(getDocs(query(
+    return from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('order', 'asc')
-    ))).pipe(
+    )), 'Tempo esgotado ao carregar banners do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Banner))
     );
   }
@@ -51,7 +51,10 @@ export class BannerService {
       updatedAt: now
     };
 
-    return from(setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newBanner)).then(() => newBanner));
+    return from(this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newBanner)).then(() => newBanner),
+      'Tempo esgotado ao salvar banner no Firestore.'
+    ));
   }
 
   updateBanner(id: number, banner: Partial<Banner>): Observable<Banner> {
@@ -61,14 +64,20 @@ export class BannerService {
       updatedAt: new Date()
     };
 
-    return from(updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedBanner)).then(() => ({
-      id,
-      ...updatedBanner
-    } as Banner)));
+    return from(this.firebaseService.withTimeout(
+      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedBanner)).then(() => ({
+        id,
+        ...updatedBanner
+      } as Banner)),
+      'Tempo esgotado ao atualizar banner no Firestore.'
+    ));
   }
 
   deleteBanner(id: number): Observable<void> {
-    return from(deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))));
+    return from(this.firebaseService.withTimeout(
+      deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
+      'Tempo esgotado ao excluir banner no Firestore.'
+    ));
   }
 
   reorderBanners(bannerIds: number[]): Observable<void> {

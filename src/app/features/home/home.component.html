@@ -72,25 +72,67 @@
           <img [src]="peregrinacao.image" [alt]="peregrinacao.title">
           <div class="card-badge-top">{{ peregrinacao.spots }}</div>
           <div class="card-overlay">
-            <button class="card-button">Saiba Mais</button>
+            <a class="card-button" [routerLink]="['/viagens', peregrinacao.slug]" [queryParams]="getTripQuery(peregrinacao)">Saiba Mais</a>
           </div>
         </div>
         <div class="card-content">
           <div class="card-header">
             <h3>{{ peregrinacao.title }}</h3>
-            <span class="location">📍 {{ peregrinacao.country }}</span>
+            <span class="location">País principal: {{ peregrinacao.country }}</span>
           </div>
           <div class="card-info">
-            <span class="info-item">📅 {{ peregrinacao.date }}</span>
-            <span class="info-item">⏱️ {{ peregrinacao.duration }}</span>
+            <span class="info-item"><strong>Período</strong>{{ peregrinacao.date }}</span>
+            <span class="info-item"><strong>Dias</strong>{{ peregrinacao.duration }}</span>
           </div>
           <div class="card-guide">
-            <span class="guide-role">{{ peregrinacao.guideRole }}</span>
-            <span class="guide-name">{{ peregrinacao.guide }}</span>
+            <span><strong>{{ peregrinacao.guideRole }}</strong>{{ peregrinacao.guide }}</span>
+            <span><strong>Coordenador</strong>{{ peregrinacao.coordinator }}</span>
+            <span><strong>Operadora</strong>{{ peregrinacao.operator }}</span>
           </div>
           <div class="card-footer">
             <span class="price">{{ peregrinacao.price }}</span>
-            <button class="btn-reserve">Reservar</button>
+            <a class="btn-reserve" [routerLink]="['/viagens', peregrinacao.slug]" [queryParams]="getTripQuery(peregrinacao)">Reservar</a>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Viagens Regulares -->
+<section class="peregrinacoes-section regulares-section">
+  <div class="section-header">
+    <h2 class="section-title">Viagens Regulares</h2>
+    <p class="section-subtitle">Roteiros completos para conhecer novos destinos com conforto</p>
+  </div>
+  
+  <div class="peregrinacoes-grid">
+    @for (regular of regulares; track regular.title) {
+      <div class="peregrinacao-card">
+        <div class="card-image">
+          <img [src]="regular.image" [alt]="regular.title">
+          <div class="card-badge-top">{{ regular.spots }}</div>
+          <div class="card-overlay">
+            <a class="card-button" [routerLink]="['/viagens', regular.slug]" [queryParams]="getTripQuery(regular)">Saiba Mais</a>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="card-header">
+            <h3>{{ regular.title }}</h3>
+            <span class="location">Pais principal: {{ regular.country }}</span>
+          </div>
+          <div class="card-info">
+            <span class="info-item"><strong>Periodo</strong>{{ regular.date }}</span>
+            <span class="info-item"><strong>Dias</strong>{{ regular.duration }}</span>
+          </div>
+          <div class="card-guide">
+            <span><strong>{{ regular.guideRole }}</strong>{{ regular.guide }}</span>
+            <span><strong>Coordenador</strong>{{ regular.coordinator }}</span>
+            <span><strong>Operadora</strong>{{ regular.operator }}</span>
+          </div>
+          <div class="card-footer">
+            <span class="price">{{ regular.price }}</span>
+            <a class="btn-reserve" [routerLink]="['/viagens', regular.slug]" [queryParams]="getTripQuery(regular)">Reservar</a>
           </div>
         </div>
       </div>
@@ -153,6 +195,59 @@
   </div>
 </section>
 
+<!-- Blog -->
+<section id="blog-unitur" class="blog-section">
+  <div class="section-header">
+    <h2 class="section-title">Blog Unitur</h2>
+    <p class="section-subtitle">Dicas, destinos e histórias de quem viaja</p>
+  </div>
+  <div class="blog-grid">
+    @for (post of blogPosts; track post.title) {
+      <div class="blog-card">
+        <div class="blog-image">
+          <img [src]="post.image" [alt]="post.title">
+          <span class="blog-category">{{ post.category }}</span>
+        </div>
+        <div class="blog-content">
+          <span class="blog-date">{{ post.date }}</span>
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.excerpt }}</p>
+          <a [routerLink]="['/blog', post.slug]" [queryParams]="{ origin: 'home' }" class="btn-blog">Ler mais</a>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Sobre -->
+<section class="about-section">
+  <div class="about-content">
+    <div class="about-text">
+      <h2 class="section-title">Sobre a Unitur</h2>
+      <p>Somos uma agência especializada em viagens de peregrinação e turismo, com mais de 5 anos de experiência levando pessoas a destinos que transformam vidas.</p>
+      <p>Nossa missão é proporcionar experiências únicas, com segurança, conforto e um atendimento personalizado do início ao fim da sua jornada.</p>
+      <div class="about-stats">
+        <div class="stat">
+          <span class="stat-number">5000+</span>
+          <span class="stat-label">Viajantes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">50+</span>
+          <span class="stat-label">Destinos</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">5</span>
+          <span class="stat-label">Anos de experiência</span>
+        </div>
+      </div>
+      <a routerLink="/about" class="btn-about">Conheça nossa história</a>
+    </div>
+    <div class="about-image">
+      <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&h=500&fit=crop" alt="Sobre a Unitur">
+    </div>
+  </div>
+</section>
+
 <!-- Testimonials -->
 <section class="testimonials-section">
   <div class="section-header">
@@ -181,55 +276,3 @@
   </div>
 </section>
 
-<!-- Blog -->
-<section class="blog-section">
-  <div class="section-header">
-    <h2 class="section-title">Blog Unitur</h2>
-    <p class="section-subtitle">Dicas, destinos e histórias de quem viaja</p>
-  </div>
-  <div class="blog-grid">
-    @for (post of blogPosts; track post.title) {
-      <div class="blog-card">
-        <div class="blog-image">
-          <img [src]="post.image" [alt]="post.title">
-          <span class="blog-category">{{ post.category }}</span>
-        </div>
-        <div class="blog-content">
-          <span class="blog-date">{{ post.date }}</span>
-          <h3>{{ post.title }}</h3>
-          <p>{{ post.excerpt }}</p>
-          <button class="btn-blog">Ler mais</button>
-        </div>
-      </div>
-    }
-  </div>
-</section>
-
-<!-- Sobre -->
-<section class="about-section">
-  <div class="about-content">
-    <div class="about-text">
-      <h2 class="section-title">Sobre a Unitur</h2>
-      <p>Somos uma agência especializada em viagens de peregrinação e turismo, com mais de 5 anos de experiência levando pessoas a destinos que transformam vidas.</p>
-      <p>Nossa missão é proporcionar experiências únicas, com segurança, conforto e um atendimento personalizado do início ao fim da sua jornada.</p>
-      <div class="about-stats">
-        <div class="stat">
-          <span class="stat-number">5000+</span>
-          <span class="stat-label">Viajantes</span>
-        </div>
-        <div class="stat">
-          <span class="stat-number">50+</span>
-          <span class="stat-label">Destinos</span>
-        </div>
-        <div class="stat">
-          <span class="stat-number">5</span>
-          <span class="stat-label">Anos de experiência</span>
-        </div>
-      </div>
-      <button class="btn-about">Conheça nossa história</button>
-    </div>
-    <div class="about-image">
-      <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&h=500&fit=crop" alt="Sobre a Unitur">
-    </div>
-  </div>
-</section>

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PostService, PostFilters } from '../../core/services/post.service';
 import { CategoryService } from '../../core/services/category.service';
 import { Post, Category } from '../../core/models/post.model';
@@ -23,6 +23,7 @@ export class BlogListComponent implements OnInit {
   currentPage = 1;
   totalPages = 1;
   itemsPerPage = 9;
+  blogOrigin = 'blog';
   private readonly blogRequestTimeout = 1500;
 
   private readonly fallbackCategories: Category[] = [
@@ -97,10 +98,13 @@ export class BlogListComponent implements OnInit {
 
   constructor(
     private postService: PostService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    this.blogOrigin = this.route.snapshot.queryParamMap.get('origin') || 'blog';
     this.categories = this.fallbackCategories;
     this.posts = this.fallbackPosts;
 

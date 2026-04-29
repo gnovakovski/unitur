@@ -29,17 +29,20 @@ export class TestimonialService {
   constructor(private firebaseService: FirebaseService) {}
 
   getTestimonials(filters?: TestimonialFilters): Observable<PaginatedResponse<Testimonial>> {
-    return from(getDocs(query(
+    return from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('createdAt', 'desc')
-    ))).pipe(
+    )), 'Tempo esgotado ao carregar depoimentos do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Testimonial)),
       map(testimonials => this.applyFilters(testimonials, filters))
     );
   }
 
   getTestimonial(id: number): Observable<Testimonial> {
-    return from(getDocs(collection(this.firebaseService.firestore, this.collectionName))).pipe(
+    return from(this.firebaseService.withTimeout(
+      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      'Tempo esgotado ao carregar depoimento do Firestore.'
+    )).pipe(
       map(snapshot => {
         const testimonial = snapshot.docs
           .map(item => this.firebaseService.normalizeDates(item.data()) as Testimonial)
@@ -71,7 +74,10 @@ export class TestimonialService {
       updatedAt: now
     };
 
-    return from(setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newTestimonial)).then(() => newTestimonial));
+    return from(this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newTestimonial)).then(() => newTestimonial),
+      'Tempo esgotado ao salvar depoimento no Firestore.'
+    ));
   }
 
   updateTestimonial(id: number, testimonial: Partial<Testimonial>): Observable<Testimonial> {
@@ -82,10 +88,13 @@ export class TestimonialService {
       updatedAt: new Date()
     };
 
-    return from(updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedTestimonial)).then(() => ({
-      id,
-      ...updatedTestimonial
-    } as Testimonial)));
+    return from(this.firebaseService.withTimeout(
+      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedTestimonial)).then(() => ({
+        id,
+        ...updatedTestimonial
+      } as Testimonial)),
+      'Tempo esgotado ao atualizar depoimento no Firestore.'
+    ));
   }
 
   approveTestimonial(id: number): Observable<Testimonial> {
@@ -97,7 +106,10 @@ export class TestimonialService {
   }
 
   deleteTestimonial(id: number): Observable<void> {
-    return from(deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))));
+    return from(this.firebaseService.withTimeout(
+      deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
+      'Tempo esgotado ao excluir depoimento no Firestore.'
+    ));
   }
 
   private applyFilters(testimonials: Testimonial[], filters?: TestimonialFilters): PaginatedResponse<Testimonial> {

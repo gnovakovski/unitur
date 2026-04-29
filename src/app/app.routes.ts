@@ -16,6 +16,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
   {
+    path: 'viagens/peregrinacao',
+    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+  },
+  {
+    path: 'viagens/regulares',
+    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+  },
+  {
+    path: 'viagens/curadoria',
+    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+  },
+  {
     path: 'viagens/:slug',
     loadComponent: () => import('./features/product/product-detail.component').then(m => m.ProductDetailComponent)
   },
@@ -58,6 +70,14 @@ export const routes: Routes = [
       {
         path: 'posts/:id/editar',
         loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent)
+      },
+      {
+        path: 'viagens/nova',
+        loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent)
+      },
+      {
+        path: 'viagens/:id/editar',
+        loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent)
       },
       {
         path: 'viagens',

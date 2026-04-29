@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { catchError, finalize, from, of, switchMap, timeout } from 'rxjs';
 import { Category } from '../../../core/models/post.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { CategoryService } from '../../../core/services/category.service';
 
 @Component({
@@ -167,6 +169,7 @@ export class CategoriasListComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
+    private authService: AuthService,
     private categoryService: CategoryService
   ) {
     this.categoryForm = this.fb.group({
@@ -186,6 +189,28 @@ export class CategoriasListComponent implements OnInit {
   loadCategories() {
     this.loading = true;
     this.error = '';
+
+    from(this.authService.waitForAuthenticatedUser()).pipe(
+      switchMap(isAuthenticated => {
+        if (!isAuthenticated) {
+          throw new Error('Sessao expirada. Faca login novamente.');
+        }
+
+        return this.categoryService.getAllCategories();
+      }),
+      timeout(12000),
+      catchError((err) => {
+        console.error('Erro ao carregar categorias', err);
+        this.error = err?.message || 'Erro ao carregar categorias. Verifique as regras e conexao do Firestore.';
+        return of([]);
+      }),
+      finalize(() => {
+        this.loading = false;
+      })
+    ).subscribe(categories => {
+      this.categories = categories;
+    });
+    return;
 
     this.categoryService.getAllCategories().subscribe({
       next: categories => {
