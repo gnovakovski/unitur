@@ -5,6 +5,7 @@ export interface Post {
   content: string;
   excerpt: string;
   featuredImage?: string;
+  contentImages?: string[];
   categoryId: number;
   category?: Category;
   tags: string[];

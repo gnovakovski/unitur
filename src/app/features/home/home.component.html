@@ -39,21 +39,21 @@
 <!-- Search Bar -->
 <section class="search-section">
   <div class="search-card">
-    <h2>Encontre sua próxima aventura</h2>
+    <h2>Encontre sua proxima aventura</h2>
     <div class="search-form">
       <div class="search-input">
-        <span class="icon">📍</span>
-        <input type="text" placeholder="Para onde você quer ir?">
+        <span class="icon">Local</span>
+        <input type="text" placeholder="Para onde voce quer ir?" [(ngModel)]="searchDestination">
       </div>
       <div class="search-input">
-        <span class="icon">📅</span>
-        <input type="date" placeholder="Data de ida">
+        <span class="icon">Ida</span>
+        <input type="date" placeholder="Data de ida" [(ngModel)]="searchStartDate">
       </div>
       <div class="search-input">
-        <span class="icon">📅</span>
-        <input type="date" placeholder="Data de volta">
+        <span class="icon">Ate</span>
+        <input type="date" placeholder="Data de volta" [(ngModel)]="searchEndDate">
       </div>
-      <button class="search-button">Buscar</button>
+      <button class="search-button" (click)="searchTrips()">Buscar</button>
     </div>
   </div>
 </section>
@@ -70,7 +70,9 @@
       <div class="peregrinacao-card">
         <div class="card-image">
           <img [src]="peregrinacao.image" [alt]="peregrinacao.title">
-          <div class="card-badge-top">{{ peregrinacao.spots }}</div>
+          @if (peregrinacao.showSpots) {
+            <div class="card-badge-top">{{ peregrinacao.spots }}</div>
+          }
           <div class="card-overlay">
             <a class="card-button" [routerLink]="['/viagens', peregrinacao.slug]" [queryParams]="getTripQuery(peregrinacao)">Saiba Mais</a>
           </div>
@@ -87,10 +89,9 @@
           <div class="card-guide">
             <span><strong>{{ peregrinacao.guideRole }}</strong>{{ peregrinacao.guide }}</span>
             <span><strong>Coordenador</strong>{{ peregrinacao.coordinator }}</span>
-            <span><strong>Operadora</strong>{{ peregrinacao.operator }}</span>
           </div>
           <div class="card-footer">
-            <span class="price">{{ peregrinacao.price }}</span>
+            <span class="price">@if (peregrinacao.foreignPrice) { <small>{{ peregrinacao.foreignPrice }}/</small> }{{ peregrinacao.price }}</span>
             <a class="btn-reserve" [routerLink]="['/viagens', peregrinacao.slug]" [queryParams]="getTripQuery(peregrinacao)">Reservar</a>
           </div>
         </div>
@@ -111,7 +112,9 @@
       <div class="peregrinacao-card">
         <div class="card-image">
           <img [src]="regular.image" [alt]="regular.title">
-          <div class="card-badge-top">{{ regular.spots }}</div>
+          @if (regular.showSpots) {
+            <div class="card-badge-top">{{ regular.spots }}</div>
+          }
           <div class="card-overlay">
             <a class="card-button" [routerLink]="['/viagens', regular.slug]" [queryParams]="getTripQuery(regular)">Saiba Mais</a>
           </div>
@@ -128,10 +131,9 @@
           <div class="card-guide">
             <span><strong>{{ regular.guideRole }}</strong>{{ regular.guide }}</span>
             <span><strong>Coordenador</strong>{{ regular.coordinator }}</span>
-            <span><strong>Operadora</strong>{{ regular.operator }}</span>
           </div>
           <div class="card-footer">
-            <span class="price">{{ regular.price }}</span>
+            <span class="price">@if (regular.foreignPrice) { <small>{{ regular.foreignPrice }}/</small> }{{ regular.price }}</span>
             <a class="btn-reserve" [routerLink]="['/viagens', regular.slug]" [queryParams]="getTripQuery(regular)">Reservar</a>
           </div>
         </div>
@@ -275,4 +277,5 @@
     }
   </div>
 </section>
+
 

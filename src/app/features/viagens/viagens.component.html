@@ -36,7 +36,9 @@
           <div class="card-image">
             <img [src]="viagem.image" [alt]="viagem.title">
             <span class="badge-category">{{ viagem.category }}</span>
-            <span class="badge-spots">{{ viagem.spots }}</span>
+            @if (viagem.showSpots) {
+              <span class="badge-spots">{{ viagem.spots }}</span>
+            }
           </div>
           <div class="card-content">
             <div class="card-header">
@@ -50,10 +52,14 @@
             <div class="card-team">
               <span><strong>Guia Espiritual</strong>{{ viagem.guide }}</span>
               <span><strong>Coordenador</strong>{{ viagem.coordinator }}</span>
-              <span><strong>Operadora</strong>{{ viagem.operator }}</span>
             </div>
             <div class="card-footer">
-              <span class="price">{{ viagem.price }}</span>
+              <span class="price">
+                @if (viagem.foreignPrice) {
+                  <small>{{ viagem.foreignPrice }}/</small>
+                }
+                {{ viagem.price }}
+              </span>
               <a class="btn-reserve" [routerLink]="['/viagens', viagem.slug]" [queryParams]="getTripQuery(viagem)">Ver viagem</a>
             </div>
           </div>

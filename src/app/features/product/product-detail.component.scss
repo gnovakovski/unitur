@@ -132,6 +132,12 @@ $dark: #1a1a2e;
     color: $orange;
     font-size: 1.45rem;
   }
+
+  small {
+    color: $gray;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
 }
 
 .content-grid {
@@ -195,7 +201,7 @@ $dark: #1a1a2e;
 
 .team-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 
   article {
@@ -218,6 +224,40 @@ $dark: #1a1a2e;
     color: $blue;
     font-size: 1rem;
   }
+}
+
+.experience-gallery,
+.hotels-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 18px;
+  }
+}
+
+.hotels-grid article {
+  display: grid;
+  gap: 0.7rem;
+  color: $dark;
+  font-weight: 800;
+}
+
+.expand-itinerary {
+  margin-top: 1rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.8rem 1.1rem;
+  background: rgba($blue, 0.08);
+  color: $blue;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .lead {
@@ -319,6 +359,12 @@ $dark: #1a1a2e;
     color: $orange;
     font-size: 2.4rem;
     margin: 0.7rem 0 1rem;
+
+    small {
+      color: $gray;
+      font-size: 1rem;
+      font-weight: 700;
+    }
   }
 
   p {
@@ -369,7 +415,9 @@ $dark: #1a1a2e;
   .summary-band,
   .content-grid,
   .inclusions-grid,
-  .team-cards {
+  .team-cards,
+  .experience-gallery,
+  .hotels-grid {
     grid-template-columns: 1fr;
   }
 

@@ -13,14 +13,20 @@ interface ProductTrip {
   date: string;
   duration: string;
   price: string;
+  foreignPrice?: string;
   spots: string;
+  showSpots?: boolean;
   guide: string;
   coordinator: string;
-  operator: string;
+  operator?: string;
   image: string;
   summary: string;
+  experienceImages?: string[];
   highlights: string[];
   itinerary: Array<{ day: string; title: string; description: string }>;
+  hotels?: Array<{ name: string; image: string }>;
+  paymentMethods?: string[];
+  cancellationPolicy?: string;
   included: string[];
   notIncluded: string[];
 }
@@ -34,6 +40,7 @@ interface ProductTrip {
 })
 export class ProductDetailComponent implements OnInit {
   trip: ProductTrip | null = null;
+  itineraryExpanded = false;
 
   private readonly trips: ProductTrip[] = [
     {
@@ -43,7 +50,8 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Israel',
       date: 'Junho 2026',
       duration: '12 dias',
-      price: 'R$ 8.999',
+      price: 'R$25.000,00',
+      foreignPrice: 'U$4.500,00',
       spots: '8 vagas',
       guide: 'Pe. JoÃ£o Batista',
       coordinator: 'Ana Silva',
@@ -67,7 +75,8 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Espanha',
       date: 'Agosto 2026',
       duration: '15 dias',
-      price: 'R$ 6.499',
+      price: 'R$19.900,00',
+      foreignPrice: 'U$3.580,00',
       spots: '12 vagas',
       guide: 'Pe. Carlos Mendes',
       coordinator: 'Carlos Mendes',
@@ -90,7 +99,8 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Portugal e França',
       date: 'Setembro 2026',
       duration: '10 dias',
-      price: 'R$ 7.299',
+      price: 'R$22.500,00',
+      foreignPrice: 'U$4.050,00',
       spots: '15 vagas',
       guide: 'Pe. Andre Lima',
       coordinator: 'Marina Costa',
@@ -113,7 +123,8 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Paris, Roma, Londres e Barcelona',
       date: 'Saídas programadas',
       duration: '14 dias',
-      price: 'R$ 9.999',
+      price: 'R$29.900,00',
+      foreignPrice: 'U$5.380,00',
       spots: 'Vagas limitadas',
       guide: 'A definir',
       coordinator: 'Equipe Unitur',
@@ -136,7 +147,7 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Cancún, Punta Cana e Aruba',
       date: 'Consulte saídas',
       duration: '7 dias',
-      price: 'R$ 5.499',
+      price: 'R$5.499,00',
       spots: 'Vagas limitadas',
       guide: 'A definir',
       coordinator: 'Equipe Unitur',
@@ -159,7 +170,8 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Tailândia, Japão e Bali',
       date: 'Consulte saídas',
       duration: '16 dias',
-      price: 'R$ 11.999',
+      price: 'R$31.900,00',
+      foreignPrice: 'U$5.740,00',
       spots: 'Vagas limitadas',
       guide: 'A definir',
       coordinator: 'Equipe Unitur',
@@ -182,7 +194,8 @@ export class ProductDetailComponent implements OnInit {
       destination: 'Machu Picchu, Patagônia e Buenos Aires',
       date: 'Consulte saídas',
       duration: '10 dias',
-      price: 'R$ 6.799',
+      price: 'R$18.900,00',
+      foreignPrice: 'U$3.400,00',
       spots: 'Vagas limitadas',
       guide: 'A definir',
       coordinator: 'Equipe Unitur',
@@ -213,7 +226,20 @@ export class ProductDetailComponent implements OnInit {
     });
   }
 
+  get visibleItinerary() {
+    if (!this.trip) {
+      return [];
+    }
+
+    return this.itineraryExpanded ? this.trip.itinerary : this.trip.itinerary.slice(0, 3);
+  }
+
+  toggleItinerary() {
+    this.itineraryExpanded = !this.itineraryExpanded;
+  }
+
   private loadTrip(slug: string | null) {
+    this.itineraryExpanded = false;
     if (!slug) {
       this.trip = null;
       return;
@@ -257,20 +283,26 @@ export class ProductDetailComponent implements OnInit {
       date,
       duration,
       price: query.get('price') || 'Consulte',
+      foreignPrice: query.get('foreignPrice') || '',
       spots: query.get('spots') || 'Vagas limitadas',
+      showSpots: query.get('showSpots') !== 'false',
       guide: query.get('guide') || 'A definir',
       coordinator: query.get('coordinator') || 'Equipe Unitur',
       operator,
       image: query.get('image') || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=900&fit=crop',
       summary: `Uma experiencia organizada pela Unitur para ${destination}, com roteiro planejado, acompanhamento e suporte em todas as etapas da viagem.`,
-      highlights: [destination, date, duration, operator],
+      experienceImages: [],
+      highlights: [destination, date, duration],
       itinerary: [
         { day: 'Etapa 1', title: 'Preparacao e embarque', description: 'Orientacoes iniciais, alinhamento do grupo e inicio da experiencia.' },
         { day: 'Etapa 2', title: 'Vivencia no destino', description: 'Roteiro conduzido conforme a proposta da viagem, com suporte da equipe Unitur.' },
         { day: 'Etapa 3', title: 'Encerramento', description: 'Finalizacao da programacao e retorno com acompanhamento.' }
       ],
       included: ['Acompanhamento Unitur', 'Roteiro organizado', 'Suporte durante a viagem', 'Orientacoes antes do embarque'],
-      notIncluded: ['Despesas pessoais', 'Documentacao', 'Servicos nao mencionados', 'Passeios opcionais']
+      notIncluded: ['Despesas pessoais', 'Documentacao', 'Servicos nao mencionados', 'Passeios opcionais'],
+      hotels: [],
+      paymentMethods: this.defaultPaymentMethods(),
+      cancellationPolicy: this.defaultCancellationPolicy()
     };
   }
 
@@ -285,7 +317,7 @@ export class ProductDetailComponent implements OnInit {
   private mapFirestoreTrip(trip: Trip): ProductTrip {
     const destination = trip.country || trip.destination || 'A definir';
     const duration = trip.duration ? `${trip.duration} dias` : 'A definir';
-    const price = trip.price ? `R$ ${Number(trip.price).toLocaleString('pt-BR')}` : 'Consulte';
+    const price = trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte';
     const summary = trip.shortDescription || trip.description || 'Roteiro organizado pela Unitur com acompanhamento e suporte em todas as etapas.';
 
     return {
@@ -296,23 +328,59 @@ export class ProductDetailComponent implements OnInit {
       date: trip.period || this.formatPeriod(trip.startDate),
       duration,
       price,
+      foreignPrice: this.formatForeignPrice(trip.foreignPrice),
       spots: `${Number(trip.availableSpots || 0)} vagas`,
+      showSpots: trip.showAvailableSpots !== false,
       guide: trip.spiritualGuide || 'A definir',
       coordinator: trip.coordinator || 'Equipe Unitur',
       operator: trip.operator || 'Unitur',
       image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=900&fit=crop',
       summary,
-      highlights: [destination, trip.period || 'Periodo a definir', duration, trip.operator || 'Unitur'],
+      experienceImages: trip.experienceImages || trip.gallery || [],
+      highlights: [destination, trip.period || 'Periodo a definir', duration],
       itinerary: trip.itinerary
-        ? [{ day: 'Roteiro', title: 'Programacao da viagem', description: trip.itinerary }]
+        ? this.parseItinerary(trip.itinerary)
         : [
             { day: 'Etapa 1', title: 'Preparacao e embarque', description: 'Orientacoes iniciais, alinhamento do grupo e inicio da experiencia.' },
             { day: 'Etapa 2', title: 'Vivencia no destino', description: 'Roteiro conduzido conforme a proposta da viagem, com suporte da equipe.' },
             { day: 'Etapa 3', title: 'Encerramento', description: 'Finalizacao da programacao e retorno com acompanhamento Unitur.' }
           ],
       included: trip.included?.length ? trip.included : ['Acompanhamento Unitur', 'Suporte durante a viagem', 'Roteiro organizado'],
-      notIncluded: trip.notIncluded?.length ? trip.notIncluded : ['Despesas pessoais', 'Documentacao', 'Servicos nao mencionados']
+      notIncluded: trip.notIncluded?.length ? trip.notIncluded : ['Despesas pessoais', 'Documentacao', 'Servicos nao mencionados'],
+      hotels: trip.hotels || [],
+      paymentMethods: trip.paymentMethods?.length ? trip.paymentMethods : this.defaultPaymentMethods(),
+      cancellationPolicy: trip.cancellationPolicy || this.defaultCancellationPolicy()
     };
+  }
+
+  private parseItinerary(value: string): Array<{ day: string; title: string; description: string }> {
+    return value
+      .split('\n')
+      .map((line, index) => {
+        const [title = `Dia ${index + 1}`, description = ''] = line.split('|').map(item => item.trim());
+        return { day: `Dia ${index + 1}`, title, description: description || title };
+      })
+      .filter(item => item.title);
+  }
+
+  private formatForeignPrice(value?: number | string): string {
+    if (!value) {
+      return '';
+    }
+
+    if (typeof value === 'number') {
+      return `U$${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    return value;
+  }
+
+  private defaultPaymentMethods(): string[] {
+    return ['Entrada + parcelas no boleto', 'Cartao de credito', 'Pix ou transferencia'];
+  }
+
+  private defaultCancellationPolicy(): string {
+    return 'Politica de cancelamento padrao conforme contrato da viagem.';
   }
 
   private getTripTypeLabel(type?: Trip['tripType']) {

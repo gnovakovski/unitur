@@ -55,7 +55,17 @@ $dark: #1a1a2e;
   border-top: 1px solid #e9ecef;
 }
 
-.price { color: $orange; font-weight: 700; font-size: 1.3rem; }
+.price {
+  color: $orange;
+  font-weight: 700;
+  font-size: 1.3rem;
+
+  small {
+    color: $gray;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+}
 
 .btn-reserve, .btn-secondary, .btn-curadoria, .cta-button, .search-button, .card-button {
   border-radius: 999px;

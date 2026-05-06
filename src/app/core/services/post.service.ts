@@ -69,6 +69,7 @@ export class PostService {
       content: post.content || '',
       excerpt: post.excerpt || '',
       featuredImage: post.featuredImage,
+      contentImages: post.contentImages || [],
       categoryId: Number(post.categoryId),
       tags: post.tags || [],
       relatedTrips: post.relatedTrips || [],
