@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, finalize, of, timeout } from 'rxjs';
@@ -30,137 +30,19 @@ interface ViagemCard {
   styleUrl: './viagens.component.scss'
 })
 export class ViagensComponent implements OnInit {
+  private readonly fallbackImage = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop';
   loading = false;
   error = '';
 
-  viagens: ViagemCard[] = [
-    {
-      slug: 'terra-santa',
-      title: 'Terra Santa',
-      location: 'Israel',
-      date: 'Junho 2026',
-      duration: '12 dias',
-      image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=350&fit=crop',
-      price: 'R$25.000,00',
-      foreignPrice: 'U$4.500,00',
-      spots: '8 vagas',
-      showSpots: true,
-      guide: 'Pe. Joao Batista',
-      coordinator: 'Ana Silva',
-      category: 'Viagens de Peregrinacao'
-    },
-    {
-      slug: 'caminho-de-santiago',
-      title: 'Caminho de Santiago',
-      location: 'Espanha',
-      date: 'Agosto 2026',
-      duration: '15 dias',
-      image: 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=500&h=350&fit=crop',
-      price: 'R$19.900,00',
-      foreignPrice: 'U$3.580,00',
-      spots: '12 vagas',
-      showSpots: true,
-      guide: 'Pe. Carlos Mendes',
-      coordinator: 'Carlos Mendes',
-      category: 'Viagens de Peregrinacao'
-    },
-    {
-      slug: 'fatima-e-lourdes',
-      title: 'Fatima e Lourdes',
-      location: 'Portugal e Franca',
-      date: 'Setembro 2026',
-      duration: '10 dias',
-      image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=500&h=350&fit=crop',
-      price: 'R$22.500,00',
-      foreignPrice: 'U$4.050,00',
-      spots: '15 vagas',
-      showSpots: true,
-      guide: 'Pe. Andre Lima',
-      coordinator: 'Marina Costa',
-      category: 'Viagens de Peregrinacao'
-    },
-    {
-      slug: 'europa-classica',
-      title: 'Europa Classica',
-      location: 'Franca, Italia, Inglaterra e Espanha',
-      date: 'Julho 2026',
-      duration: '14 dias',
-      image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=350&fit=crop',
-      price: 'R$29.900,00',
-      foreignPrice: 'U$5.380,00',
-      spots: '10 vagas',
-      showSpots: true,
-      guide: 'A definir',
-      coordinator: 'Equipe Unitur',
-      category: 'Viagens Regulares'
-    },
-    {
-      slug: 'caribe-paradisiaco',
-      title: 'Caribe Paradisiaco',
-      location: 'Republica Dominicana',
-      date: 'Outubro 2026',
-      duration: '7 dias',
-      image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=500&h=350&fit=crop',
-      price: 'R$5.499,00',
-      spots: '20 vagas',
-      showSpots: true,
-      guide: 'A definir',
-      coordinator: 'Equipe Unitur',
-      category: 'Viagens Regulares'
-    },
-    {
-      slug: 'asia-mistica',
-      title: 'Asia Mistica',
-      location: 'Japao',
-      date: 'Novembro 2026',
-      duration: '16 dias',
-      image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=500&h=350&fit=crop',
-      price: 'R$31.900,00',
-      foreignPrice: 'U$5.740,00',
-      spots: '8 vagas',
-      showSpots: true,
-      guide: 'A definir',
-      coordinator: 'Equipe Unitur',
-      category: 'Viagens Regulares'
-    },
-    {
-      slug: 'america-do-sul',
-      title: 'America do Sul',
-      location: 'Peru',
-      date: 'Dezembro 2026',
-      duration: '10 dias',
-      image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=500&h=350&fit=crop',
-      price: 'R$18.900,00',
-      foreignPrice: 'U$3.400,00',
-      spots: '14 vagas',
-      showSpots: true,
-      guide: 'A definir',
-      coordinator: 'Equipe Unitur',
-      category: 'Viagens Regulares'
-    },
-    {
-      slug: 'lua-de-mel-nas-maldivas',
-      title: 'Lua de Mel nas Maldivas',
-      location: 'Maldivas',
-      date: 'Janeiro 2027',
-      duration: '12 dias',
-      image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=500&h=350&fit=crop',
-      price: 'R$39.900,00',
-      foreignPrice: 'U$7.180,00',
-      spots: '6 vagas',
-      showSpots: true,
-      guide: 'Consultor especializado',
-      coordinator: 'Ana Silva',
-      category: 'Viagens de Curadoria'
-    }
-  ];
+  viagens: ViagemCard[] = [];
 
   selectedCategory = 'Viagens de Peregrinacao';
   categories = ['Viagens de Peregrinacao', 'Viagens Regulares', 'Viagens de Curadoria'];
 
   constructor(
     private route: ActivatedRoute,
-    private tripService: TripService
+    private tripService: TripService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -179,9 +61,10 @@ export class ViagensComponent implements OnInit {
     const destination = (this.route.snapshot.queryParamMap.get('destination') || '').trim().toLowerCase();
     const startDate = this.parseFilterDate(this.route.snapshot.queryParamMap.get('startDate'));
     const endDate = this.parseFilterDate(this.route.snapshot.queryParamMap.get('endDate'));
+    const hasSearch = !!destination || !!startDate || !!endDate;
 
     return this.viagens.filter(v => {
-      const matchesCategory = v.category === this.selectedCategory;
+      const matchesCategory = hasSearch || v.category === this.selectedCategory;
       const matchesDestination = !destination || v.location.toLowerCase().includes(destination) || v.title.toLowerCase().includes(destination);
       const tripDate = this.parseFilterDate(v.startDate);
       const matchesStart = !startDate || (tripDate ? tripDate >= startDate : false);
@@ -212,6 +95,12 @@ export class ViagensComponent implements OnInit {
     };
   }
 
+  useFallbackImage(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.onerror = null;
+    image.src = this.fallbackImage;
+  }
+
   private loadTrips() {
     this.loading = true;
     this.error = '';
@@ -225,13 +114,13 @@ export class ViagensComponent implements OnInit {
       }),
       finalize(() => {
         this.loading = false;
+        this.cdr.detectChanges();
       })
     ).subscribe(response => {
       const activeTrips = response.data.filter(trip => trip.status !== 'inactive');
 
-      if (activeTrips.length) {
-        this.viagens = activeTrips.map(trip => this.mapTrip(trip));
-      }
+      this.viagens = activeTrips.map(trip => this.mapTrip(trip));
+      this.cdr.detectChanges();
     });
   }
 
@@ -242,7 +131,7 @@ export class ViagensComponent implements OnInit {
       location: trip.country || trip.destination || 'A definir',
       date: trip.period || this.formatPeriod(trip.startDate),
       duration: trip.duration ? `${trip.duration} dias` : 'A definir',
-      image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop',
+      image: this.normalizeImage(trip.mainImage),
       price: trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte',
       foreignPrice: this.formatForeignPrice(trip.foreignPrice),
       spots: `${Number(trip.availableSpots || 0)} vagas`,
@@ -264,6 +153,11 @@ export class ViagensComponent implements OnInit {
     }
 
     return value;
+  }
+
+  private normalizeImage(value?: string): string {
+    const image = String(value || '').trim();
+    return image || this.fallbackImage;
   }
 
   private parseFilterDate(value?: Date | string | null): Date | null {
@@ -306,3 +200,4 @@ export class ViagensComponent implements OnInit {
     });
   }
 }
+

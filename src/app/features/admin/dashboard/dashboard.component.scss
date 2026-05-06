@@ -36,7 +36,6 @@ $gray: #6C757D;
   padding: 1.5rem;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
   border-left: 4px solid;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
@@ -45,16 +44,6 @@ $gray: #6C757D;
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   }
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
 }
 
 .stat-content {
@@ -96,7 +85,6 @@ $gray: #6C757D;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
   text-decoration: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
@@ -106,10 +94,6 @@ $gray: #6C757D;
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     border-color: $orange;
-  }
-  
-  .action-icon {
-    font-size: 3rem;
   }
   
   .action-label {

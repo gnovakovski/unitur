@@ -64,12 +64,24 @@
   }
 }
 
+.legacy-image-url {
+  display: none;
+}
+
 .form-label {
   display: block;
   font-weight: 600;
   color: #333;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
+
+  .field-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    width: fit-content;
+    white-space: nowrap;
+  }
 
   .required {
     color: #f44336;

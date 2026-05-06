@@ -251,7 +251,7 @@ export class ProductDetailComponent implements OnInit {
       return;
     }
 
-    const fallback = this.trips.find(item => item.slug === slug) || null;
+    const fallback = null;
 
     this.tripService.getTrips({ limit: 100 }).pipe(
       timeout(10000),

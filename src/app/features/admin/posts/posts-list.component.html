@@ -44,17 +44,17 @@
     </form>
   </div>
 
-  <!-- Loading State -->
+  <!-- Loading Stat? -->
   @if (loading) {
-    <div class="loading-state">
+    <div class="loading-stat?">
       <div class="spinner"></div>
       <p>Carregando posts...</p>
     </div>
   }
 
-  <!-- Error State -->
+  <!-- Error Stat? -->
   @if (error && !loading) {
-    <div class="error-state">
+    <div class="error-stat?">
       <p>{{ error }}</p>
       <button (click)="loadPosts()" class="btn btn-primary">Tentar novamente</button>
     </div>
@@ -80,10 +80,10 @@
               <tr>
                 <td>
                   <div class="post-image">
-                    @if (post.featuredImage) {
-                      <img [src]="post.featuredImage" [alt]="post.title">
+                    @if (getPostImage(post)) {
+                      <img [src]="getPostImage(post)" [alt]="post.title" (error)="onPostImageError($event)">
                     } @else {
-                      <div class="no-image">📝</div>
+                      <div class="no-image">IMG</div>
                     }
                   </div>
                 </td>
@@ -103,17 +103,17 @@
                   </span>
                 </td>
                 <td>
-                  <div class="actions">
+                  <div class="row-actions">
                     <a [routerLink]="['/admin/posts', post.id, 'editar']" 
-                       class="btn-icon" 
+                       class="btn-small" 
                        title="Editar">
-                      ✏️
+                      Editar
                     </a>
                     <button 
                       (click)="openDeleteModal(post)" 
-                      class="btn-icon btn-danger" 
+                      class="btn-small danger" 
                       title="Excluir">
-                      🗑️
+                      Excluir
                     </button>
                   </div>
                 </td>
@@ -147,7 +147,7 @@
       }
     } @else {
       <div class="empty-state">
-        <div class="empty-icon">📝</div>
+        <div class="empty-icon">POST</div>
         <h3>Nenhum post encontrado</h3>
         <p>Comece criando seu primeiro post do blog</p>
         <a routerLink="/admin/posts/novo" class="btn btn-primary">Criar Post</a>
@@ -162,7 +162,7 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Confirmar Exclusão</h3>
-        <button class="btn-close" (click)="closeDeleteModal()">✕</button>
+        <button class="btn-close" (click)="closeDeleteModal()">X</button>
       </div>
       <div class="modal-body">
         <p>Tem certeza que deseja excluir o post <strong>{{ postToDelete?.title }}</strong>?</p>

@@ -7,11 +7,12 @@ import { CategoryService } from '../../../core/services/category.service';
 import { TripService } from '../../../core/services/trip.service';
 import { Post, Category } from '../../../core/models/post.model';
 import { Trip } from '../../../core/models/trip.model';
+import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 
 @Component({
   selector: 'app-post-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent],
   templateUrl: './post-form.component.html',
   styleUrl: './post-form.component.scss'
 })
@@ -39,6 +40,7 @@ export class PostFormComponent implements OnInit {
       excerpt: ['', [Validators.required, Validators.maxLength(200)]],
       content: ['', [Validators.required, Validators.minLength(50)]],
       featuredImage: [''],
+      contentImageUpload: [''],
       contentImagesText: [''],
       categoryId: ['', [Validators.required]],
       tags: [''],
@@ -126,7 +128,7 @@ export class PostFormComponent implements OnInit {
     this.error = null;
 
     const formValue = this.postForm.value;
-    const { contentImagesText, ...baseValue } = formValue;
+    const { contentImagesText, contentImageUpload, ...baseValue } = formValue;
     const postData: Partial<Post> = {
       ...baseValue,
       tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : []
@@ -154,6 +156,15 @@ export class PostFormComponent implements OnInit {
 
   onCancel() {
     this.router.navigate(['/admin/posts']);
+  }
+
+  onContentImageUploaded(url: string) {
+    const current = this.postForm.get('contentImagesText')?.value || '';
+    const nextValue = [current, url].filter(Boolean).join('\n');
+    this.postForm.patchValue({
+      contentImagesText: nextValue,
+      contentImageUpload: ''
+    });
   }
 
   markFormGroupTouched(formGroup: FormGroup) {

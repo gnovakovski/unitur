@@ -8,7 +8,7 @@
 
   @if (error && !loading) {
     <div class="error-container">
-      <div class="error-icon">😕</div>
+      <div class="error-icon">!</div>
       <h2>{{ error }}</h2>
       <p>O post que você está procurando não existe ou foi removido.</p>
       <a href="/" class="btn-primary" (click)="goBackToHomeBlog($event)">Voltar para o Blog</a>
@@ -36,7 +36,7 @@
           
           <div class="post-meta">
             <div class="meta-item">
-              <span class="meta-icon">📅</span>
+              <span class="meta-icon">Data</span>
               <span>{{ formatDate(post.publishedAt || post.createdAt) }}</span>
             </div>
             @if (post.author) {
@@ -94,7 +94,7 @@
               <div class="share-buttons">
                 <button class="share-btn link" (click)="copyPostLink()"><span class="share-icon">Link</span>Copiar link</button>
                 <button class="share-btn whatsapp" (click)="shareOnWhatsApp()">
-                  <span class="share-icon">💬</span>
+                  <span class="share-icon">WhatsApp</span>
                   WhatsApp
                 </button>
               </div>
@@ -113,7 +113,7 @@
                       @if (relatedPost.featuredImage) {
                         <img [src]="relatedPost.featuredImage" [alt]="relatedPost.title">
                       } @else {
-                        <div class="related-no-image">📝</div>
+                        <div class="related-no-image">IMG</div>
                       }
                       <div class="related-content">
                         <h4>{{ relatedPost.title }}</h4>

@@ -20,17 +20,17 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   values = [
     {
-      icon: '👨‍👩‍👧‍👦',
+      icon: 'FAM',
       title: 'Somos uma Família',
       description: 'Acima de tudo, valorizamos as relações humanas e tratamos cada cliente como parte da nossa família.'
     },
     {
-      icon: '🌍',
+      icon: 'MUN',
       title: 'Bem Comum',
       description: 'Promovemos o bem comum e a união entre os povos através de nossas viagens e serviços.'
     },
     {
-      icon: '🤝',
+      icon: 'PAR',
       title: 'Economia de Comunhão',
       description: 'Realizamos as práticas da EdC, compartilhando recursos e promovendo justiça social.'
     },

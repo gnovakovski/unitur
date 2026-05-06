@@ -57,7 +57,7 @@
                 <img [src]="post.featuredImage" [alt]="post.title">
               } @else {
                 <div class="no-image">
-                  <span class="no-image-icon">📝</span>
+                  <span class="no-image-icon">IMG</span>
                 </div>
               }
               @if (post.category) {
@@ -134,7 +134,7 @@
     <!-- Empty State -->
     @if (!loading && posts.length === 0) {
       <div class="empty-state">
-        <div class="empty-icon">📝</div>
+        <div class="empty-icon">POST</div>
         <h3>Nenhum post encontrado</h3>
         <p>
           @if (selectedCategory) {

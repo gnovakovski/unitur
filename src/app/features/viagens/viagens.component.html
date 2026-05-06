@@ -34,7 +34,7 @@
       @for (viagem of filtered; track viagem.title) {
         <div class="viagem-card">
           <div class="card-image">
-            <img [src]="viagem.image" [alt]="viagem.title">
+            <img [src]="viagem.image" [alt]="viagem.title" (error)="useFallbackImage($event)">
             <span class="badge-category">{{ viagem.category }}</span>
             @if (viagem.showSpots) {
               <span class="badge-spots">{{ viagem.spots }}</span>

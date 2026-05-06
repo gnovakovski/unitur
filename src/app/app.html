@@ -1,7 +1,11 @@
 <div class="app-container">
-  <app-header></app-header>
-  <main class="main-content">
+  @if (!isAdminRoute) {
+    <app-header></app-header>
+  }
+  <main class="main-content" [class.admin-content]="isAdminRoute">
     <router-outlet />
   </main>
-  <app-footer></app-footer>
+  @if (!isAdminRoute) {
+    <app-footer></app-footer>
+  }
 </div>
