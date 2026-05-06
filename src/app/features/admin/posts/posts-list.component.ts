@@ -1,11 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { PostService, PostFilters } from '../../../core/services/post.service';
 import { CategoryService } from '../../../core/services/category.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Post, Category } from '../../../core/models/post.model';
-import { catchError, debounceTime, distinctUntilChanged, finalize, of, timeout } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, finalize, from, of, switchMap, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-posts-list',
@@ -35,9 +36,11 @@ export class PostsListComponent implements OnInit {
   deleting = false;
 
   constructor(
+    private authService: AuthService,
     private postService: PostService,
     private categoryService: CategoryService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private cdr: ChangeDetectorRef
   ) {
     this.filterForm = this.fb.group({
       search: [''],
@@ -65,8 +68,15 @@ export class PostsListComponent implements OnInit {
   }
 
   loadCategories() {
-    this.categoryService.getAllCategories().pipe(
-      timeout(8000),
+    from(this.authService.waitForAuthenticatedUser()).pipe(
+      switchMap(isAuthenticated => {
+        if (!isAuthenticated) {
+          throw new Error('Sessao expirada. Faca login novamente.');
+        }
+
+        return this.categoryService.getAllCategories();
+      }),
+      timeout(12000),
       catchError((err) => {
         console.error('Erro ao carregar categorias', err);
         this.error = 'Erro ao carregar categorias. Verifique login e regras do Firestore.';
@@ -75,6 +85,7 @@ export class PostsListComponent implements OnInit {
     ).subscribe({
       next: (categories) => {
         this.categories = categories.filter(c => c.type === 'blog' || c.type === 'both');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -96,8 +107,15 @@ export class PostsListComponent implements OnInit {
       }
     });
 
-    this.postService.getPosts(filters).pipe(
-      timeout(8000),
+    from(this.authService.waitForAuthenticatedUser()).pipe(
+      switchMap(isAuthenticated => {
+        if (!isAuthenticated) {
+          throw new Error('Sessao expirada. Faca login novamente.');
+        }
+
+        return this.postService.getPosts(filters);
+      }),
+      timeout(12000),
       catchError((err) => {
         console.error('Erro ao carregar posts', err);
         this.error = err?.message?.includes('Tempo esgotado')
@@ -113,12 +131,14 @@ export class PostsListComponent implements OnInit {
       }),
       finalize(() => {
         this.loading = false;
+        this.cdr.detectChanges();
       })
     ).subscribe({
       next: (response) => {
         this.posts = response.data;
         this.totalItems = response.total;
         this.totalPages = response.totalPages;
+        this.cdr.detectChanges();
       }
     });
   }

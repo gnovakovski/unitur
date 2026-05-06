@@ -11,7 +11,9 @@
         <span>{{ trip.destination }}</span>
         <span>{{ trip.date }}</span>
         <span>{{ trip.duration }}</span>
-        <span>{{ trip.spots }}</span>
+        @if (trip.showSpots !== false) {
+          <span>{{ trip.spots }}</span>
+        }
       </div>
     </div>
   </section>
@@ -32,12 +34,14 @@
       </div>
       <div class="summary-item price">
         <span>A partir de</span>
-        <strong>{{ trip.price }}</strong>
+        <strong>@if (trip.foreignPrice) { <small>{{ trip.foreignPrice }}/</small> }{{ trip.price }}</strong>
       </div>
-      <div class="summary-item">
-        <span>Vagas</span>
-        <strong>{{ trip.spots }}</strong>
-      </div>
+      @if (trip.showSpots !== false) {
+        <div class="summary-item">
+          <span>Vagas</span>
+          <strong>{{ trip.spots }}</strong>
+        </div>
+      }
     </section>
 
     <section class="content-grid">
@@ -53,6 +57,13 @@
               <span>{{ highlight }}</span>
             }
           </div>
+          @if (trip.experienceImages?.length) {
+            <div class="experience-gallery">
+              @for (image of trip.experienceImages; track image) {
+                <img [src]="image" [alt]="trip.title">
+              }
+            </div>
+          }
         </section>
 
         <section class="section-block">
@@ -69,10 +80,6 @@
               <span>Coordenador</span>
               <strong>{{ trip.coordinator }}</strong>
             </article>
-            <article>
-              <span>Operadora</span>
-              <strong>{{ trip.operator }}</strong>
-            </article>
           </div>
         </section>
 
@@ -82,7 +89,7 @@
             <h2>Roteiro</h2>
           </div>
           <div class="timeline">
-            @for (item of trip.itinerary; track item.day) {
+            @for (item of visibleItinerary; track item.day) {
               <article class="timeline-item">
                 <div class="timeline-marker">{{ item.day }}</div>
                 <div>
@@ -92,13 +99,31 @@
               </article>
             }
           </div>
+          @if (trip.itinerary.length > 3) {
+            <button class="expand-itinerary" type="button" (click)="toggleItinerary()">{{ itineraryExpanded ? 'Recolher roteiro' : 'Ver roteiro completo' }}</button>
+          }
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <span>04</span>
+            <h2>Hoteis</h2>
+          </div>
+          @if (trip.hotels?.length) {
+            <div class="hotels-grid">
+              @for (hotel of trip.hotels; track hotel.name) {
+                <article><img [src]="hotel.image" [alt]="hotel.name"><strong>{{ hotel.name }}</strong></article>
+              }
+            </div>
+          } @else {
+            <p class="lead">Hoteis do grupo a confirmar.</p>
+          }
         </section>
 
         <section class="section-block inclusions-grid">
           <div>
             <div class="section-heading compact">
-              <span>04</span>
-              <h2>Incluso</h2>
+              <span>05</span><h2>Incluso</h2>
             </div>
             <ul class="check-list">
               @for (item of trip.included; track item) {
@@ -118,14 +143,36 @@
             </ul>
           </div>
         </section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <span>06</span>
+            <h2>Formas de pagamento</h2>
+          </div>
+          <ul class="check-list">
+            @for (item of trip.paymentMethods; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading muted">
+            <span>07</span>
+            <h2>Politica de cancelamento</h2>
+          </div>
+          <p class="lead">{{ trip.cancellationPolicy }}</p>
+        </section>
       </div>
 
       <aside class="booking-panel">
-        <span class="spots">{{ trip.spots }}</span>
-        <h2>{{ trip.price }}</h2>
+        @if (trip.showSpots !== false) {
+          <span class="spots">{{ trip.spots }}</span>
+        }
+        <h2>@if (trip.foreignPrice) { <small>{{ trip.foreignPrice }}/</small> }{{ trip.price }}</h2>
         <p>Converse com a equipe Unitur para confirmar disponibilidade, formas de pagamento e próximos passos.</p>
         <a class="primary-cta" href="https://wa.me/5500000000000" target="_blank" rel="noopener">Reservar agora</a>
-        <a class="secondary-cta" routerLink="/viagens">Ver outras viagens</a>
+        
       </aside>
     </section>
   </main>
@@ -136,3 +183,5 @@
     <a routerLink="/" class="primary-cta">Voltar para a home</a>
   </section>
 }
+
+

@@ -100,6 +100,17 @@
           <!-- Tags -->
           <div class="form-card">
             <div class="form-group">
+              <label for="contentImagesText" class="form-label">Imagens no texto</label>
+              <textarea
+                id="contentImagesText"
+                formControlName="contentImagesText"
+                class="form-control"
+                rows="4"
+                placeholder="Uma URL de imagem por linha"></textarea>
+              <small class="form-hint">As imagens aparecem no inicio do conteudo. Tambem e possivel inserir tags &lt;img&gt; direto no texto.</small>
+            </div>
+
+            <div class="form-group">
               <label for="tags" class="form-label">Tags</label>
               <input 
                 type="text" 
@@ -167,7 +178,7 @@
                   <option [value]="trip.id">{{ trip.title }}</option>
                 }
               </select>
-              <small class="form-hint">Segure Ctrl/Cmd para selecionar múltiplas</small>
+              <small class="form-hint">Selecione ate 3 viagens relacionadas</small>
             </div>
           </div>
 
@@ -223,3 +234,4 @@
     </form>
   }
 </div>
+

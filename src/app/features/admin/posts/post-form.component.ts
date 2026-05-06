@@ -39,6 +39,7 @@ export class PostFormComponent implements OnInit {
       excerpt: ['', [Validators.required, Validators.maxLength(200)]],
       content: ['', [Validators.required, Validators.minLength(50)]],
       featuredImage: [''],
+      contentImagesText: [''],
       categoryId: ['', [Validators.required]],
       tags: [''],
       relatedTrips: [[]],
@@ -72,6 +73,7 @@ export class PostFormComponent implements OnInit {
           excerpt: post.excerpt,
           content: post.content,
           featuredImage: post.featuredImage || '',
+          contentImagesText: (post.contentImages || []).join('\n'),
           categoryId: post.categoryId,
           tags: post.tags.join(', '),
           relatedTrips: post.relatedTrips || [],
@@ -124,9 +126,13 @@ export class PostFormComponent implements OnInit {
     this.error = null;
 
     const formValue = this.postForm.value;
+    const { contentImagesText, ...baseValue } = formValue;
     const postData: Partial<Post> = {
-      ...formValue,
+      ...baseValue,
       tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : []
+        ,
+      relatedTrips: (formValue.relatedTrips || []).map((id: string | number) => Number(id)).filter(Boolean).slice(0, 3),
+      contentImages: this.parseLines(contentImagesText)
     };
 
     const request = this.isEditMode && this.postId
@@ -170,5 +176,12 @@ export class PostFormComponent implements OnInit {
       if (field.errors['maxlength']) return `Máximo de ${field.errors['maxlength'].requiredLength} caracteres`;
     }
     return '';
+  }
+
+  private parseLines(value: string): string[] {
+    return String(value || '')
+      .split('\n')
+      .map(item => item.trim())
+      .filter(Boolean);
   }
 }

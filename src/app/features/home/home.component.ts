@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { PaginatedResponse, TripService } from '../../core/services/trip.service';
@@ -14,10 +15,11 @@ interface HomeTripCard {
   image: string;
   price: string;
   spots: string;
+  showSpots: boolean;
+  foreignPrice?: string;
   guide: string;
   guideRole: string;
   coordinator: string;
-  operator: string;
 }
 
 interface HomeCuradoriaCard {
@@ -32,15 +34,21 @@ interface HomeCuradoriaCard {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit, OnDestroy {
   currentSlide = 0;
+  searchDestination = '';
+  searchStartDate = '';
+  searchEndDate = '';
   private slideInterval: any;
 
-  constructor(private tripService: TripService) {}
+  constructor(
+    private tripService: TripService,
+    private router: Router
+  ) {}
 
   bannerImages = [
     'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=700&fit=crop',
@@ -57,12 +65,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: 'Junho 2026',
       duration: '12 dias',
       image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=350&fit=crop',
-      price: 'R$ 8.999',
+      price: 'R$25.000,00',
+      foreignPrice: 'U$4.500,00',
       spots: '8 vagas',
+      showSpots: true,
       guide: 'Pe. João Batista',
       guideRole: 'Guia Espiritual',
-      coordinator: 'Ana Silva',
-      operator: 'Unitur'
+      coordinator: 'Ana Silva'
     },
     {
       slug: 'caminho-de-santiago',
@@ -71,12 +80,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: 'Agosto 2026',
       duration: '15 dias',
       image: 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=500&h=350&fit=crop',
-      price: 'R$ 6.499',
+      price: 'R$19.900,00',
+      foreignPrice: 'U$3.580,00',
       spots: '12 vagas',
+      showSpots: true,
       guide: 'Pe. Carlos Mendes',
       guideRole: 'Guia Espiritual',
-      coordinator: 'Carlos Mendes',
-      operator: 'Unitur'
+      coordinator: 'Carlos Mendes'
     },
     {
       title: 'Fátima e Lourdes',
@@ -85,12 +95,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: 'Setembro 2026',
       duration: '10 dias',
       image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=500&h=350&fit=crop',
-      price: 'R$ 7.299',
+      price: 'R$22.500,00',
+      foreignPrice: 'U$4.050,00',
       spots: '15 vagas',
+      showSpots: true,
       guide: 'Pe. André Lima',
       guideRole: 'Guia Espiritual',
-      coordinator: 'Marina Costa',
-      operator: 'Unitur'
+      coordinator: 'Marina Costa'
     }
   ];
 
@@ -102,12 +113,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: 'Outubro 2026',
       duration: '14 dias',
       image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=500&h=350&fit=crop',
-      price: 'R$ 9.890',
+      price: 'R$29.900,00',
+      foreignPrice: 'U$5.380,00',
       spots: '10 vagas',
+      showSpots: true,
       guide: 'Equipe Unitur',
       guideRole: 'Guia',
-      coordinator: 'Equipe Unitur',
-      operator: 'Unitur'
+      coordinator: 'Equipe Unitur'
     },
     {
       slug: 'nordeste-encantador',
@@ -116,12 +128,12 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: 'Julho 2026',
       duration: '8 dias',
       image: 'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?w=500&h=350&fit=crop',
-      price: 'R$ 4.290',
+      price: 'R$4.290,00',
       spots: '14 vagas',
+      showSpots: true,
       guide: 'Equipe Unitur',
       guideRole: 'Guia',
-      coordinator: 'Equipe Unitur',
-      operator: 'Unitur'
+      coordinator: 'Equipe Unitur'
     },
     {
       slug: 'patagonia-completa',
@@ -130,12 +142,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: 'Novembro 2026',
       duration: '11 dias',
       image: 'https://images.unsplash.com/photo-1531804159968-24716780d214?w=500&h=350&fit=crop',
-      price: 'R$ 11.500',
+      price: 'R$31.900,00',
+      foreignPrice: 'U$5.740,00',
       spots: '6 vagas',
+      showSpots: true,
       guide: 'Equipe Unitur',
       guideRole: 'Guia',
-      coordinator: 'Equipe Unitur',
-      operator: 'Unitur'
+      coordinator: 'Equipe Unitur'
     }
   ];
 
@@ -245,6 +258,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit() {
+    this.continents = [
+      ...this.continents,
+      {
+        name: 'Africa',
+        icon: 'AF',
+        image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop',
+        description: 'Africa do Sul, Marrocos, Egito e safaris'
+      },
+      {
+        name: 'Brasil',
+        icon: 'BR',
+        image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=600&h=400&fit=crop',
+        description: 'Nordeste, Sul, Amazonia e destinos nacionais'
+      }
+    ];
     this.startSlideShow();
     this.loadTrips();
   }
@@ -281,11 +309,22 @@ export class HomeComponent implements OnInit, OnDestroy {
       duration: trip.duration,
       price: trip.price,
       spots: trip.spots,
+      showSpots: String(trip.showSpots),
+      foreignPrice: trip.foreignPrice || '',
       guide: trip.guide,
       coordinator: trip.coordinator,
-      operator: trip.operator,
       image: trip.image
     };
+  }
+
+  searchTrips() {
+    this.router.navigate(['/viagens'], {
+      queryParams: {
+        destination: this.searchDestination || null,
+        startDate: this.searchStartDate || null,
+        endDate: this.searchEndDate || null
+      }
+    });
   }
 
   private loadTrips() {
@@ -326,13 +365,26 @@ export class HomeComponent implements OnInit, OnDestroy {
       date: trip.period || this.formatTripPeriod(trip.startDate),
       duration: trip.duration ? `${trip.duration} dias` : 'A definir',
       image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop',
-      price: trip.price ? `R$ ${Number(trip.price).toLocaleString('pt-BR')}` : 'Consulte',
+      price: trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte',
+      foreignPrice: this.formatForeignPrice(trip.foreignPrice),
       spots: `${Number(trip.availableSpots || 0)} vagas`,
+      showSpots: trip.showAvailableSpots !== false,
       guide: trip.spiritualGuide || 'A definir',
       guideRole,
-      coordinator: trip.coordinator || 'Equipe Unitur',
-      operator: trip.operator || 'Unitur'
+      coordinator: trip.coordinator || 'Equipe Unitur'
     };
+  }
+
+  private formatForeignPrice(value?: number | string): string {
+    if (!value) {
+      return '';
+    }
+
+    if (typeof value === 'number') {
+      return `U$${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    return value;
   }
 
   private formatTripPeriod(date?: Date): string {

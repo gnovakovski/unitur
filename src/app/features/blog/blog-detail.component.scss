@@ -249,6 +249,20 @@ $soft: #f5f8fc;
   }
 }
 
+.content-images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0 0 2rem;
+
+  img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 18px;
+  }
+}
+
 .post-tags-section,
 .share-section {
   padding-top: 1.5rem;
@@ -467,6 +481,10 @@ $soft: #f5f8fc;
 
   .share-buttons {
     flex-direction: column;
+  }
+
+  .content-images {
+    grid-template-columns: 1fr;
   }
 }
 

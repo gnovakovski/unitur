@@ -16,10 +16,19 @@ export interface Trip {
   endDate: Date;
   duration: number; // em dias
   price: number;
+  foreignPrice?: number | string;
   availableSpots: number;
+  showAvailableSpots?: boolean;
   spiritualGuide?: string;
   coordinator?: string;
   operator?: string;
+  experienceImages?: string[];
+  hotels?: Array<{
+    name: string;
+    image: string;
+  }>;
+  paymentMethods?: string[];
+  cancellationPolicy?: string;
   included: string[];
   notIncluded: string[];
   itinerary?: string; // HTML ou Markdown

@@ -50,6 +50,11 @@ import { TripService } from '../../../core/services/trip.service';
           </label>
 
           <label>
+            Data de embarque
+            <input class="form-control" type="date" formControlName="startDate">
+          </label>
+
+          <label>
             Dias
             <input class="form-control" type="number" formControlName="duration" min="1">
           </label>
@@ -62,6 +67,11 @@ import { TripService } from '../../../core/services/trip.service';
           <label>
             Preco
             <input class="form-control" type="number" formControlName="price" min="0">
+          </label>
+
+          <label>
+            Valor em moeda estrangeira
+            <input class="form-control" formControlName="foreignPrice" placeholder="Ex: U$4.500,00">
           </label>
 
           <label>
@@ -85,8 +95,11 @@ import { TripService } from '../../../core/services/trip.service';
           </label>
 
           <label>
-            Operadora
-            <input class="form-control" formControlName="operator" placeholder="Unitur">
+            Mostrar quantidade de vagas
+            <select class="form-control" formControlName="showAvailableSpots">
+              <option [ngValue]="true">Sim</option>
+              <option [ngValue]="false">Nao</option>
+            </select>
           </label>
 
           <label>
@@ -103,6 +116,47 @@ import { TripService } from '../../../core/services/trip.service';
         <label>
           Descricao completa
           <textarea class="form-control" rows="5" formControlName="description" placeholder="Descricao da viagem"></textarea>
+        </label>
+
+        <div class="form-grid wide">
+          <label>
+            Imagens da experiencia
+            <textarea class="form-control" rows="4" formControlName="experienceImagesText" placeholder="Uma URL por linha"></textarea>
+          </label>
+
+          <label>
+            Roteiro
+            <textarea class="form-control" rows="4" formControlName="itinerary" placeholder="Use uma linha por dia ou etapa"></textarea>
+          </label>
+        </div>
+
+        <div class="form-grid wide">
+          <label>
+            Hoteis do grupo
+            <textarea class="form-control" rows="4" formControlName="hotelsText" placeholder="URL da imagem | Nome do hotel"></textarea>
+          </label>
+
+          <label>
+            Formas de pagamento
+            <textarea class="form-control" rows="4" formControlName="paymentMethodsText" placeholder="Uma forma de pagamento por linha"></textarea>
+          </label>
+        </div>
+
+        <div class="form-grid wide">
+          <label>
+            Incluso
+            <textarea class="form-control" rows="4" formControlName="includedText" placeholder="Um item por linha"></textarea>
+          </label>
+
+          <label>
+            Nao incluso
+            <textarea class="form-control" rows="4" formControlName="notIncludedText" placeholder="Um item por linha"></textarea>
+          </label>
+        </div>
+
+        <label>
+          Politica de cancelamento
+          <textarea class="form-control" rows="4" formControlName="cancellationPolicy" placeholder="Politica padrao de cancelamento"></textarea>
         </label>
 
         <div class="form-actions">
@@ -122,6 +176,7 @@ import { TripService } from '../../../core/services/trip.service';
     .alert-error { margin-bottom: 1rem; padding: 1rem; background: #ffebee; color: #c62828; border-radius: 18px; }
     .form-card { background: white; border-radius: 24px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: grid; gap: 1.25rem; }
     .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+    .form-grid.wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     label { display: grid; gap: 0.5rem; color: #333; font-size: 0.9rem; font-weight: 700; }
     .form-control { width: 100%; border: 1px solid #e0e0e0; border-radius: 18px; padding: 0.8rem 1rem; font: inherit; }
     textarea.form-control { resize: vertical; }
@@ -153,16 +208,25 @@ export class ViagemFormComponent implements OnInit {
       tripType: ['peregrinacao', [Validators.required]],
       country: ['', [Validators.required]],
       period: ['', [Validators.required]],
+      startDate: [''],
       duration: [1, [Validators.required, Validators.min(1)]],
       availableSpots: [0, [Validators.required, Validators.min(0)]],
       price: [0, [Validators.required, Validators.min(0)]],
+      foreignPrice: [''],
       status: ['active', [Validators.required]],
       spiritualGuide: [''],
       coordinator: [''],
-      operator: ['Unitur'],
+      showAvailableSpots: [true],
       mainImage: [''],
       shortDescription: [''],
-      description: ['']
+      description: [''],
+      experienceImagesText: [''],
+      hotelsText: [''],
+      itinerary: [''],
+      paymentMethodsText: [''],
+      includedText: [''],
+      notIncludedText: [''],
+      cancellationPolicy: ['']
     });
   }
 
@@ -183,16 +247,25 @@ export class ViagemFormComponent implements OnInit {
           tripType: trip.tripType || 'regular',
           country: trip.country || trip.destination,
           period: trip.period || '',
+          startDate: this.formatDateInput(trip.startDate),
           duration: trip.duration,
           availableSpots: trip.availableSpots,
           price: trip.price,
+          foreignPrice: trip.foreignPrice || '',
           status: trip.status,
           spiritualGuide: trip.spiritualGuide || '',
           coordinator: trip.coordinator || '',
-          operator: trip.operator || 'Unitur',
+          showAvailableSpots: trip.showAvailableSpots !== false,
           mainImage: trip.mainImage || '',
           shortDescription: trip.shortDescription || '',
-          description: trip.description || ''
+          description: trip.description || '',
+          experienceImagesText: (trip.experienceImages || trip.gallery || []).join('\n'),
+          hotelsText: (trip.hotels || []).map(hotel => `${hotel.image} | ${hotel.name}`).join('\n'),
+          itinerary: trip.itinerary || '',
+          paymentMethodsText: (trip.paymentMethods || []).join('\n'),
+          includedText: (trip.included || []).join('\n'),
+          notIncludedText: (trip.notIncluded || []).join('\n'),
+          cancellationPolicy: trip.cancellationPolicy || ''
         });
       },
       error: err => {
@@ -210,14 +283,29 @@ export class ViagemFormComponent implements OnInit {
     this.saving = true;
     this.error = '';
     const value = this.tripForm.value;
+    const {
+      experienceImagesText,
+      hotelsText,
+      paymentMethodsText,
+      includedText,
+      notIncludedText,
+      ...baseValue
+    } = value;
     const now = new Date();
+    const startDate = value.startDate ? new Date(`${value.startDate}T00:00:00`) : now;
     const tripData: Partial<Trip> = {
-      ...value,
+      ...baseValue,
       destination: value.country,
       categoryId: 0,
-      startDate: now,
-      endDate: now,
-      featured: value.tripType === 'curadoria'
+      startDate,
+      endDate: startDate,
+      featured: value.tripType === 'curadoria',
+      experienceImages: this.parseLines(experienceImagesText),
+      gallery: this.parseLines(experienceImagesText),
+      hotels: this.parseHotels(hotelsText),
+      paymentMethods: this.parseLines(paymentMethodsText),
+      included: this.parseLines(includedText),
+      notIncluded: this.parseLines(notIncludedText)
     };
 
     const request = this.isEditMode && this.tripId
@@ -238,5 +326,32 @@ export class ViagemFormComponent implements OnInit {
 
   cancel() {
     this.router.navigate(['/admin/viagens']);
+  }
+
+  private parseLines(value: string): string[] {
+    return String(value || '')
+      .split('\n')
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  private parseHotels(value: string): Array<{ name: string; image: string }> {
+    return this.parseLines(value).map(line => {
+      const [image = '', name = ''] = line.split('|').map(item => item.trim());
+      return { image, name: name || image };
+    });
+  }
+
+  private formatDateInput(date?: Date): string {
+    if (!date) {
+      return '';
+    }
+
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return '';
+    }
+
+    return parsedDate.toISOString().slice(0, 10);
   }
 }

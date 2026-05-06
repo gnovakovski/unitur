@@ -25,6 +25,7 @@ export interface AuthResponse {
 export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'auth_user';
+  private authReadyPromise: Promise<boolean> | null = null;
   
   private currentUserSubject = new BehaviorSubject<any>(this.getUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -98,15 +99,21 @@ export class AuthService {
       });
     }
 
-    return new Promise(resolve => {
+    if (this.authReadyPromise) {
+      return this.authReadyPromise;
+    }
+
+    this.authReadyPromise = new Promise(resolve => {
       const timeoutId = window.setTimeout(() => {
         unsubscribe();
+        this.authReadyPromise = null;
         resolve(false);
-      }, 3000);
+      }, 10000);
 
       const unsubscribe = onAuthStateChanged(auth, user => {
         window.clearTimeout(timeoutId);
         unsubscribe();
+        this.authReadyPromise = null;
 
         if (!user) {
           localStorage.removeItem(this.TOKEN_KEY);
@@ -130,6 +137,8 @@ export class AuthService {
         }).catch(() => resolve(false));
       });
     });
+
+    return this.authReadyPromise;
   }
 
   getToken(): string | null {

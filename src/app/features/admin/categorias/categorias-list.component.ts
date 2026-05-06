@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, finalize, from, of, switchMap, timeout } from 'rxjs';
@@ -170,7 +170,8 @@ export class CategoriasListComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private cdr: ChangeDetectorRef
   ) {
     this.categoryForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
@@ -206,21 +207,11 @@ export class CategoriasListComponent implements OnInit {
       }),
       finalize(() => {
         this.loading = false;
+        this.cdr.detectChanges();
       })
     ).subscribe(categories => {
       this.categories = categories;
-    });
-    return;
-
-    this.categoryService.getAllCategories().subscribe({
-      next: categories => {
-        this.categories = categories;
-        this.loading = false;
-      },
-      error: () => {
-        this.error = 'Erro ao carregar categorias. Verifique as regras e conexão do Firestore.';
-        this.loading = false;
-      }
+      this.cdr.detectChanges();
     });
   }
 
@@ -278,10 +269,12 @@ export class CategoriasListComponent implements OnInit {
         this.saving = false;
         this.closeForm();
         this.loadCategories();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.error = 'Erro ao salvar categoria. Verifique as permissões do Firestore.';
         this.saving = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -298,10 +291,12 @@ export class CategoriasListComponent implements OnInit {
       next: () => {
         this.deletingId = null;
         this.loadCategories();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.error = 'Erro ao excluir categoria. Verifique as permissões do Firestore.';
         this.deletingId = null;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -326,3 +321,6 @@ export class CategoriasListComponent implements OnInit {
     });
   }
 }
+
+
+

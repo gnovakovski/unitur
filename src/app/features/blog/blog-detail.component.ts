@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PostService } from '../../core/services/post.service';
+import { TripService } from '../../core/services/trip.service';
 import { Post } from '../../core/models/post.model';
+import { Trip } from '../../core/models/trip.model';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -15,6 +17,7 @@ import { environment } from '../../../environments/environment';
 export class BlogDetailComponent implements OnInit {
   post: Post | null = null;
   relatedPosts: Post[] = [];
+  relatedTrips: Trip[] = [];
   loading = true;
   error: string | null = null;
   origin: 'home' | 'footer' | 'blog' = 'blog';
@@ -103,7 +106,8 @@ export class BlogDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private postService: PostService
+    private postService: PostService,
+    private tripService: TripService
   ) {}
 
   ngOnInit() {
@@ -137,6 +141,7 @@ export class BlogDetailComponent implements OnInit {
         if (post) {
           this.post = post;
           this.loadRelatedPosts(post);
+          this.loadRelatedTrips(post);
         } else {
           this.error = 'Post não encontrado';
         }
@@ -179,11 +184,29 @@ export class BlogDetailComponent implements OnInit {
     if (post) {
       this.post = post;
       this.loadRelatedPosts(post);
+      this.loadRelatedTrips(post);
     } else {
       this.error = 'Post não encontrado';
     }
 
     this.loading = false;
+  }
+
+  loadRelatedTrips(post: Post) {
+    const ids = (post.relatedTrips || []).slice(0, 3).map(id => Number(id));
+    if (!ids.length) {
+      this.relatedTrips = [];
+      return;
+    }
+
+    this.tripService.getTrips({ limit: 100 }).subscribe({
+      next: response => {
+        this.relatedTrips = response.data.filter(trip => ids.includes(Number(trip.id))).slice(0, 3);
+      },
+      error: () => {
+        this.relatedTrips = [];
+      }
+    });
   }
 
   formatDate(date: Date | string): string {
@@ -209,6 +232,10 @@ export class BlogDetailComponent implements OnInit {
     const url = encodeURIComponent(window.location.href);
     const text = encodeURIComponent(this.post?.title || '');
     window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+  }
+
+  copyPostLink() {
+    navigator.clipboard?.writeText(window.location.href);
   }
 
   goBackToHomeBlog(event: Event) {

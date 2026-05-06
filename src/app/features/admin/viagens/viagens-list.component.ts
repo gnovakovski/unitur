@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { catchError, finalize, from, of, switchMap, timeout } from 'rxjs';
@@ -113,7 +113,8 @@ export class ViagensListComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private tripService: TripService
+    private tripService: TripService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -140,9 +141,11 @@ export class ViagensListComponent implements OnInit {
       }),
       finalize(() => {
         this.loading = false;
+        this.cdr.detectChanges();
       })
     ).subscribe(response => {
       this.trips = response.data;
+      this.cdr.detectChanges();
     });
   }
 
@@ -161,6 +164,7 @@ export class ViagensListComponent implements OnInit {
       error: err => {
         console.error('Erro ao excluir viagem', err);
         this.error = err?.message || 'Erro ao excluir viagem.';
+        this.cdr.detectChanges();
       }
     });
   }

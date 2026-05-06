@@ -198,6 +198,12 @@ $white: #ffffff;
   font-size: 1.1rem;
   font-weight: 700;
   color: $blue;
+
+  small {
+    color: #666;
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
 }
 
 .btn-reserve {
