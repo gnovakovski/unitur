@@ -15,14 +15,14 @@
         <div class="upload-spinner"></div>
         <p>Fazendo upload...</p>
       } @else {
-        <div class="upload-icon">📷</div>
+        <div class="upload-icon">IMG</div>
         <p class="upload-text">Clique ou arraste uma imagem</p>
         <p class="upload-hint">JPG, PNG ou WebP (máx. {{ maxSize }}MB)</p>
       }
       
       <input 
         type="file" 
-        id="file-input"
+        [id]="inputId"
         [accept]="accept"
         (change)="onFileSelected($event)"
         style="display: none">
@@ -35,7 +35,7 @@
         class="btn-remove" 
         (click)="removeImage()"
         [disabled]="uploading">
-        ✕
+        X
       </button>
     </div>
   }

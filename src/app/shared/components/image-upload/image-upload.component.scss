@@ -3,21 +3,21 @@ $blue: #3a75c3;
 $error: #dc3545;
 
 .image-upload {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 .upload-label {
   display: block;
   font-weight: 600;
   color: #1a1a2e;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
   font-size: 0.95rem;
 }
 
 .upload-area {
   border: 2px dashed #E9ECEF;
   border-radius: 12px;
-  padding: 3rem 2rem;
+  padding: 1.5rem 1.25rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -41,14 +41,23 @@ $error: #dc3545;
 }
 
 .upload-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba($blue, 0.1);
+  color: $blue;
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin-bottom: 0.65rem;
 }
 
 .upload-text {
   color: #1a1a2e;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .upload-hint {

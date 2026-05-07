@@ -40,14 +40,14 @@
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         @if (error) {
           <div class="alert alert-error">
-            <span class="alert-icon">⚠️</span>
+            <span class="alert-icon">!</span>
             <span>{{ error }}</span>
           </div>
         }
 
         <div class="form-group">
           <label for="email">
-            <span class="label-icon">📧</span>
+            <span class="label-icon">@</span>
             Email
           </label>
           <input 
@@ -71,7 +71,7 @@
 
         <div class="form-group">
           <label for="password">
-            <span class="label-icon">🔒</span>
+            <span class="label-icon">#</span>
             Senha
           </label>
           <div class="password-wrapper">
@@ -86,7 +86,7 @@
               type="button" 
               class="toggle-password"
               (click)="togglePasswordVisibility()">
-              {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+              {{ showPassword ? 'Ocultar' : 'Ver' }}
             </button>
           </div>
           @if (password?.invalid && password?.touched) {

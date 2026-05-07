@@ -71,7 +71,7 @@ export class PostsListComponent implements OnInit {
     from(this.authService.waitForAuthenticatedUser()).pipe(
       switchMap(isAuthenticated => {
         if (!isAuthenticated) {
-          throw new Error('Sessao expirada. Faca login novamente.');
+          throw new Error('Sessão expirada. Faça login novamente.');
         }
 
         return this.categoryService.getAllCategories();
@@ -110,7 +110,7 @@ export class PostsListComponent implements OnInit {
     from(this.authService.waitForAuthenticatedUser()).pipe(
       switchMap(isAuthenticated => {
         if (!isAuthenticated) {
-          throw new Error('Sessao expirada. Faca login novamente.');
+          throw new Error('Sessão expirada. Faça login novamente.');
         }
 
         return this.postService.getPosts(filters);
@@ -119,7 +119,7 @@ export class PostsListComponent implements OnInit {
       catchError((err) => {
         console.error('Erro ao carregar posts', err);
         this.error = err?.message?.includes('Tempo esgotado')
-          ? 'Tempo esgotado ao carregar posts. Verifique conexÃ£o, login e regras do Firestore.'
+          ? 'Tempo esgotado ao carregar posts. Verifique conexão, login e regras do Firestore.'
           : 'Erro ao carregar posts. Verifique login e regras do Firestore.';
         return of({
           data: [],
@@ -194,5 +194,21 @@ export class PostsListComponent implements OnInit {
 
   formatDate(date: Date | string): string {
     return new Date(date).toLocaleDateString('pt-BR');
+  }
+
+  getPostImage(post: Post): string {
+    return post.featuredImage || post.contentImages?.[0] || '';
+  }
+
+  onPostImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    const container = img.parentElement;
+    img.remove();
+    if (container && !container.querySelector('.no-image')) {
+      const fallback = document.createElement('div');
+      fallback.className = 'no-image';
+      fallback.textContent = 'IMG';
+      container.appendChild(fallback);
+    }
   }
 }

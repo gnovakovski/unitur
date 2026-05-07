@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -39,6 +39,7 @@ interface HomeCuradoriaCard {
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  private readonly fallbackTripImage = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop';
   currentSlide = 0;
   searchDestination = '';
   searchStartDate = '';
@@ -47,7 +48,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   constructor(
     private tripService: TripService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   bannerImages = [
@@ -57,123 +59,32 @@ export class HomeComponent implements OnInit, OnDestroy {
     'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=1600&h=700&fit=crop'
   ];
 
-  peregrinacoes: HomeTripCard[] = [
-    {
-      slug: 'terra-santa',
-      title: 'Terra Santa',
-      country: 'Israel',
-      date: 'Junho 2026',
-      duration: '12 dias',
-      image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=350&fit=crop',
-      price: 'R$25.000,00',
-      foreignPrice: 'U$4.500,00',
-      spots: '8 vagas',
-      showSpots: true,
-      guide: 'Pe. João Batista',
-      guideRole: 'Guia Espiritual',
-      coordinator: 'Ana Silva'
-    },
-    {
-      slug: 'caminho-de-santiago',
-      title: 'Caminho de Santiago',
-      country: 'Espanha',
-      date: 'Agosto 2026',
-      duration: '15 dias',
-      image: 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=500&h=350&fit=crop',
-      price: 'R$19.900,00',
-      foreignPrice: 'U$3.580,00',
-      spots: '12 vagas',
-      showSpots: true,
-      guide: 'Pe. Carlos Mendes',
-      guideRole: 'Guia Espiritual',
-      coordinator: 'Carlos Mendes'
-    },
-    {
-      title: 'Fátima e Lourdes',
-      country: 'Portugal e França',
-      slug: 'fatima-e-lourdes',
-      date: 'Setembro 2026',
-      duration: '10 dias',
-      image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=500&h=350&fit=crop',
-      price: 'R$22.500,00',
-      foreignPrice: 'U$4.050,00',
-      spots: '15 vagas',
-      showSpots: true,
-      guide: 'Pe. André Lima',
-      guideRole: 'Guia Espiritual',
-      coordinator: 'Marina Costa'
-    }
-  ];
+  peregrinacoes: HomeTripCard[] = [];
 
-  regulares: HomeTripCard[] = [
-    {
-      slug: 'europa-classica',
-      title: 'Europa Classica',
-      country: 'Italia, Franca e Portugal',
-      date: 'Outubro 2026',
-      duration: '14 dias',
-      image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=500&h=350&fit=crop',
-      price: 'R$29.900,00',
-      foreignPrice: 'U$5.380,00',
-      spots: '10 vagas',
-      showSpots: true,
-      guide: 'Equipe Unitur',
-      guideRole: 'Guia',
-      coordinator: 'Equipe Unitur'
-    },
-    {
-      slug: 'nordeste-encantador',
-      title: 'Nordeste Encantador',
-      country: 'Brasil',
-      date: 'Julho 2026',
-      duration: '8 dias',
-      image: 'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?w=500&h=350&fit=crop',
-      price: 'R$4.290,00',
-      spots: '14 vagas',
-      showSpots: true,
-      guide: 'Equipe Unitur',
-      guideRole: 'Guia',
-      coordinator: 'Equipe Unitur'
-    },
-    {
-      slug: 'patagonia-completa',
-      title: 'Patagonia Completa',
-      country: 'Argentina e Chile',
-      date: 'Novembro 2026',
-      duration: '11 dias',
-      image: 'https://images.unsplash.com/photo-1531804159968-24716780d214?w=500&h=350&fit=crop',
-      price: 'R$31.900,00',
-      foreignPrice: 'U$5.740,00',
-      spots: '6 vagas',
-      showSpots: true,
-      guide: 'Equipe Unitur',
-      guideRole: 'Guia',
-      coordinator: 'Equipe Unitur'
-    }
-  ];
+  regulares: HomeTripCard[] = [];
 
   continents = [
     {
       name: 'Europa',
-      icon: '🏰',
+      icon: 'EU',
       image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
       description: 'Paris, Roma, Lisboa e muito mais'
     },
     {
       name: 'Américas',
-      icon: '🌎',
+      icon: 'AM',
       image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=600&h=400&fit=crop',
       description: 'Machu Picchu, Patagônia e Caribe'
     },
     {
       name: 'Ásia',
-      icon: '🏯',
+      icon: 'AS',
       image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=600&h=400&fit=crop',
       description: 'Japão, Tailândia, Bali e Dubai'
     },
     {
       name: 'Oceania',
-      icon: '🦘',
+      icon: 'OC',
       image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=600&h=400&fit=crop',
       description: 'Austrália, Nova Zelândia e ilhas do Pacífico'
     }
@@ -317,6 +228,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     };
   }
 
+  useFallbackImage(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.onerror = null;
+    image.src = this.fallbackTripImage;
+  }
+
   searchTrips() {
     this.router.navigate(['/viagens'], {
       queryParams: {
@@ -340,20 +257,12 @@ export class HomeComponent implements OnInit, OnDestroy {
       timeout(12000),
       catchError(() => of(emptyResponse))
     ).subscribe(response => {
-      if (!response.data.length) {
-        return;
-      }
-
       const activeTrips = response.data.filter(trip => trip.status !== 'inactive');
       const peregrinacoes = activeTrips.filter(trip => trip.tripType === 'peregrinacao');
       const regulares = activeTrips.filter(trip => trip.tripType === 'regular');
-      if (peregrinacoes.length) {
-        this.peregrinacoes = peregrinacoes.map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
-      }
-
-      if (regulares.length) {
-        this.regulares = regulares.map(trip => this.mapTripCard(trip, 'Guia'));
-      }
+      this.peregrinacoes = peregrinacoes.map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
+      this.regulares = regulares.map(trip => this.mapTripCard(trip, 'Guia'));
+      this.cdr.detectChanges();
     });
   }
 
@@ -364,7 +273,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       country: trip.country || trip.destination || 'A definir',
       date: trip.period || this.formatTripPeriod(trip.startDate),
       duration: trip.duration ? `${trip.duration} dias` : 'A definir',
-      image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop',
+      image: this.normalizeImage(trip.mainImage),
       price: trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte',
       foreignPrice: this.formatForeignPrice(trip.foreignPrice),
       spots: `${Number(trip.availableSpots || 0)} vagas`,
@@ -387,6 +296,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     return value;
   }
 
+  private normalizeImage(value?: string): string {
+    const image = String(value || '').trim();
+    return image || this.fallbackTripImage;
+  }
+
   private formatTripPeriod(date?: Date): string {
     if (!date) {
       return 'A definir';
@@ -403,3 +317,4 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 }
+

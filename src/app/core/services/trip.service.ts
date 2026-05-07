@@ -218,7 +218,7 @@ export class TripService {
     )), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip)),
       catchError(() => of([] as Trip[])),
-      map(trips => this.mergeWithStaticTrips(trips)),
+      map(trips => this.mergeWithAdminTrips(trips)),
       map(trips => this.applyFilters(trips, filters))
     );
   }
@@ -231,7 +231,7 @@ export class TripService {
       map(snapshot => {
         const trip = snapshot.docs
           .map(item => this.firebaseService.normalizeDates(item.data()) as Trip)
-          .find(item => item.id === id) || this.getLocalTrips().find(item => item.id === id) || this.getVisibleStaticTrips().find(item => item.id === id);
+          .find(item => item.id === id) || this.getLocalTrips().find(item => item.id === id);
 
         if (!trip) {
           throw new Error('Viagem não encontrada');
@@ -308,7 +308,6 @@ export class TripService {
       ...updatedTrip
     } as Trip;
 
-    this.unhideStaticTrip(id);
     this.upsertLocalTrip(localTrip);
 
     return from(this.firebaseService.withTimeout(
@@ -326,10 +325,6 @@ export class TripService {
   }
 
   deleteTrip(id: number): Observable<void> {
-    if (this.staticTrips.some(trip => trip.id === id)) {
-      this.hideStaticTrip(id);
-    }
-
     this.removeLocalTrip(id);
 
     return from(this.firebaseService.withTimeout(
@@ -388,15 +383,10 @@ export class TripService {
     };
   }
 
-  private mergeWithStaticTrips(firestoreTrips: Trip[]): Trip[] {
+  private mergeWithAdminTrips(firestoreTrips: Trip[]): Trip[] {
     const localTrips = this.getLocalTrips();
-    const remoteAndLocalTrips = this.dedupeTrips([...localTrips, ...firestoreTrips]);
-    const visibleStaticTrips = this.getVisibleStaticTrips();
-    const tripsById = new Map(remoteAndLocalTrips.map(trip => [Number(trip.id), trip]));
-    const mergedStatic = visibleStaticTrips.map(trip => tripsById.get(Number(trip.id)) || trip);
-    const customTrips = remoteAndLocalTrips.filter(trip => !this.staticTrips.some(staticTrip => staticTrip.id === Number(trip.id)));
-
-    return [...customTrips, ...mergedStatic].sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
+    return this.dedupeTrips([...localTrips, ...firestoreTrips])
+      .sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
   }
 
   private dedupeTrips(trips: Trip[]): Trip[] {

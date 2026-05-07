@@ -27,6 +27,7 @@ export class ImageUploadComponent implements ControlValueAccessor {
   uploading = false;
   error: string | null = null;
   dragOver = false;
+  inputId = `image-upload-${Math.random().toString(36).slice(2)}`;
 
   private onChange: (value: string | null) => void = () => {};
   private onTouched: () => void = () => {};
@@ -117,7 +118,7 @@ export class ImageUploadComponent implements ControlValueAccessor {
   }
 
   triggerFileInput(): void {
-    const input = document.getElementById('file-input') as HTMLInputElement;
+    const input = document.getElementById(this.inputId) as HTMLInputElement;
     input?.click();
   }
 }

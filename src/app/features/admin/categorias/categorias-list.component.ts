@@ -27,7 +27,12 @@ import { CategoryService } from '../../../core/services/category.service';
       }
 
       @if (formOpen) {
-        <form class="form-card" [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
+        <div class="modal-overlay" (click)="closeForm()">
+        <form class="form-card modal-card" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>{{ editingCategory ? 'Editar categoria' : 'Nova categoria' }}</h2>
+            <button class="btn-close" type="button" (click)="closeForm()">X</button>
+          </div>
           <div class="form-grid">
             <label>
               Nome
@@ -66,6 +71,7 @@ import { CategoryService } from '../../../core/services/category.service';
             </button>
           </div>
         </form>
+        </div>
       }
 
       @if (loading) {
@@ -132,6 +138,11 @@ import { CategoryService } from '../../../core/services/category.service';
     .alert-error { margin-bottom: 1rem; padding: 1rem; background: #ffebee; color: #c62828; border-radius: 8px; }
     .form-card, .table-card, .empty-state { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
     .form-card { padding: 1.5rem; margin-bottom: 1.5rem; display: grid; gap: 1rem; }
+    .modal-overlay { position: fixed; inset: 0; z-index: 1400; background: rgba(0,0,0,0.45); display: grid; place-items: start center; padding: 6rem 1rem 2rem; overflow-y: auto; }
+    .modal-card { width: min(760px, 100%); max-height: calc(100vh - 8rem); overflow: auto; margin-bottom: 0; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .modal-header h2 { margin: 0; color: #1a1a2e; }
+    .btn-close { border: none; background: #f0f0f0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
     .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
     label { display: grid; gap: 0.5rem; color: #333; font-weight: 600; font-size: 0.9rem; }
     .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid #e0e0e0; border-radius: 8px; font: inherit; }
@@ -194,7 +205,7 @@ export class CategoriasListComponent implements OnInit {
     from(this.authService.waitForAuthenticatedUser()).pipe(
       switchMap(isAuthenticated => {
         if (!isAuthenticated) {
-          throw new Error('Sessao expirada. Faca login novamente.');
+          throw new Error('Sessão expirada. Faça login novamente.');
         }
 
         return this.categoryService.getAllCategories();
@@ -202,7 +213,7 @@ export class CategoriasListComponent implements OnInit {
       timeout(12000),
       catchError((err) => {
         console.error('Erro ao carregar categorias', err);
-        this.error = err?.message || 'Erro ao carregar categorias. Verifique as regras e conexao do Firestore.';
+        this.error = err?.message || 'Erro ao carregar categorias. Verifique as regras e conexão do Firestore.';
         return of([]);
       }),
       finalize(() => {

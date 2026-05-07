@@ -7,7 +7,7 @@
   </div>
 
   @if (loading) {
-    <div class="loading-state">
+    <div class="loading-stat?">
       <div class="spinner"></div>
       <p>Carregando post...</p>
     </div>
@@ -22,7 +22,7 @@
           <div class="form-card">
             <div class="form-group">
               <label for="title" class="form-label">
-                Título <span class="required">*</span>
+                <span class="field-label">Título <span class="required">*</span></span>
               </label>
               <input 
                 type="text" 
@@ -39,7 +39,7 @@
             <!-- Slug -->
             <div class="form-group">
               <label for="slug" class="form-label">
-                Slug (URL) <span class="required">*</span>
+                <span class="field-label">Slug (URL) <span class="required">*</span></span>
               </label>
               <input 
                 type="text" 
@@ -59,7 +59,7 @@
           <div class="form-card">
             <div class="form-group">
               <label for="excerpt" class="form-label">
-                Resumo <span class="required">*</span>
+                <span class="field-label">Resumo <span class="required">*</span></span>
               </label>
               <textarea 
                 id="excerpt"
@@ -81,7 +81,7 @@
           <div class="form-card">
             <div class="form-group">
               <label for="content" class="form-label">
-                Conteúdo <span class="required">*</span>
+                <span class="field-label">Conteúdo <span class="required">*</span></span>
               </label>
               <textarea 
                 id="content"
@@ -100,14 +100,16 @@
           <!-- Tags -->
           <div class="form-card">
             <div class="form-group">
-              <label for="contentImagesText" class="form-label">Imagens no texto</label>
+              <label class="form-label">Imagens no texto</label>
+              <app-image-upload label="Selecionar imagem" formControlName="contentImageUpload" (uploaded)="onContentImageUploaded($event)"></app-image-upload>
+              <label for="contentImagesText" class="form-label">Imagens selecionadas</label>
               <textarea
                 id="contentImagesText"
                 formControlName="contentImagesText"
                 class="form-control"
                 rows="4"
-                placeholder="Uma URL de imagem por linha"></textarea>
-              <small class="form-hint">As imagens aparecem no inicio do conteudo. Tambem e possivel inserir tags &lt;img&gt; direto no texto.</small>
+                placeholder="As imagens enviadas aparecem aqui automaticamente"></textarea>
+              <small class="form-hint">As imagens aparecem no início do conteúdo. Também é possível inserir tags &lt;img&gt; direto no texto.</small>
             </div>
 
             <div class="form-group">
@@ -128,22 +130,7 @@
           <!-- Imagem Destacada -->
           <div class="form-card">
             <h3 class="card-title">Imagem Destacada</h3>
-            <div class="form-group">
-              <label for="featuredImage" class="form-label">URL da imagem</label>
-              <input
-                type="url"
-                id="featuredImage"
-                formControlName="featuredImage"
-                class="form-control"
-                placeholder="https://exemplo.com/imagem.jpg">
-              <small class="form-hint">Use uma URL pública enquanto o Firebase Storage estiver desativado.</small>
-            </div>
-
-            @if (postForm.get('featuredImage')?.value) {
-              <div class="image-url-preview">
-                <img [src]="postForm.get('featuredImage')?.value" alt="Prévia da imagem destacada">
-              </div>
-            }
+            <app-image-upload label="Imagem destacada" formControlName="featuredImage"></app-image-upload>
           </div>
 
           <!-- Categoria -->
@@ -178,7 +165,7 @@
                   <option [value]="trip.id">{{ trip.title }}</option>
                 }
               </select>
-              <small class="form-hint">Selecione ate 3 viagens relacionadas</small>
+              <small class="form-hint">Selecione at? 3 viagens relacionadas</small>
             </div>
           </div>
 

@@ -69,7 +69,7 @@
     @for (peregrinacao of peregrinacoes; track peregrinacao.title) {
       <div class="peregrinacao-card">
         <div class="card-image">
-          <img [src]="peregrinacao.image" [alt]="peregrinacao.title">
+          <img [src]="peregrinacao.image" [alt]="peregrinacao.title" (error)="useFallbackImage($event)">
           @if (peregrinacao.showSpots) {
             <div class="card-badge-top">{{ peregrinacao.spots }}</div>
           }
@@ -111,7 +111,7 @@
     @for (regular of regulares; track regular.title) {
       <div class="peregrinacao-card">
         <div class="card-image">
-          <img [src]="regular.image" [alt]="regular.title">
+          <img [src]="regular.image" [alt]="regular.title" (error)="useFallbackImage($event)">
           @if (regular.showSpots) {
             <div class="card-badge-top">{{ regular.spots }}</div>
           }
