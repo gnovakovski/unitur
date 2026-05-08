@@ -17,6 +17,10 @@ export class UploadService {
   constructor(private firebaseService: FirebaseService) {}
 
   uploadImage(file: File): Observable<UploadResponse> {
+    if (this.shouldUseLocalDataUrl()) {
+      return from(this.fileToDataUrl(file));
+    }
+
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
     const imageRef = ref(this.firebaseService.storage, `uploads/${filename}`);
 
@@ -31,6 +35,10 @@ export class UploadService {
   }
 
   uploadMultipleImages(files: File[]): Observable<UploadResponse[]> {
+    if (this.shouldUseLocalDataUrl()) {
+      return from(Promise.all(files.map(file => this.fileToDataUrl(file))));
+    }
+
     return from(Promise.all(files.map(file => {
       const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
       const imageRef = ref(this.firebaseService.storage, `uploads/${filename}`);
@@ -49,7 +57,7 @@ export class UploadService {
   }
 
   validateImage(file: File): { valid: boolean; error?: string } {
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 2 * 1024 * 1024;
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     if (!allowedTypes.includes(file.type)) {
@@ -61,5 +69,25 @@ export class UploadService {
     }
 
     return { valid: true };
+  }
+
+  private shouldUseLocalDataUrl(): boolean {
+    return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  }
+
+  private fileToDataUrl(file: File): Promise<UploadResponse> {
+    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        url: String(reader.result || ''),
+        filename,
+        size: file.size,
+        mimetype: file.type
+      });
+      reader.onerror = () => reject(new Error('Não foi possível ler a imagem selecionada.'));
+      reader.readAsDataURL(file);
+    });
   }
 }

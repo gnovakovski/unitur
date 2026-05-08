@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { Trip } from '../../../core/models/trip.model';
 import { TripService } from '../../../core/services/trip.service';
+import { UploadService } from '../../../core/services/upload.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 
 @Component({
@@ -119,7 +120,7 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
         <div class="form-grid wide">
           <label>
             Imagens da experiencia
-            <app-image-upload label="Selecionar imagem da experiencia" formControlName="experienceImageUpload" (uploaded)="onExperienceImageUploaded($event)"></app-image-upload>
+            <app-image-upload label="Selecionar imagem da experiência" formControlName="experienceImageUpload"></app-image-upload>
             <textarea class="form-control" rows="4" formControlName="experienceImagesText" placeholder="As imagens enviadas aparecem aqui automaticamente"></textarea>
           </label>
 
@@ -132,7 +133,7 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
         <div class="form-grid wide">
           <label>
             Hotéis do grupo
-            <app-image-upload label="Selecionar imagem do hotel" formControlName="hotelImageUpload" (uploaded)="onHotelImageUploaded($event)"></app-image-upload>
+            <app-image-upload label="Selecionar imagem do hotel" formControlName="hotelImageUpload"></app-image-upload>
             <textarea class="form-control" rows="4" formControlName="hotelsText" placeholder="Imagem do hotel | Nome do hotel"></textarea>
           </label>
 
@@ -202,6 +203,7 @@ export class ViagemFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private tripService: TripService,
+    private uploadService: UploadService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -284,7 +286,7 @@ export class ViagemFormComponent implements OnInit {
     });
   }
 
-  saveTrip() {
+  async saveTrip() {
     if (this.tripForm.invalid) {
       this.tripForm.markAllAsTouched();
       return;
@@ -292,68 +294,62 @@ export class ViagemFormComponent implements OnInit {
 
     this.saving = true;
     this.error = '';
-    const value = this.tripForm.value;
-    const {
-      experienceImagesText,
-      experienceImageUpload,
-      hotelsText,
-      hotelImageUpload,
-      paymentMethodsText,
-      includedText,
-      notIncludedText,
-      ...baseValue
-    } = value;
-    const now = new Date();
-    const startDate = value.startDate ? new Date(`${value.startDate}T00:00:00`) : now;
-    const tripData: Partial<Trip> = {
-      ...baseValue,
-      destination: value.country,
-      categoryId: 0,
-      startDate,
-      endDate: startDate,
-      featured: value.tripType === 'curadoria',
-      experienceImages: this.parseLines(experienceImagesText),
-      gallery: this.parseLines(experienceImagesText),
-      hotels: this.parseHotels(hotelsText),
-      paymentMethods: this.parseLines(paymentMethodsText),
-      included: this.parseLines(includedText),
-      notIncluded: this.parseLines(notIncludedText)
-    };
 
-    const request = this.isEditMode && this.tripId
-      ? this.tripService.updateTrip(this.tripId, tripData)
-      : this.tripService.createTrip(tripData);
+    try {
+      const value = this.tripForm.value;
+      const {
+        experienceImagesText,
+        experienceImageUpload,
+        hotelsText,
+        hotelImageUpload,
+        paymentMethodsText,
+        includedText,
+        notIncludedText,
+        ...baseValue
+      } = value;
+      const uploadedExperienceImage = await this.uploadOptionalImage(experienceImageUpload);
+      const uploadedHotelImage = await this.uploadOptionalImage(hotelImageUpload);
+      const experienceImages = [
+        ...this.parseLines(experienceImagesText),
+        uploadedExperienceImage
+      ].filter(Boolean) as string[];
+      const hotels = this.parseHotels([
+        hotelsText,
+        uploadedHotelImage ? `${uploadedHotelImage} | ` : ''
+      ].filter(Boolean).join('\n'));
+      const now = new Date();
+      const startDate = value.startDate ? new Date(`${value.startDate}T00:00:00`) : now;
+      const tripData: Partial<Trip> = {
+        ...baseValue,
+        mainImage: await this.uploadImageValue(baseValue.mainImage),
+        destination: value.country,
+        categoryId: 0,
+        startDate,
+        endDate: startDate,
+        featured: value.tripType === 'curadoria',
+        experienceImages,
+        gallery: experienceImages,
+        hotels,
+        paymentMethods: this.parseLines(paymentMethodsText),
+        included: this.parseLines(includedText),
+        notIncluded: this.parseLines(notIncludedText)
+      };
 
-    request.pipe(
-      finalize(() => {
-        this.saving = false;
-      })
-    ).subscribe({
-      next: () => this.router.navigate(['/admin/viagens']),
-      error: err => {
-        this.error = err?.message || 'Erro ao salvar viagem. Verifique permissão do Firestore.';
-      }
-    });
+      const request = this.isEditMode && this.tripId
+        ? this.tripService.updateTrip(this.tripId, tripData)
+        : this.tripService.createTrip(tripData);
+
+      await firstValueFrom(request);
+      this.router.navigate(['/admin/viagens']);
+    } catch (err: any) {
+      this.error = err?.message || 'Erro ao salvar viagem. Verifique permiss?o do Firestore.';
+    } finally {
+      this.saving = false;
+    }
   }
 
   cancel() {
     this.router.navigate(['/admin/viagens']);
-  }
-
-  onExperienceImageUploaded(url: string) {
-    const current = this.tripForm.get('experienceImagesText')?.value || '';
-    this.tripForm.patchValue({
-      experienceImagesText: [current, url].filter(Boolean).join('\n'),
-      experienceImageUpload: ''
-    });
-  }
-
-  onHotelImageUploaded(url: string) {
-    const current = this.tripForm.get('hotelsText')?.value || '';
-    this.tripForm.patchValue({
-      hotelsText: [current, `${url} | `].filter(Boolean).join('\n'),
-      hotelImageUpload: ''
-    });
   }
 
   private parseLines(value: string): string[] {
@@ -368,6 +364,22 @@ export class ViagemFormComponent implements OnInit {
       const [image = '', name = ''] = line.split('|').map(item => item.trim());
       return { image, name: name || image };
     });
+  }
+
+  private async uploadImageValue(value: unknown): Promise<string> {
+    if (value instanceof File) {
+      return (await firstValueFrom(this.uploadService.uploadImage(value))).url;
+    }
+
+    return String(value || '');
+  }
+
+  private async uploadOptionalImage(value: unknown): Promise<string> {
+    if (!value) {
+      return '';
+    }
+
+    return this.uploadImageValue(value);
   }
 
   private formatDateInput(date?: Date): string {

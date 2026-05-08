@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, from, map, of } from 'rxjs';
+import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { Trip } from '../models/trip.model';
 import { FirebaseService } from './firebase.service';
@@ -212,12 +212,23 @@ export class TripService {
   constructor(private firebaseService: FirebaseService) {}
 
   getTrips(filters?: TripFilters): Observable<PaginatedResponse<Trip>> {
-    return from(this.firebaseService.withTimeout(getDocs(query(
+    const firestoreTrips$ = from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
       orderBy('createdAt', 'desc')
     )), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip)),
-      catchError(() => of([] as Trip[])),
+      tap(trips => {
+        if (trips.length > 0) {
+          this.replaceLocalTrips(trips);
+        }
+      }),
+      catchError(() => of([] as Trip[]))
+    );
+
+    return concat(
+      of(this.getLocalTrips()),
+      firestoreTrips$
+    ).pipe(
       map(trips => this.mergeWithAdminTrips(trips)),
       map(trips => this.applyFilters(trips, filters))
     );
@@ -428,6 +439,12 @@ export class TripService {
 
   private removeLocalTrip(id: number) {
     const nextTrips = this.getLocalTrips().filter(trip => Number(trip.id) !== Number(id));
+    localStorage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
+  }
+
+  private replaceLocalTrips(trips: Trip[]) {
+    const localTrips = this.getLocalTrips();
+    const nextTrips = this.dedupeTrips([...localTrips, ...trips]);
     localStorage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
   }
 

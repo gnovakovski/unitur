@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, from, map } from 'rxjs';
+import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { Post } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
@@ -25,6 +25,7 @@ export interface PaginatedResponse<T> {
 })
 export class PostService {
   private readonly collectionName = 'posts';
+  private readonly localPostsKey = 'unitur_admin_posts';
 
   constructor(private firebaseService: FirebaseService) {}
 
@@ -34,8 +35,21 @@ export class PostService {
       orderBy('createdAt', 'desc')
     ));
 
-    return from(this.firebaseService.withTimeout(request, 'Tempo esgotado ao carregar posts do Firestore.')).pipe(
+    const firestorePosts$ = from(this.firebaseService.withTimeout(request, 'Tempo esgotado ao carregar posts do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post)),
+      tap(posts => {
+        if (posts.length > 0) {
+          this.replaceLocalPosts(posts);
+        }
+      }),
+      catchError(() => of([] as Post[]))
+    );
+
+    return concat(
+      of(this.getLocalPosts()),
+      firestorePosts$
+    ).pipe(
+      map(posts => this.dedupePosts([...this.getLocalPosts(), ...posts])),
       map(posts => this.applyFilters(posts, filters))
     );
   }
@@ -48,13 +62,22 @@ export class PostService {
       map(snapshot => {
         const item = snapshot.docs
           .map(docSnap => this.firebaseService.normalizeDates(docSnap.data()) as Post)
-          .find(post => post.id === id);
+          .find(post => post.id === id) || this.getLocalPosts().find(post => post.id === id);
 
         if (!item) {
           throw new Error('Post não encontrado');
         }
 
         return item;
+      })
+    ).pipe(
+      catchError(() => {
+        const localPost = this.getLocalPosts().find(post => post.id === id);
+        if (!localPost) {
+          throw new Error('Post não encontrado');
+        }
+
+        return of(localPost);
       })
     );
   }
@@ -80,10 +103,14 @@ export class PostService {
       author: post.author || { id: 1, name: 'Administrador' }
     };
 
-    return from(this.firebaseService.withTimeout(
-      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)).then(() => newPost),
+    this.upsertLocalPost(newPost);
+
+    void this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)),
       'Tempo esgotado ao salvar post no Firestore.'
-    ));
+    ).catch(err => console.warn('Post salvo localmente, mas nao foi possivel persistir no Firestore.', err));
+
+    return of(newPost);
   }
 
   updatePost(id: number, post: Partial<Post>): Observable<Post> {
@@ -93,20 +120,31 @@ export class PostService {
       updatedAt: new Date()
     };
 
-    return from(this.firebaseService.withTimeout(
-      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedPost)).then(() => ({
-        id,
-        ...updatedPost
-      } as Post)),
+    const localPost = {
+      ...(this.getLocalPosts().find(item => item.id === id) || {}),
+      id,
+      ...updatedPost
+    } as Post;
+
+    this.upsertLocalPost(localPost);
+
+    void this.firebaseService.withTimeout(
+      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedPost)),
       'Tempo esgotado ao atualizar post no Firestore.'
-    ));
+    ).catch(err => console.warn('Post atualizado localmente, mas nao foi possivel persistir no Firestore.', err));
+
+    return of(localPost);
   }
 
   deletePost(id: number): Observable<void> {
-    return from(this.firebaseService.withTimeout(
+    this.removeLocalPost(id);
+
+    void this.firebaseService.withTimeout(
       deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
       'Tempo esgotado ao excluir post no Firestore.'
-    ));
+    ).catch(err => console.warn('Post removido localmente, mas nao foi possivel excluir no Firestore.', err));
+
+    return of(undefined);
   }
 
   generateSlug(title: string): string {
@@ -156,6 +194,61 @@ export class PostService {
 
   private cleanUndefined<T extends object>(data: T): Record<string, unknown> {
     return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
+  }
+
+  private getLocalPosts(): Post[] {
+    try {
+      const rawPosts = JSON.parse(localStorage.getItem(this.localPostsKey) || '[]') as Post[];
+      return rawPosts.map(post => ({
+        ...post,
+        publishedAt: post.publishedAt ? new Date(post.publishedAt) : undefined,
+        createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
+        updatedAt: post.updatedAt ? new Date(post.updatedAt) : new Date()
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  private upsertLocalPost(post: Post) {
+    const posts = this.getLocalPosts();
+    const nextPosts = this.dedupePosts([...posts, post]);
+    localStorage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
+  }
+
+  private replaceLocalPosts(posts: Post[]) {
+    const nextPosts = this.dedupePosts([...this.getLocalPosts(), ...posts]);
+    localStorage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
+  }
+
+  private removeLocalPost(id: number) {
+    const nextPosts = this.getLocalPosts().filter(post => Number(post.id) !== Number(id));
+    localStorage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
+  }
+
+  private dedupePosts(posts: Post[]): Post[] {
+    return [...posts].reduce((result, post) => {
+      const existingIndex = result.findIndex(item => Number(item.id) === Number(post.id));
+      if (existingIndex >= 0) {
+        result[existingIndex] = {
+          ...result[existingIndex],
+          ...post
+        };
+        return result;
+      }
+
+      result.push(post);
+      return result;
+    }, [] as Post[]).sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
+  }
+
+  private getTime(date?: Date): number {
+    if (!date) {
+      return 0;
+    }
+
+    const parsed = date instanceof Date ? date : new Date(date);
+    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
   }
 
 }

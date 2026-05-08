@@ -5,7 +5,6 @@ import { PostService } from '../../core/services/post.service';
 import { TripService } from '../../core/services/trip.service';
 import { Post } from '../../core/models/post.model';
 import { Trip } from '../../core/models/trip.model';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-blog-detail',
@@ -126,43 +125,33 @@ export class BlogDetailComponent implements OnInit {
   loadPost(slug: string) {
     this.loading = true;
     this.error = null;
+    this.post = null;
 
-    if (!environment.production) {
-      this.setFallbackPost(slug);
-      return;
-    }
-
-    // Por enquanto, vamos buscar todos os posts e filtrar pelo slug
-    // Em produção, você deve ter um endpoint específico: GET /api/posts/by-slug/:slug
-    this.postService.getPosts({ limit: 100 }).subscribe({
+    this.postService.getPosts({ status: 'published', limit: 100 }).subscribe({
       next: (response) => {
-        const post = response.data.find(p => p.slug === slug && p.status === 'published');
+        const post = response.data.find(p => this.matchesPostSlug(p, slug));
         
         if (post) {
           this.post = post;
+          this.error = null;
           this.loadRelatedPosts(post);
           this.loadRelatedTrips(post);
-        } else {
-          this.error = 'Post não encontrado';
         }
-        
+      },
+      error: () => {
+        this.setFallbackPost(slug);
         this.loading = false;
       },
-      error: (err) => {
-        this.error = 'Erro ao carregar post';
+      complete: () => {
+        if (!this.post) {
+          this.setFallbackPost(slug);
+        }
         this.loading = false;
       }
     });
   }
 
   loadRelatedPosts(post: Post) {
-    if (!environment.production) {
-      this.relatedPosts = this.fallbackPosts
-        .filter(relatedPost => relatedPost.id !== post.id && relatedPost.categoryId === post.categoryId)
-        .slice(0, 3);
-      return;
-    }
-
     // Buscar posts relacionados da mesma categoria
     this.postService.getPosts({ 
       categoryId: post.categoryId,
@@ -173,13 +162,15 @@ export class BlogDetailComponent implements OnInit {
         this.relatedPosts = response.data.filter(p => p.id !== post.id).slice(0, 3);
       },
       error: () => {
-        this.relatedPosts = [];
+        this.relatedPosts = this.fallbackPosts
+          .filter(relatedPost => relatedPost.id !== post.id && relatedPost.categoryId === post.categoryId)
+          .slice(0, 3);
       }
     });
   }
 
   private setFallbackPost(slug: string) {
-    const post = this.fallbackPosts.find(item => item.slug === slug);
+    const post = this.fallbackPosts.find(item => this.matchesPostSlug(item, slug));
 
     if (post) {
       this.post = post;
@@ -190,6 +181,10 @@ export class BlogDetailComponent implements OnInit {
     }
 
     this.loading = false;
+  }
+
+  private matchesPostSlug(post: Post, slug: string) {
+    return post.slug === slug || String(post.id) === slug;
   }
 
   loadRelatedTrips(post: Post) {

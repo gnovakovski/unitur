@@ -1,9 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { Testimonial } from '../../../core/models/testimonial.model';
 import { TestimonialService } from '../../../core/services/testimonial.service';
+import { UploadService } from '../../../core/services/upload.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 
 @Component({
@@ -152,6 +153,7 @@ export class DepoimentosListComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private testimonialService: TestimonialService,
+    private uploadService: UploadService,
     private cdr: ChangeDetectorRef
   ) {
     this.testimonialForm = this.fb.group({
@@ -200,24 +202,40 @@ export class DepoimentosListComponent implements OnInit {
     }
   }
 
-  saveTestimonial() {
+  async saveTestimonial() {
     if (this.testimonialForm.invalid) {
       this.testimonialForm.markAllAsTouched();
       return;
     }
 
     this.saving = true;
-    const request = this.editingTestimonial
-      ? this.testimonialService.updateTestimonial(this.editingTestimonial.id, this.testimonialForm.value)
-      : this.testimonialService.createTestimonial(this.testimonialForm.value);
+    this.error = '';
 
-    request.pipe(finalize(() => this.saving = false)).subscribe({
-      next: () => {
-        this.closeForm();
-        this.loadTestimonials();
-      },
-      error: err => this.error = err?.message || 'Erro ao salvar depoimento.'
-    });
+    try {
+      const value = {
+        ...this.testimonialForm.value,
+        clientPhoto: await this.uploadImageValue(this.testimonialForm.value.clientPhoto)
+      };
+      const request = this.editingTestimonial
+        ? this.testimonialService.updateTestimonial(this.editingTestimonial.id, value)
+        : this.testimonialService.createTestimonial(value);
+
+      await firstValueFrom(request);
+      this.saving = false;
+      this.closeForm();
+      this.loadTestimonials();
+    } catch (err: any) {
+      this.error = err?.message || 'Erro ao salvar depoimento.';
+      this.saving = false;
+    }
+  }
+
+  private async uploadImageValue(value: unknown): Promise<string> {
+    if (value instanceof File) {
+      return (await firstValueFrom(this.uploadService.uploadImage(value))).url;
+    }
+
+    return String(value || '');
   }
 
   deleteTestimonial(testimonial: Testimonial) {

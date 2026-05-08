@@ -6,21 +6,20 @@
     </div>
     <a routerLink="/admin/posts/novo" class="btn btn-primary">
       <span class="btn-icon">+</span>
-      Novo Post
+      Novo post
     </a>
   </div>
 
-  <!-- Filtros -->
   <div class="filters-card">
     <form [formGroup]="filterForm" class="filters-form">
       <div class="filter-group">
-        <input 
-          type="text" 
-          formControlName="search" 
+        <input
+          type="text"
+          formControlName="search"
           placeholder="Buscar por título..."
           class="form-control">
       </div>
-      
+
       <div class="filter-group">
         <select formControlName="categoryId" class="form-control">
           <option value="">Todas as categorias</option>
@@ -29,7 +28,7 @@
           }
         </select>
       </div>
-      
+
       <div class="filter-group">
         <select formControlName="status" class="form-control">
           <option value="">Todos os status</option>
@@ -37,30 +36,27 @@
           <option value="draft">Rascunho</option>
         </select>
       </div>
-      
+
       <button type="button" (click)="clearFilters()" class="btn btn-secondary">
         Limpar
       </button>
     </form>
   </div>
 
-  <!-- Loading Stat? -->
   @if (loading) {
-    <div class="loading-stat?">
+    <div class="loading-state">
       <div class="spinner"></div>
       <p>Carregando posts...</p>
     </div>
   }
 
-  <!-- Error Stat? -->
   @if (error && !loading) {
-    <div class="error-stat?">
+    <div class="error-state">
       <p>{{ error }}</p>
       <button (click)="loadPosts()" class="btn btn-primary">Tentar novamente</button>
     </div>
   }
 
-  <!-- Posts Table -->
   @if (!loading && !error) {
     @if (posts.length > 0) {
       <div class="table-container">
@@ -104,14 +100,14 @@
                 </td>
                 <td>
                   <div class="row-actions">
-                    <a [routerLink]="['/admin/posts', post.id, 'editar']" 
-                       class="btn-small" 
+                    <a [routerLink]="['/admin/posts', post.id, 'editar']"
+                       class="btn-small"
                        title="Editar">
                       Editar
                     </a>
-                    <button 
-                      (click)="openDeleteModal(post)" 
-                      class="btn-small danger" 
+                    <button
+                      (click)="openDeleteModal(post)"
+                      class="btn-small danger"
                       title="Excluir">
                       Excluir
                     </button>
@@ -123,22 +119,21 @@
         </table>
       </div>
 
-      <!-- Paginação -->
       @if (totalPages > 1) {
         <div class="pagination">
-          <button 
-            (click)="changePage(currentPage - 1)" 
+          <button
+            (click)="changePage(currentPage - 1)"
             [disabled]="currentPage === 1"
             class="btn btn-secondary">
             Anterior
           </button>
-          
+
           <div class="pagination-info">
             Página {{ currentPage }} de {{ totalPages }} ({{ totalItems }} posts)
           </div>
-          
-          <button 
-            (click)="changePage(currentPage + 1)" 
+
+          <button
+            (click)="changePage(currentPage + 1)"
             [disabled]="currentPage === totalPages"
             class="btn btn-secondary">
             Próxima
@@ -150,18 +145,17 @@
         <div class="empty-icon">POST</div>
         <h3>Nenhum post encontrado</h3>
         <p>Comece criando seu primeiro post do blog</p>
-        <a routerLink="/admin/posts/novo" class="btn btn-primary">Criar Post</a>
+        <a routerLink="/admin/posts/novo" class="btn btn-primary">Criar post</a>
       </div>
     }
   }
 </div>
 
-<!-- Modal de Confirmação de Exclusão -->
 @if (deleteModalOpen) {
   <div class="modal-overlay" (click)="closeDeleteModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Confirmar Exclusão</h3>
+        <h3>Confirmar exclusão</h3>
         <button class="btn-close" (click)="closeDeleteModal()">X</button>
       </div>
       <div class="modal-body">
@@ -169,14 +163,14 @@
         <p class="warning-text">Esta ação não pode ser desfeita.</p>
       </div>
       <div class="modal-footer">
-        <button 
-          (click)="closeDeleteModal()" 
+        <button
+          (click)="closeDeleteModal()"
           class="btn btn-secondary"
           [disabled]="deleting">
           Cancelar
         </button>
-        <button 
-          (click)="confirmDelete()" 
+        <button
+          (click)="confirmDelete()"
           class="btn btn-danger"
           [disabled]="deleting">
           {{ deleting ? 'Excluindo...' : 'Excluir' }}

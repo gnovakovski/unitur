@@ -1,9 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { Banner } from '../../../core/models/banner.model';
 import { BannerService } from '../../../core/services/banner.service';
+import { UploadService } from '../../../core/services/upload.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 
 @Component({
@@ -145,6 +146,7 @@ export class BannersListComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private bannerService: BannerService,
+    private uploadService: UploadService,
     private cdr: ChangeDetectorRef
   ) {
     this.bannerForm = this.fb.group({
@@ -195,24 +197,40 @@ export class BannersListComponent implements OnInit {
     }
   }
 
-  saveBanner() {
+  async saveBanner() {
     if (this.bannerForm.invalid) {
       this.bannerForm.markAllAsTouched();
       return;
     }
 
     this.saving = true;
-    const request = this.editingBanner
-      ? this.bannerService.updateBanner(this.editingBanner.id, this.bannerForm.value)
-      : this.bannerService.createBanner(this.bannerForm.value);
+    this.error = '';
 
-    request.pipe(finalize(() => this.saving = false)).subscribe({
-      next: () => {
-        this.closeForm();
-        this.loadBanners();
-      },
-      error: err => this.error = err?.message || 'Erro ao salvar banner.'
-    });
+    try {
+      const value = {
+        ...this.bannerForm.value,
+        imageUrl: await this.uploadImageValue(this.bannerForm.value.imageUrl)
+      };
+      const request = this.editingBanner
+        ? this.bannerService.updateBanner(this.editingBanner.id, value)
+        : this.bannerService.createBanner(value);
+
+      await firstValueFrom(request);
+      this.saving = false;
+      this.closeForm();
+      this.loadBanners();
+    } catch (err: any) {
+      this.error = err?.message || 'Erro ao salvar banner.';
+      this.saving = false;
+    }
+  }
+
+  private async uploadImageValue(value: unknown): Promise<string> {
+    if (value instanceof File) {
+      return (await firstValueFrom(this.uploadService.uploadImage(value))).url;
+    }
+
+    return String(value || '');
   }
 
   deleteBanner(banner: Banner) {
