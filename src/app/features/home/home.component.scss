@@ -416,6 +416,8 @@ $dark: #1a1a2e;
 }
 
 .btn-continent {
+  display: inline-flex;
+  text-decoration: none;
   background: $orange;
   color: $white;
   border: none;

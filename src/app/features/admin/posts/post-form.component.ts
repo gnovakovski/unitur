@@ -5,9 +5,11 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { PostService } from '../../../core/services/post.service';
 import { CategoryService } from '../../../core/services/category.service';
 import { TripService } from '../../../core/services/trip.service';
+import { UploadService } from '../../../core/services/upload.service';
 import { Post, Category } from '../../../core/models/post.model';
 import { Trip } from '../../../core/models/trip.model';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-post-form',
@@ -31,6 +33,7 @@ export class PostFormComponent implements OnInit {
     private postService: PostService,
     private categoryService: CategoryService,
     private tripService: TripService,
+    private uploadService: UploadService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -118,7 +121,7 @@ export class PostFormComponent implements OnInit {
     });
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (this.postForm.invalid) {
       this.markFormGroupTouched(this.postForm);
       return;
@@ -127,44 +130,37 @@ export class PostFormComponent implements OnInit {
     this.saving = true;
     this.error = null;
 
-    const formValue = this.postForm.value;
-    const { contentImagesText, contentImageUpload, ...baseValue } = formValue;
-    const postData: Partial<Post> = {
-      ...baseValue,
-      tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : []
-        ,
-      relatedTrips: (formValue.relatedTrips || []).map((id: string | number) => Number(id)).filter(Boolean).slice(0, 3),
-      contentImages: this.parseLines(contentImagesText)
-    };
+    try {
+      const formValue = this.postForm.value;
+      const { contentImagesText, contentImageUpload, ...baseValue } = formValue;
+      const uploadedContentImage = await this.uploadOptionalImage(contentImageUpload);
+      const postData: Partial<Post> = {
+        ...baseValue,
+        featuredImage: await this.uploadImageValue(baseValue.featuredImage),
+        tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : [],
+        relatedTrips: (formValue.relatedTrips || []).map((id: string | number) => Number(id)).filter(Boolean).slice(0, 3),
+        contentImages: [
+          ...this.parseLines(contentImagesText),
+          uploadedContentImage
+        ].filter(Boolean) as string[]
+      };
 
-    const request = this.isEditMode && this.postId
-      ? this.postService.updatePost(this.postId, postData)
-      : this.postService.createPost(postData);
+      const request = this.isEditMode && this.postId
+        ? this.postService.updatePost(this.postId, postData)
+        : this.postService.createPost(postData);
 
-    request.subscribe({
-      next: () => {
-        this.saving = false;
-        this.router.navigate(['/admin/posts']);
-      },
-      error: (err) => {
-        this.error = 'Erro ao salvar post';
-        this.saving = false;
-        console.error(err);
-      }
-    });
+      await firstValueFrom(request);
+      this.router.navigate(['/admin/posts']);
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : 'Erro ao salvar post';
+      console.error(err);
+    } finally {
+      this.saving = false;
+    }
   }
 
   onCancel() {
     this.router.navigate(['/admin/posts']);
-  }
-
-  onContentImageUploaded(url: string) {
-    const current = this.postForm.get('contentImagesText')?.value || '';
-    const nextValue = [current, url].filter(Boolean).join('\n');
-    this.postForm.patchValue({
-      contentImagesText: nextValue,
-      contentImageUpload: ''
-    });
   }
 
   markFormGroupTouched(formGroup: FormGroup) {
@@ -172,6 +168,22 @@ export class PostFormComponent implements OnInit {
       const control = formGroup.get(key);
       control?.markAsTouched();
     });
+  }
+
+  private async uploadImageValue(value: unknown): Promise<string> {
+    if (value instanceof File) {
+      return (await firstValueFrom(this.uploadService.uploadImage(value).pipe(timeout(30000)))).url;
+    }
+
+    return String(value || '');
+  }
+
+  private async uploadOptionalImage(value: unknown): Promise<string> {
+    if (!value) {
+      return '';
+    }
+
+    return this.uploadImageValue(value);
   }
 
   isFieldInvalid(fieldName: string): boolean {

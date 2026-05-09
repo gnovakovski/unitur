@@ -5,7 +5,6 @@ import { PostService, PostFilters } from '../../core/services/post.service';
 import { CategoryService } from '../../core/services/category.service';
 import { Post, Category } from '../../core/models/post.model';
 import { catchError, finalize, of, timeout } from 'rxjs';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-blog-list',
@@ -108,10 +107,6 @@ export class BlogListComponent implements OnInit {
     this.categories = this.fallbackCategories;
     this.posts = this.fallbackPosts;
 
-    if (!environment.production) {
-      return;
-    }
-
     this.loadCategories();
     this.loadPosts();
   }
@@ -177,10 +172,6 @@ export class BlogListComponent implements OnInit {
     this.posts = categoryId
       ? this.fallbackPosts.filter(post => post.categoryId === categoryId)
       : this.fallbackPosts;
-
-    if (!environment.production) {
-      return;
-    }
 
     this.loadPosts();
   }

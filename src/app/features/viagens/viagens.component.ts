@@ -1,7 +1,7 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, finalize, of, timeout } from 'rxjs';
+import { catchError, finalize, of, Subscription } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
 
@@ -29,15 +29,20 @@ interface ViagemCard {
   templateUrl: './viagens.component.html',
   styleUrl: './viagens.component.scss'
 })
-export class ViagensComponent implements OnInit {
+export class ViagensComponent implements OnInit, OnDestroy {
   private readonly fallbackImage = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop';
   loading = false;
   error = '';
 
   viagens: ViagemCard[] = [];
 
-  selectedCategory = 'Viagens de Peregrinacao';
-  categories = ['Viagens de Peregrinacao', 'Viagens Regulares', 'Viagens de Curadoria'];
+  selectedCategory = 'Todas';
+  categories = ['Todas', 'Viagens de Peregrinação', 'Viagens Regulares', 'Viagens de Curadoria'];
+  private routeSub?: Subscription;
+  private querySub?: Subscription;
+  private filterDestination = '';
+  private filterStartDate: Date | null = null;
+  private filterEndDate: Date | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -46,25 +51,44 @@ export class ViagensComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.routeSub = this.route.url.subscribe(() => {
+      this.updateSelectedCategory();
+      this.cdr.detectChanges();
+    });
+    this.querySub = this.route.queryParamMap.subscribe(params => {
+      this.filterDestination = (params.get('destination') || '').trim().toLowerCase();
+      this.filterStartDate = this.parseFilterDate(params.get('startDate'));
+      this.filterEndDate = this.parseFilterDate(params.get('endDate'));
+      this.cdr.detectChanges();
+    });
+    this.updateSelectedCategory();
+    this.loadTrips();
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+    this.querySub?.unsubscribe();
+  }
+
+  private updateSelectedCategory() {
     const path = this.route.snapshot.routeConfig?.path || '';
     const categoryByPath: Record<string, string> = {
-      'viagens/peregrinacao': 'Viagens de Peregrinacao',
+      'viagens/peregrinacao': 'Viagens de Peregrinação',
       'viagens/regulares': 'Viagens Regulares',
       'viagens/curadoria': 'Viagens de Curadoria'
     };
 
-    this.selectedCategory = categoryByPath[path] || this.categories[0];
-    this.loadTrips();
+    this.selectedCategory = categoryByPath[path] || 'Todas';
   }
 
   get filtered() {
-    const destination = (this.route.snapshot.queryParamMap.get('destination') || '').trim().toLowerCase();
-    const startDate = this.parseFilterDate(this.route.snapshot.queryParamMap.get('startDate'));
-    const endDate = this.parseFilterDate(this.route.snapshot.queryParamMap.get('endDate'));
+    const destination = this.filterDestination;
+    const startDate = this.filterStartDate;
+    const endDate = this.filterEndDate;
     const hasSearch = !!destination || !!startDate || !!endDate;
 
     return this.viagens.filter(v => {
-      const matchesCategory = hasSearch || v.category === this.selectedCategory;
+      const matchesCategory = hasSearch || this.selectedCategory === 'Todas' || v.category === this.selectedCategory;
       const matchesDestination = !destination || v.location.toLowerCase().includes(destination) || v.title.toLowerCase().includes(destination);
       const tripDate = this.parseFilterDate(v.startDate);
       const matchesStart = !startDate || (tripDate ? tripDate >= startDate : false);
@@ -106,10 +130,9 @@ export class ViagensComponent implements OnInit {
     this.error = '';
 
     this.tripService.getTrips({ limit: 100 }).pipe(
-      timeout(12000),
       catchError((err) => {
         console.error('Erro ao carregar viagens publicas', err);
-        this.error = 'Nao foi possivel carregar as viagens cadastradas. Exibindo viagens padrao.';
+        this.error = 'Não foi possível carregar as viagens cadastradas.';
         return of({ data: [], total: 0, page: 1, limit: 100, totalPages: 1 });
       }),
       finalize(() => {
@@ -118,8 +141,10 @@ export class ViagensComponent implements OnInit {
       })
     ).subscribe(response => {
       const activeTrips = response.data.filter(trip => trip.status !== 'inactive');
-
-      this.viagens = activeTrips.map(trip => this.mapTrip(trip));
+      const nextTrips = activeTrips.map(trip => this.mapTrip(trip));
+      if (nextTrips.length > 0 || this.viagens.length === 0) {
+        this.viagens = nextTrips;
+      }
       this.cdr.detectChanges();
     });
   }
@@ -176,7 +201,7 @@ export class ViagensComponent implements OnInit {
 
   private getCategoryLabel(type?: Trip['tripType']) {
     const labels: Record<string, string> = {
-      peregrinacao: 'Viagens de Peregrinacao',
+      peregrinacao: 'Viagens de Peregrinação',
       regular: 'Viagens Regulares',
       curadoria: 'Viagens de Curadoria'
     };

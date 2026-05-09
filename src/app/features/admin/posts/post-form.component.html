@@ -1,13 +1,13 @@
 <div class="post-form">
   <div class="page-header">
     <div>
-      <h1>{{ isEditMode ? 'Editar Post' : 'Novo Post' }}</h1>
+      <h1>{{ isEditMode ? 'Editar post' : 'Novo post' }}</h1>
       <p>{{ isEditMode ? 'Atualize as informações do post' : 'Crie um novo post para o blog' }}</p>
     </div>
   </div>
 
   @if (loading) {
-    <div class="loading-stat?">
+    <div class="loading-state">
       <div class="spinner"></div>
       <p>Carregando post...</p>
     </div>
@@ -16,16 +16,14 @@
   @if (!loading) {
     <form [formGroup]="postForm" (ngSubmit)="onSubmit()">
       <div class="form-grid">
-        <!-- Coluna Principal -->
         <div class="main-column">
-          <!-- Título -->
           <div class="form-card">
             <div class="form-group">
               <label for="title" class="form-label">
                 <span class="field-label">Título <span class="required">*</span></span>
               </label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="title"
                 formControlName="title"
                 class="form-control"
@@ -36,13 +34,12 @@
               }
             </div>
 
-            <!-- Slug -->
             <div class="form-group">
               <label for="slug" class="form-label">
                 <span class="field-label">Slug (URL) <span class="required">*</span></span>
               </label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="slug"
                 formControlName="slug"
                 class="form-control"
@@ -55,13 +52,12 @@
             </div>
           </div>
 
-          <!-- Resumo -->
           <div class="form-card">
             <div class="form-group">
               <label for="excerpt" class="form-label">
                 <span class="field-label">Resumo <span class="required">*</span></span>
               </label>
-              <textarea 
+              <textarea
                 id="excerpt"
                 formControlName="excerpt"
                 class="form-control"
@@ -77,13 +73,12 @@
             </div>
           </div>
 
-          <!-- Conteúdo -->
           <div class="form-card">
             <div class="form-group">
               <label for="content" class="form-label">
                 <span class="field-label">Conteúdo <span class="required">*</span></span>
               </label>
-              <textarea 
+              <textarea
                 id="content"
                 formControlName="content"
                 class="form-control content-editor"
@@ -97,11 +92,10 @@
             </div>
           </div>
 
-          <!-- Tags -->
           <div class="form-card">
             <div class="form-group">
               <label class="form-label">Imagens no texto</label>
-              <app-image-upload label="Selecionar imagem" formControlName="contentImageUpload" (uploaded)="onContentImageUploaded($event)"></app-image-upload>
+              <app-image-upload label="Selecionar imagem" formControlName="contentImageUpload"></app-image-upload>
               <label for="contentImagesText" class="form-label">Imagens selecionadas</label>
               <textarea
                 id="contentImagesText"
@@ -114,8 +108,8 @@
 
             <div class="form-group">
               <label for="tags" class="form-label">Tags</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="tags"
                 formControlName="tags"
                 class="form-control"
@@ -125,19 +119,16 @@
           </div>
         </div>
 
-        <!-- Coluna Lateral -->
         <div class="sidebar-column">
-          <!-- Imagem Destacada -->
           <div class="form-card">
-            <h3 class="card-title">Imagem Destacada</h3>
+            <h3 class="card-title">Imagem destacada</h3>
             <app-image-upload label="Imagem destacada" formControlName="featuredImage"></app-image-upload>
           </div>
 
-          <!-- Categoria -->
           <div class="form-card">
             <h3 class="card-title">Categoria</h3>
             <div class="form-group">
-              <select 
+              <select
                 formControlName="categoryId"
                 class="form-control"
                 [class.invalid]="isFieldInvalid('categoryId')">
@@ -152,11 +143,10 @@
             </div>
           </div>
 
-          <!-- Viagens Relacionadas -->
           <div class="form-card">
-            <h3 class="card-title">Viagens Relacionadas</h3>
+            <h3 class="card-title">Viagens relacionadas</h3>
             <div class="form-group">
-              <select 
+              <select
                 formControlName="relatedTrips"
                 class="form-control"
                 multiple
@@ -165,26 +155,25 @@
                   <option [value]="trip.id">{{ trip.title }}</option>
                 }
               </select>
-              <small class="form-hint">Selecione at? 3 viagens relacionadas</small>
+              <small class="form-hint">Selecione até 3 viagens relacionadas</small>
             </div>
           </div>
 
-          <!-- Status -->
           <div class="form-card">
             <h3 class="card-title">Status</h3>
             <div class="form-group">
               <div class="radio-group">
                 <label class="radio-label">
-                  <input 
-                    type="radio" 
-                    formControlName="status" 
+                  <input
+                    type="radio"
+                    formControlName="status"
                     value="draft">
                   <span>Rascunho</span>
                 </label>
                 <label class="radio-label">
-                  <input 
-                    type="radio" 
-                    formControlName="status" 
+                  <input
+                    type="radio"
+                    formControlName="status"
                     value="published">
                   <span>Publicado</span>
                 </label>
@@ -192,21 +181,20 @@
             </div>
           </div>
 
-          <!-- Ações -->
           <div class="form-card">
             <div class="form-actions">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 (click)="onCancel()"
                 class="btn btn-secondary btn-block"
                 [disabled]="saving">
                 Cancelar
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 class="btn btn-primary btn-block"
                 [disabled]="saving || postForm.invalid">
-                {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar' : 'Criar Post') }}
+                {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar' : 'Criar post') }}
               </button>
             </div>
           </div>
@@ -221,4 +209,3 @@
     </form>
   }
 </div>
-

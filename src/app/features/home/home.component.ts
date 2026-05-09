@@ -5,6 +5,11 @@ import { Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { PaginatedResponse, TripService } from '../../core/services/trip.service';
+import { Testimonial } from '../../core/models/testimonial.model';
+import { TestimonialService } from '../../core/services/testimonial.service';
+import { BannerService } from '../../core/services/banner.service';
+import { PostService } from '../../core/services/post.service';
+import { Post } from '../../core/models/post.model';
 
 interface HomeTripCard {
   slug: string;
@@ -23,12 +28,37 @@ interface HomeTripCard {
 }
 
 interface HomeCuradoriaCard {
+  slug: string;
   title: string;
   subtitle: string;
   description: string;
   image: string;
   curator: string;
   tags: string[];
+}
+
+interface HomeWorldCard {
+  name: string;
+  icon: string;
+  image: string;
+  description: string;
+}
+
+interface HomeTestimonialCard {
+  name: string;
+  text: string;
+  rating: number;
+  image: string;
+  trip: string;
+}
+
+interface HomeBlogPostCard {
+  title: string;
+  slug: string;
+  excerpt: string;
+  image: string;
+  date: string;
+  category: string;
 }
 
 @Component({
@@ -48,144 +78,32 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   constructor(
     private tripService: TripService,
+    private testimonialService: TestimonialService,
+    private bannerService: BannerService,
+    private postService: PostService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
-  bannerImages = [
-    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=700&fit=crop',
-    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=700&fit=crop',
-    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1600&h=700&fit=crop',
-    'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=1600&h=700&fit=crop'
-  ];
+  bannerImages: string[] = [];
 
   peregrinacoes: HomeTripCard[] = [];
 
   regulares: HomeTripCard[] = [];
 
-  continents = [
-    {
-      name: 'Europa',
-      icon: 'EU',
-      image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
-      description: 'Paris, Roma, Lisboa e muito mais'
-    },
-    {
-      name: 'Américas',
-      icon: 'AM',
-      image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=600&h=400&fit=crop',
-      description: 'Machu Picchu, Patagônia e Caribe'
-    },
-    {
-      name: 'Ásia',
-      icon: 'AS',
-      image: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=600&h=400&fit=crop',
-      description: 'Japão, Tailândia, Bali e Dubai'
-    },
-    {
-      name: 'Oceania',
-      icon: 'OC',
-      image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=600&h=400&fit=crop',
-      description: 'Austrália, Nova Zelândia e ilhas do Pacífico'
-    }
-  ];
+  continents: HomeWorldCard[] = [];
 
-  curadoria: HomeCuradoriaCard[] = [
-    {
-      title: 'Lua de Mel dos Sonhos',
-      subtitle: 'Maldivas + Dubai',
-      description: 'A combinação perfeita de romance e luxo. Praias paradisíacas e experiências exclusivas.',
-      image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=600&h=400&fit=crop',
-      curator: 'Recomendado por Ana Silva',
-      tags: ['Romântico', 'Luxo', 'Praia']
-    },
-    {
-      title: 'Aventura Radical',
-      subtitle: 'Nova Zelândia',
-      description: 'Para os aventureiros de plantão. Bungee jump, trilhas e paisagens de tirar o fôlego.',
-      image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=600&h=400&fit=crop',
-      curator: 'Recomendado por Carlos Mendes',
-      tags: ['Aventura', 'Natureza', 'Esportes']
-    },
-    {
-      title: 'Cultura e História',
-      subtitle: 'Grécia e Turquia',
-      description: 'Mergulhe na história antiga. Ruínas, museus e gastronomia mediterrânea.',
-      image: 'https://images.unsplash.com/photo-1503152394-c571994fd383?w=600&h=400&fit=crop',
-      curator: 'Recomendado por Maria Costa',
-      tags: ['Cultura', 'História', 'Gastronomia']
-    }
-  ];
+  curadoria: HomeCuradoriaCard[] = [];
 
-  testimonials = [
-    {
-      name: 'Maria Silva',
-      text: 'A viagem para Terra Santa foi transformadora. Cada detalhe foi cuidadosamente planejado pela equipe.',
-      rating: 5,
-      image: 'https://i.pravatar.cc/150?img=1',
-      trip: 'Terra Santa'
-    },
-    {
-      name: 'João Santos',
-      text: 'Experiência incrível no Caminho de Santiago. Suporte impecável durante toda a jornada.',
-      rating: 5,
-      image: 'https://i.pravatar.cc/150?img=12',
-      trip: 'Caminho de Santiago'
-    },
-    {
-      name: 'Ana Costa',
-      text: 'A lua de mel nas Maldivas superou todas as expectativas. Simplesmente perfeito!',
-      rating: 5,
-      image: 'https://i.pravatar.cc/150?img=5',
-      trip: 'Maldivas'
-    }
-  ];
+  testimonials: HomeTestimonialCard[] = [];
 
-  blogPosts = [
-    {
-      title: 'Como planejar uma viagem sem imprevistos',
-      slug: 'como-planejar-uma-viagem-sem-imprevistos',
-      excerpt: 'Veja pontos essenciais para organizar documentos, roteiro, hospedagem e transporte antes de embarcar.',
-      image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=900&h=600&fit=crop',
-      date: 'Abril 2026',
-      category: 'Dicas de viagem'
-    },
-    {
-      title: 'Destinos para conhecer em grupo',
-      slug: 'destinos-para-conhecer-em-grupo',
-      excerpt: 'Sugestões para quem busca experiências completas, seguras e bem acompanhadas em viagens nacionais e internacionais.',
-      image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&h=600&fit=crop',
-      date: 'Abril 2026',
-      category: 'Destinos'
-    },
-    {
-      title: 'O que levar na mala de mão',
-      slug: 'o-que-levar-na-mala-de-mao',
-      excerpt: 'Uma lista prática para manter documentos, itens pessoais e objetos importantes sempre por perto.',
-      image: 'https://images.unsplash.com/photo-1553531384-cc64ac80f931?w=900&h=600&fit=crop',
-      date: 'Abril 2026',
-      category: 'Dicas de viagem'
-    }
-  ];
+  blogPosts: HomeBlogPostCard[] = [];
 
   ngOnInit() {
-    this.continents = [
-      ...this.continents,
-      {
-        name: 'Africa',
-        icon: 'AF',
-        image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop',
-        description: 'Africa do Sul, Marrocos, Egito e safaris'
-      },
-      {
-        name: 'Brasil',
-        icon: 'BR',
-        image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=600&h=400&fit=crop',
-        description: 'Nordeste, Sul, Amazonia e destinos nacionais'
-      }
-    ];
-    this.startSlideShow();
+    this.loadBanners();
     this.loadTrips();
+    this.loadTestimonials();
+    this.loadPosts();
   }
 
   ngOnDestroy() {
@@ -201,10 +119,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   nextSlide() {
+    if (this.bannerImages.length === 0) {
+      return;
+    }
+
     this.currentSlide = (this.currentSlide + 1) % this.bannerImages.length;
   }
 
   prevSlide() {
+    if (this.bannerImages.length === 0) {
+      return;
+    }
+
     this.currentSlide = this.currentSlide === 0 ? this.bannerImages.length - 1 : this.currentSlide - 1;
   }
 
@@ -254,14 +180,76 @@ export class HomeComponent implements OnInit, OnDestroy {
     };
 
     this.tripService.getTrips({ limit: 100 }).pipe(
-      timeout(12000),
       catchError(() => of(emptyResponse))
     ).subscribe(response => {
       const activeTrips = response.data.filter(trip => trip.status !== 'inactive');
       const peregrinacoes = activeTrips.filter(trip => trip.tripType === 'peregrinacao');
       const regulares = activeTrips.filter(trip => trip.tripType === 'regular');
-      this.peregrinacoes = peregrinacoes.map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
-      this.regulares = regulares.map(trip => this.mapTripCard(trip, 'Guia'));
+      const curadoria = activeTrips.filter(trip => trip.tripType === 'curadoria');
+      const nextPeregrinacoes = peregrinacoes.map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
+      const nextRegulares = regulares.map(trip => this.mapTripCard(trip, 'Guia'));
+      const nextCuradoria = curadoria.map(trip => this.mapCuradoriaCard(trip));
+      const nextContinents = this.mapWorldCards(activeTrips);
+
+      if (activeTrips.length > 0 || this.hasNoTripContent()) {
+        this.peregrinacoes = nextPeregrinacoes;
+        this.regulares = nextRegulares;
+        this.curadoria = nextCuradoria;
+        this.continents = nextContinents;
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  private loadBanners() {
+    this.bannerService.getBanners().pipe(
+      timeout(12000),
+      catchError(() => of([]))
+    ).subscribe(banners => {
+      this.bannerImages = banners
+        .filter(banner => banner.status === 'active' && banner.imageUrl)
+        .map(banner => this.normalizeImage(banner.imageUrl));
+      this.currentSlide = 0;
+      this.startSlideShow();
+      this.cdr.detectChanges();
+    });
+  }
+
+  private loadTestimonials() {
+    const emptyResponse = {
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 6,
+      totalPages: 1
+    };
+
+    this.testimonialService.getTestimonials({ status: 'approved', limit: 6 }).pipe(
+      timeout(12000),
+      catchError(() => of(emptyResponse))
+    ).subscribe(response => {
+      this.testimonials = response.data.map(testimonial => this.mapTestimonialCard(testimonial));
+      this.cdr.detectChanges();
+    });
+  }
+
+  private loadPosts() {
+    const emptyResponse = {
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 3,
+      totalPages: 1
+    };
+
+    this.postService.getPosts({ status: 'published', limit: 3 }).pipe(
+      timeout(12000),
+      catchError(() => of(emptyResponse))
+    ).subscribe(response => {
+      const nextPosts = response.data.map(post => this.mapBlogPostCard(post));
+      if (nextPosts.length > 0 || this.blogPosts.length === 0) {
+        this.blogPosts = nextPosts;
+      }
       this.cdr.detectChanges();
     });
   }
@@ -284,6 +272,85 @@ export class HomeComponent implements OnInit, OnDestroy {
     };
   }
 
+  private mapCuradoriaCard(trip: Trip): HomeCuradoriaCard {
+    const destination = trip.country || trip.destination || 'Destino a definir';
+
+    return {
+      slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      title: trip.title,
+      subtitle: destination,
+      description: trip.shortDescription || trip.description || 'Roteiro selecionado pela curadoria Unitur.',
+      image: this.normalizeImage(trip.mainImage),
+      curator: trip.coordinator ? `Curadoria de ${trip.coordinator}` : 'Curadoria Unitur',
+      tags: [
+        destination,
+        trip.duration ? `${trip.duration} dias` : '',
+        trip.period || ''
+      ].filter(Boolean).slice(0, 3)
+    };
+  }
+
+  private mapWorldCards(trips: Trip[]): HomeWorldCard[] {
+    const cards = new Map<string, HomeWorldCard & { total: number }>();
+
+    trips.forEach(trip => {
+      const destination = (trip.country || trip.destination || '').trim();
+      if (!destination) {
+        return;
+      }
+
+      const key = this.normalizeTextKey(destination);
+      const existing = cards.get(key);
+
+      if (existing) {
+        existing.total += 1;
+        existing.description = `${existing.total} viagens cadastradas para ${existing.name}`;
+        if (existing.image === this.fallbackTripImage && trip.mainImage) {
+          existing.image = this.normalizeImage(trip.mainImage);
+        }
+        return;
+      }
+
+      cards.set(key, {
+        name: destination,
+        icon: this.getDestinationIcon(destination),
+        image: this.normalizeImage(trip.mainImage),
+        description: trip.shortDescription || trip.period || `Viagens cadastradas para ${destination}`,
+        total: 1
+      });
+    });
+
+    return Array.from(cards.values()).map(({ total, ...card }) => card);
+  }
+
+  private mapTestimonialCard(testimonial: Testimonial): HomeTestimonialCard {
+    return {
+      name: testimonial.clientName,
+      text: testimonial.text,
+      rating: testimonial.rating || 5,
+      image: this.normalizeImage(testimonial.clientPhoto),
+      trip: testimonial.trip?.title || 'Cliente Unitur'
+    };
+  }
+
+  private hasNoTripContent(): boolean {
+    return this.peregrinacoes.length === 0 &&
+      this.regulares.length === 0 &&
+      this.curadoria.length === 0 &&
+      this.continents.length === 0;
+  }
+
+  private mapBlogPostCard(post: Post): HomeBlogPostCard {
+    return {
+      title: post.title,
+      slug: post.slug || String(post.id),
+      excerpt: post.excerpt || '',
+      image: this.normalizeImage(post.featuredImage || post.contentImages?.[0]),
+      date: this.formatBlogDate(post.publishedAt || post.createdAt),
+      category: post.category?.name || post.tags?.[0] || 'Blog'
+    };
+  }
+
   private formatForeignPrice(value?: number | string): string {
     if (!value) {
       return '';
@@ -301,6 +368,30 @@ export class HomeComponent implements OnInit, OnDestroy {
     return image || this.fallbackTripImage;
   }
 
+  private normalizeTextKey(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private getDestinationIcon(value: string): string {
+    const normalized = value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z\s]/g, '')
+      .trim();
+    const words = normalized.split(/\s+/).filter(Boolean);
+
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+
+    return normalized.slice(0, 2).toUpperCase() || 'UN';
+  }
+
   private formatTripPeriod(date?: Date): string {
     if (!date) {
       return 'A definir';
@@ -309,6 +400,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     const parsedDate = date instanceof Date ? date : new Date(date);
     if (Number.isNaN(parsedDate.getTime())) {
       return 'A definir';
+    }
+
+    return parsedDate.toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  private formatBlogDate(date?: Date): string {
+    if (!date) {
+      return '';
+    }
+
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return '';
     }
 
     return parsedDate.toLocaleDateString('pt-BR', {

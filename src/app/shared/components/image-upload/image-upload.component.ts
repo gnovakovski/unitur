@@ -21,7 +21,7 @@ export class ImageUploadComponent implements ControlValueAccessor {
   @Input() label = 'Imagem';
   @Input() accept = 'image/jpeg,image/jpg,image/png,image/webp';
   @Input() maxSize = 2; // MB
-  @Output() uploaded = new EventEmitter<string>();
+  @Output() uploaded = new EventEmitter<File>();
 
   imageUrl: string | null = null;
   uploading = false;
@@ -29,16 +29,21 @@ export class ImageUploadComponent implements ControlValueAccessor {
   dragOver = false;
   inputId = `image-upload-${Math.random().toString(36).slice(2)}`;
 
-  private onChange: (value: string | null) => void = () => {};
+  private onChange: (value: string | File | null) => void = () => {};
   private onTouched: () => void = () => {};
 
   constructor(private uploadService: UploadService) {}
 
-  writeValue(value: string | null): void {
+  writeValue(value: string | File | null): void {
+    if (value instanceof File) {
+      this.setPreview(value);
+      return;
+    }
+
     this.imageUrl = value;
   }
 
-  registerOnChange(fn: (value: string | null) => void): void {
+  registerOnChange(fn: (value: string | File | null) => void): void {
     this.onChange = fn;
   }
 
@@ -82,28 +87,10 @@ export class ImageUploadComponent implements ControlValueAccessor {
       return;
     }
 
-    // Preview local
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      this.imageUrl = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-
-    // Upload
-    this.uploading = true;
-    this.uploadService.uploadImage(file).subscribe({
-      next: (response) => {
-        this.imageUrl = response.url;
-        this.onChange(response.url);
-        this.uploaded.emit(response.url);
-        this.uploading = false;
-      },
-      error: (err) => {
-        this.error = err.error?.message || 'Erro ao fazer upload';
-        this.uploading = false;
-        this.imageUrl = null;
-      }
-    });
+    this.setPreview(file);
+    this.onChange(file);
+    this.uploaded.emit(file);
+    this.onTouched();
   }
 
   removeImage(): void {
@@ -120,5 +107,13 @@ export class ImageUploadComponent implements ControlValueAccessor {
   triggerFileInput(): void {
     const input = document.getElementById(this.inputId) as HTMLInputElement;
     input?.click();
+  }
+
+  private setPreview(file: File): void {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      this.imageUrl = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   }
 }
