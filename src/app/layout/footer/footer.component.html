@@ -2,30 +2,25 @@
   <div class="container">
     <div class="footer-content">
       <div class="footer-section">
-        <h3>
-          Unitur
-        </h3>
-        <p>Transformando sonhos em viagens inesquecíveis desde 2020.</p>
+        <h3>Unitur</h3>
+        <p>Transformando sonhos em viagens inesquec&iacute;veis desde 2020.</p>
         <div class="social-links">
           <a routerLink="/blog" [queryParams]="{ origin: 'footer' }" aria-label="Blog" class="blog-social">Blog</a>
-          <a href="#" aria-label="Facebook">Facebook</a>
-          <a href="#" aria-label="Instagram">Instagram</a>
-          <a href="#" aria-label="YouTube">YouTube</a>
         </div>
       </div>
-      
+
       <div class="footer-section">
         <h4>Destinos</h4>
         <ul>
           <li><a href="#">Europa</a></li>
-          <li><a href="#">Ásia</a></li>
-          <li><a href="#">América do Sul</a></li>
+          <li><a href="#">&Aacute;sia</a></li>
+          <li><a href="#">Am&eacute;rica do Sul</a></li>
           <li><a href="#">Caribe</a></li>
         </ul>
       </div>
-      
+
       <div class="footer-section">
-        <h4>Serviços</h4>
+        <h4>Servi&ccedil;os</h4>
         <ul>
           <li><a href="#">Pacotes</a></li>
           <li><a href="#">Cruzeiros</a></li>
@@ -33,35 +28,41 @@
           <li><a href="#">Corporativo</a></li>
         </ul>
       </div>
-      
+
       <div class="footer-section">
         <h4>Blog</h4>
         <ul>
-          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Últimas Notícias</a></li>
+          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">&Uacute;ltimas Not&iacute;cias</a></li>
           <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Dicas de Viagem</a></li>
           <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Destinos em Alta</a></li>
-          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Peregrinações</a></li>
+          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Peregrina&ccedil;&otilde;es</a></li>
         </ul>
       </div>
-      
+
       <div class="footer-section">
         <h4>Contato</h4>
-        <ul>
-          <li>Tel: (11) 1234-5678</li>
-          <li>Email: contato@Unitur.com</li>
-          <li>Local: São Paulo, SP</li>
-          <li class="exchange-rate-inline">Cambio: US$ 1,00 = R$ 5,60</li>
+        <ul class="contact-list">
+          <li>
+            <strong>Matriz Porto Alegre</strong>
+            <span>Pra&ccedil;a. Mal. Deodoro, 130 - Conj. 301.</span>
+            <span>CEP: 90.010-300. Porto Alegre - RS.</span>
+          </li>
+          <li><a href="tel:+555132723377">+55 (51) 3272.3377</a></li>
+          <li><a href="mailto:grupos@unitur.com.br">grupos&#64;unitur.com.br</a></li>
         </ul>
       </div>
+
+      <div class="footer-section exchange-section">
+        <h4>C&acirc;mbio</h4>
+        <div class="exchange-rate">
+          <strong>Euro: {{ formatExchangeRate(euroRate) }}</strong>
+          <strong>D&oacute;lar: {{ formatExchangeRate(dollarRate) }}</strong>
+        </div>
+      </div>
     </div>
-    
+
     <div class="footer-bottom">
       <p>&copy; {{ currentYear }} Unitur. Todos os direitos reservados.</p>
-      <p class="exchange-rate">Cambio: US$ 1,00 = R$ 5,60</p>
     </div>
   </div>
 </footer>
-
-
-
-

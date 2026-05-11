@@ -6,7 +6,7 @@
       class="upload-area"
       [class.drag-over]="dragOver"
       [class.uploading]="uploading"
-      (click)="triggerFileInput()"
+      (click)="triggerFileInput($event)"
       (drop)="onDrop($event)"
       (dragover)="onDragOver($event)"
       (dragleave)="onDragLeave($event)">
@@ -19,14 +19,15 @@
         <p class="upload-text">Clique ou arraste uma imagem</p>
         <p class="upload-hint">JPG, PNG ou WebP (máx. {{ maxSize }}MB)</p>
       }
-      
-      <input 
-        type="file" 
-        [id]="inputId"
-        [accept]="accept"
-        (change)="onFileSelected($event)"
-        style="display: none">
     </div>
+
+    <input 
+      type="file" 
+      [id]="inputId"
+      [accept]="accept"
+      (click)="$event.stopPropagation()"
+      (change)="onFileSelected($event)"
+      class="file-input">
   } @else {
     <div class="image-preview">
       <img [src]="imageUrl" [alt]="label">
@@ -38,6 +39,19 @@
         X
       </button>
     </div>
+    @if (selectedFileName) {
+      <div class="upload-details">
+        <p><strong>Arquivo:</strong> {{ selectedFileName }}</p>
+        @if (imagePath) {
+          <p class="image-path">
+            <strong>Caminho:</strong>
+            <a [href]="imagePath" target="_blank" rel="noopener noreferrer">{{ imagePath }}</a>
+          </p>
+        } @else if (isLocalFile) {
+          <p class="image-path muted">O caminho no Firebase será gerado ao salvar.</p>
+        }
+      </div>
+    }
   }
   
   @if (error) {

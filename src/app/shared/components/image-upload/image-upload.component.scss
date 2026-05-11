@@ -40,6 +40,10 @@ $error: #dc3545;
   }
 }
 
+.file-input {
+  display: none;
+}
+
 .upload-icon {
   width: 52px;
   height: 52px;
@@ -118,6 +122,36 @@ $error: #dc3545;
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+}
+
+.upload-details {
+  margin: 0.5rem 0 0;
+  color: #1a1a2e;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  word-break: break-word;
+
+  p {
+    margin: 0.2rem 0;
+  }
+
+  a {
+    color: $blue;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.image-path {
+  color: #495057;
+
+  &.muted {
+    color: #6C757D;
+    font-weight: 500;
   }
 }
 

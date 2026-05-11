@@ -153,15 +153,15 @@
 
   <div class="continents-grid">
     @for (continent of continents; track continent.name) {
-      <div class="continent-card">
+      <a class="continent-card" routerLink="/viagens" [queryParams]="{ destination: continent.name }">
         <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)">
         <div class="continent-overlay">
           <span class="continent-icon">{{ continent.icon }}</span>
           <h3>{{ continent.name }}</h3>
           <p>{{ continent.description }}</p>
-          <a class="btn-continent" routerLink="/viagens" [queryParams]="{ destination: continent.name }">Explorar</a>
+          <span class="btn-continent">Explorar</span>
         </div>
-      </div>
+      </a>
     }
   </div>
 </section>

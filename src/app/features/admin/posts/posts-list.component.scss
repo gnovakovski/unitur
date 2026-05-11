@@ -1,5 +1,11 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .posts-list {
-  padding: 2rem;
+  width: 100%;
+  max-width: none;
 }
 
 .page-header {
@@ -408,10 +414,6 @@
 
 // Responsivo
 @media (max-width: 768px) {
-  .posts-list {
-    padding: 1rem;
-  }
-
   .page-header {
     flex-direction: column;
     align-items: flex-start;

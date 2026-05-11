@@ -6,6 +6,8 @@ import { firstValueFrom } from 'rxjs';
 import { Trip } from '../../../core/models/trip.model';
 import { TripService } from '../../../core/services/trip.service';
 import { UploadService } from '../../../core/services/upload.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode } from '../../../core/utils/currency-format';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 
 @Component({
@@ -72,8 +74,20 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
           </label>
 
           <label>
-            Valor em moeda estrangeira
-            <input class="form-control" formControlName="foreignPrice" placeholder="Ex: U$4.500,00">
+            Tipo de moeda
+            <select class="form-control" formControlName="foreignCurrency">
+              <option value="">Sem valor estrangeiro</option>
+              <option value="USD">Dolar turismo</option>
+              <option value="EUR">Euro turismo</option>
+            </select>
+          </label>
+
+          <label>
+            Valor convertido
+            <input class="form-control" formControlName="foreignPrice" readonly placeholder="Calculado automaticamente">
+            @if (exchangeRateText) {
+              <span class="field-hint">{{ exchangeRateText }}</span>
+            }
           </label>
 
           <label>
@@ -121,7 +135,6 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
           <label>
             Imagens da experiencia
             <app-image-upload label="Selecionar imagem da experiência" formControlName="experienceImageUpload"></app-image-upload>
-            <textarea class="form-control" rows="4" formControlName="experienceImagesText" placeholder="As imagens enviadas aparecem aqui automaticamente"></textarea>
           </label>
 
           <label>
@@ -134,7 +147,6 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
           <label>
             Hotéis do grupo
             <app-image-upload label="Selecionar imagem do hotel" formControlName="hotelImageUpload"></app-image-upload>
-            <textarea class="form-control" rows="4" formControlName="hotelsText" placeholder="Imagem do hotel | Nome do hotel"></textarea>
           </label>
 
           <label>
@@ -170,7 +182,8 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
     </div>
   `,
   styles: [`
-    .page-container { max-width: 1200px; }
+    :host { display: block; width: 100%; }
+    .page-container { width: 100%; max-width: none; }
     .page-header { margin-bottom: 2rem; }
     .page-header h1 { color: #1a1a2e; margin: 0 0 0.35rem; font-size: 2rem; }
     .page-header p { color: #6C757D; margin: 0; }
@@ -180,7 +193,9 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
     .form-grid.wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     label { display: grid; gap: 0.35rem; color: #333; font-size: 0.9rem; font-weight: 700; align-content: start; }
     .field-label { display: inline-flex; align-items: baseline; gap: 0.2rem; width: fit-content; white-space: nowrap; min-height: 1.2rem; }
+    .field-hint { color: #6C757D; font-size: 0.78rem; font-weight: 500; }
     .form-control { width: 100%; border: 1px solid #e0e0e0; border-radius: 12px; padding: 0.75rem 0.9rem; font: inherit; }
+    .form-control[readonly] { background: #f8f9fa; color: #6C757D; }
     textarea.form-control { resize: vertical; }
     .form-control:focus { outline: none; border-color: #ff812c; box-shadow: 0 0 0 3px rgba(255,129,44,0.1); }
     .required { color: #c62828; }
@@ -199,11 +214,14 @@ export class ViagemFormComponent implements OnInit {
   tripId: number | null = null;
   saving = false;
   error = '';
+  exchangeRateText = '';
+  private lastExchangeRate: number | undefined;
 
   constructor(
     private fb: FormBuilder,
     private tripService: TripService,
     private uploadService: UploadService,
+    private exchangeRateService: ExchangeRateService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -216,7 +234,8 @@ export class ViagemFormComponent implements OnInit {
       duration: [1, [Validators.required, Validators.min(1)]],
       availableSpots: [0, [Validators.required, Validators.min(0)]],
       price: ['', [Validators.required, Validators.min(1)]],
-      foreignPrice: [''],
+      foreignCurrency: [''],
+      foreignPrice: [{ value: '', disabled: true }],
       status: ['active', [Validators.required]],
       spiritualGuide: [''],
       coordinator: [''],
@@ -249,6 +268,9 @@ export class ViagemFormComponent implements OnInit {
       this.tripId = Number(id);
       this.loadTrip(this.tripId);
     }
+
+    this.tripForm.get('price')?.valueChanges.subscribe(() => this.updateConvertedPrice());
+    this.tripForm.get('foreignCurrency')?.valueChanges.subscribe(() => this.updateConvertedPrice());
   }
 
   loadTrip(id: number) {
@@ -263,7 +285,8 @@ export class ViagemFormComponent implements OnInit {
           duration: trip.duration,
           availableSpots: trip.availableSpots,
           price: trip.price,
-          foreignPrice: trip.foreignPrice || '',
+          foreignCurrency: trip.foreignCurrency || this.detectCurrency(trip.foreignPrice),
+          foreignPrice: trip.foreignPrice ? formatForeignCurrency(trip.foreignPrice, trip.foreignCurrency || this.detectCurrency(trip.foreignPrice)) : '',
           status: trip.status,
           spiritualGuide: trip.spiritualGuide || '',
           coordinator: trip.coordinator || '',
@@ -279,6 +302,8 @@ export class ViagemFormComponent implements OnInit {
           notIncludedText: (trip.notIncluded || []).join('\n'),
           cancellationPolicy: trip.cancellationPolicy || ''
         });
+        this.lastExchangeRate = trip.foreignExchangeRate;
+        this.updateConvertedPrice();
       },
       error: err => {
         this.error = err?.message || 'Erro ao carregar viagem.';
@@ -296,7 +321,8 @@ export class ViagemFormComponent implements OnInit {
     this.error = '';
 
     try {
-      const value = this.tripForm.value;
+      await this.updateConvertedPrice(true);
+      const value = this.tripForm.getRawValue();
       const {
         experienceImagesText,
         experienceImageUpload,
@@ -322,6 +348,8 @@ export class ViagemFormComponent implements OnInit {
       const tripData: Partial<Trip> = {
         ...baseValue,
         mainImage: await this.uploadImageValue(baseValue.mainImage),
+        foreignPrice: baseValue.foreignCurrency ? baseValue.foreignPrice : '',
+        foreignExchangeRate: baseValue.foreignCurrency ? this.lastExchangeRate : undefined,
         destination: value.country,
         categoryId: 0,
         startDate,
@@ -380,6 +408,49 @@ export class ViagemFormComponent implements OnInit {
     }
 
     return this.uploadImageValue(value);
+  }
+
+  private async updateConvertedPrice(waitForResult = false): Promise<void> {
+    const price = Number(this.tripForm.get('price')?.value || 0);
+    const currency = this.tripForm.get('foreignCurrency')?.value as ForeignCurrencyCode | '';
+    const foreignPriceControl = this.tripForm.get('foreignPrice');
+
+    if (!currency || !price || Number.isNaN(price)) {
+      foreignPriceControl?.setValue('', { emitEvent: false });
+      this.exchangeRateText = '';
+      this.lastExchangeRate = undefined;
+      return;
+    }
+
+    const applyRate = (rate: number | null) => {
+      if (!rate) {
+        foreignPriceControl?.setValue('', { emitEvent: false });
+        this.exchangeRateText = 'Nao foi possivel carregar o cambio.';
+        this.lastExchangeRate = undefined;
+        return;
+      }
+
+      const convertedValue = price / rate;
+      this.lastExchangeRate = rate;
+      foreignPriceControl?.setValue(formatForeignCurrency(convertedValue, currency), { emitEvent: false });
+      this.exchangeRateText = `Cambio usado: 1 ${currency} = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    if (waitForResult) {
+      const rate = await firstValueFrom(this.exchangeRateService.getCurrencyRate(currency));
+      applyRate(rate.value);
+      return;
+    }
+
+    this.exchangeRateService.getCurrencyRate(currency).subscribe(rate => applyRate(rate.value));
+  }
+
+  private detectCurrency(value?: number | string): ForeignCurrencyCode | '' {
+    if (!value) {
+      return '';
+    }
+
+    return getCurrencyCode(value);
   }
 
   private formatDateInput(date?: Date): string {

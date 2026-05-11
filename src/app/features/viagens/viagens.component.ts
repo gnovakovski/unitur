@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, finalize, of, Subscription } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
+import { formatForeignCurrency } from '../../core/utils/currency-format';
 
 interface ViagemCard {
   slug: string;
@@ -169,15 +170,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
   }
 
   private formatForeignPrice(value?: number | string): string {
-    if (!value) {
-      return '';
-    }
-
-    if (typeof value === 'number') {
-      return `U$${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-
-    return value;
+    return formatForeignCurrency(value);
   }
 
   private normalizeImage(value?: string): string {

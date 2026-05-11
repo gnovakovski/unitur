@@ -4,8 +4,14 @@ $white: #FFFFFF;
 $gray-light: #F8F9FA;
 $gray: #6C757D;
 
+:host {
+  display: block;
+  width: 100%;
+}
+
 .dashboard {
-  max-width: 1400px;
+  width: 100%;
+  max-width: none;
 }
 
 .page-header {

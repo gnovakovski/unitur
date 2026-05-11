@@ -10,6 +10,7 @@ import { TestimonialService } from '../../core/services/testimonial.service';
 import { BannerService } from '../../core/services/banner.service';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
+import { formatForeignCurrency } from '../../core/utils/currency-format';
 
 interface HomeTripCard {
   slug: string;
@@ -352,15 +353,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private formatForeignPrice(value?: number | string): string {
-    if (!value) {
-      return '';
-    }
-
-    if (typeof value === 'number') {
-      return `U$${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-
-    return value;
+    return formatForeignCurrency(value);
   }
 
   private normalizeImage(value?: string): string {

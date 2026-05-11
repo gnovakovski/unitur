@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
+import { formatForeignCurrency } from '../../core/utils/currency-format';
 
 interface ProductTrip {
   slug: string;
@@ -283,7 +284,7 @@ export class ProductDetailComponent implements OnInit {
       date,
       duration,
       price: query.get('price') || 'Consulte',
-      foreignPrice: query.get('foreignPrice') || '',
+      foreignPrice: this.formatForeignPrice(query.get('foreignPrice') || ''),
       spots: query.get('spots') || 'Vagas limitadas',
       showSpots: query.get('showSpots') !== 'false',
       guide: query.get('guide') || 'A definir',
@@ -364,15 +365,7 @@ export class ProductDetailComponent implements OnInit {
   }
 
   private formatForeignPrice(value?: number | string): string {
-    if (!value) {
-      return '';
-    }
-
-    if (typeof value === 'number') {
-      return `U$${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-
-    return value;
+    return formatForeignCurrency(value);
   }
 
   private defaultPaymentMethods(): string[] {

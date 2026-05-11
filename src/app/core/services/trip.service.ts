@@ -274,6 +274,8 @@ export class TripService {
       duration: Number(trip.duration || 0),
       price: Number(trip.price || 0),
       foreignPrice: trip.foreignPrice,
+      foreignCurrency: trip.foreignCurrency || '',
+      foreignExchangeRate: trip.foreignExchangeRate,
       availableSpots: Number(trip.availableSpots || 0),
       showAvailableSpots: trip.showAvailableSpots !== false,
       spiritualGuide: trip.spiritualGuide || '',
