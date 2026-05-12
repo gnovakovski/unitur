@@ -52,12 +52,13 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'dashboard',
+        redirectTo: 'viagens',
         pathMatch: 'full'
       },
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/admin/dashboard/dashboard.component').then(m => m.DashboardComponent)
+        redirectTo: 'viagens',
+        pathMatch: 'full'
       },
       {
         path: 'posts',

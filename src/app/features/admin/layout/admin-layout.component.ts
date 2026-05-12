@@ -16,10 +16,6 @@ export class AdminLayoutComponent implements OnInit {
 
   menuItems = [
     { 
-      label: 'Dashboard', 
-      route: '/admin/dashboard' 
-    },
-    { 
       label: 'Posts', 
       route: '/admin/posts' 
     },

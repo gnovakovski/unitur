@@ -34,7 +34,12 @@
       </div>
       <div class="summary-item price">
         <span>A partir de</span>
-        <strong>@if (trip.foreignPrice) { <small>{{ trip.foreignPrice }}/</small> }{{ trip.price }}</strong>
+        <strong class="price-line">
+          @if (trip.foreignPrice) {
+            <small>{{ trip.foreignPrice }}/</small>
+          }
+          <span>{{ trip.price }}</span>
+        </strong>
       </div>
       @if (trip.showSpots !== false) {
         <div class="summary-item">
@@ -169,7 +174,12 @@
         @if (trip.showSpots !== false) {
           <span class="spots">{{ trip.spots }}</span>
         }
-        <h2>@if (trip.foreignPrice) { <small>{{ trip.foreignPrice }}/</small> }{{ trip.price }}</h2>
+        <h2 class="booking-price">
+          @if (trip.foreignPrice) {
+            <small>{{ trip.foreignPrice }}/</small>
+          }
+          <span>{{ trip.price }}</span>
+        </h2>
         <p>Converse com a equipe Unitur para confirmar disponibilidade, formas de pagamento e próximos passos.</p>
         <a class="primary-cta" href="https://wa.me/5500000000000" target="_blank" rel="noopener">Reservar agora</a>
         

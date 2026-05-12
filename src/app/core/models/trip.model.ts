@@ -17,6 +17,8 @@ export interface Trip {
   duration: number; // em dias
   price: number;
   foreignPrice?: number | string;
+  foreignCurrency?: 'USD' | 'EUR' | 'GBP' | '';
+  foreignExchangeRate?: number;
   availableSpots: number;
   showAvailableSpots?: boolean;
   spiritualGuide?: string;

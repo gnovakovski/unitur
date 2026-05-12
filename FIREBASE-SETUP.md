@@ -83,3 +83,22 @@ service firebase.storage {
   }
 }
 ```
+
+## CORS do Firebase Storage
+
+Para permitir upload de imagens no site publicado, aplique o arquivo `storage-cors.json` no bucket do Storage:
+
+```bash
+gcloud auth login
+gcloud config set project unitur-10034
+gcloud storage buckets update gs://unitur-10034.firebasestorage.app --cors-file=storage-cors.json
+```
+
+Para conferir a configuracao ativa:
+
+```bash
+gcloud storage buckets describe gs://unitur-10034.firebasestorage.app --format="default(cors_config)"
+```
+
+Se o comando retornar `404`, confirme no console do Firebase se o Storage foi criado e se o bucket do projeto e `unitur-10034.firebasestorage.app`.
+Se retornar `403`, a conta ativa do `gcloud` nao tem permissao de Storage Admin/Owner no projeto.

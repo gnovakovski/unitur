@@ -98,7 +98,8 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
     }
   `,
   styles: [`
-    .page-container { max-width: 1400px; }
+    :host { display: block; width: 100%; }
+    .page-container { width: 100%; max-width: none; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
     .page-header h1 { font-size: 2rem; color: #1a1a2e; margin: 0; }
     .btn-primary, .btn-secondary, .btn-small { border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }

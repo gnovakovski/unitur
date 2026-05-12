@@ -96,13 +96,6 @@
             <div class="form-group">
               <label class="form-label">Imagens no texto</label>
               <app-image-upload label="Selecionar imagem" formControlName="contentImageUpload"></app-image-upload>
-              <label for="contentImagesText" class="form-label">Imagens selecionadas</label>
-              <textarea
-                id="contentImagesText"
-                formControlName="contentImagesText"
-                class="form-control"
-                rows="4"
-                placeholder="As imagens enviadas aparecem aqui automaticamente"></textarea>
               <small class="form-hint">As imagens aparecem no início do conteúdo. Também é possível inserir tags &lt;img&gt; direto no texto.</small>
             </div>
 
@@ -146,16 +139,24 @@
           <div class="form-card">
             <h3 class="card-title">Viagens relacionadas</h3>
             <div class="form-group">
-              <select
-                formControlName="relatedTrips"
-                class="form-control"
-                multiple
-                size="5">
+              <div class="related-trips-list">
                 @for (trip of trips; track trip.id) {
-                  <option [value]="trip.id">{{ trip.title }}</option>
+                  <button
+                    type="button"
+                    class="related-trip-option"
+                    [class.selected]="isTripSelected(trip.id)"
+                    [disabled]="!canSelectRelatedTrip(trip.id)"
+                    (click)="toggleRelatedTrip(trip.id)">
+                    <span>{{ trip.title }}</span>
+                    @if (isTripSelected(trip.id)) {
+                      <span class="selected-marker">Selecionada</span>
+                    }
+                  </button>
+                } @empty {
+                  <p class="empty-related-trips">Nenhuma viagem cadastrada.</p>
                 }
-              </select>
-              <small class="form-hint">Selecione até 3 viagens relacionadas</small>
+              </div>
+              <small class="form-hint">Selecione até 3 viagens relacionadas. {{ selectedRelatedTripIds.length }}/3 selecionadas.</small>
             </div>
           </div>
 

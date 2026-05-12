@@ -81,7 +81,7 @@ export class PostFormComponent implements OnInit {
           contentImagesText: (post.contentImages || []).join('\n'),
           categoryId: post.categoryId,
           tags: post.tags.join(', '),
-          relatedTrips: post.relatedTrips || [],
+          relatedTrips: (post.relatedTrips || []).map(id => Number(id)).filter(Boolean).slice(0, 3),
           status: post.status
         });
         this.loading = false;
@@ -110,6 +110,33 @@ export class PostFormComponent implements OnInit {
       },
       error: (err) => console.error('Erro ao carregar viagens', err)
     });
+  }
+
+  get selectedRelatedTripIds(): number[] {
+    return (this.postForm.get('relatedTrips')?.value || [])
+      .map((id: string | number) => Number(id))
+      .filter(Boolean);
+  }
+
+  isTripSelected(tripId: number): boolean {
+    return this.selectedRelatedTripIds.includes(Number(tripId));
+  }
+
+  canSelectRelatedTrip(tripId: number): boolean {
+    return this.isTripSelected(tripId) || this.selectedRelatedTripIds.length < 3;
+  }
+
+  toggleRelatedTrip(tripId: number) {
+    const id = Number(tripId);
+    const selected = this.selectedRelatedTripIds;
+    const next = selected.includes(id)
+      ? selected.filter(selectedId => selectedId !== id)
+      : selected.length < 3
+        ? [...selected, id]
+        : selected;
+
+    this.postForm.get('relatedTrips')?.setValue(next);
+    this.postForm.get('relatedTrips')?.markAsDirty();
   }
 
   setupSlugGeneration() {

@@ -17,42 +17,26 @@ export class UploadService {
   constructor(private firebaseService: FirebaseService) {}
 
   uploadImage(file: File): Observable<UploadResponse> {
-    if (this.shouldUseLocalDataUrl()) {
-      return from(this.fileToDataUrl(file));
-    }
-
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
+    const filename = this.getFilename(file);
     const imageRef = ref(this.firebaseService.storage, `uploads/${filename}`);
 
-    return from(
-      uploadBytes(imageRef, file).then(async snapshot => ({
-        url: await getDownloadURL(snapshot.ref),
-        filename,
-        size: file.size,
-        mimetype: file.type
-      }))
-    );
+    return from(this.uploadToStorage(imageRef, file, filename));
   }
 
   uploadMultipleImages(files: File[]): Observable<UploadResponse[]> {
-    if (this.shouldUseLocalDataUrl()) {
-      return from(Promise.all(files.map(file => this.fileToDataUrl(file))));
-    }
-
     return from(Promise.all(files.map(file => {
-      const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
+      const filename = this.getFilename(file);
       const imageRef = ref(this.firebaseService.storage, `uploads/${filename}`);
 
-      return uploadBytes(imageRef, file).then(async snapshot => ({
-        url: await getDownloadURL(snapshot.ref),
-        filename,
-        size: file.size,
-        mimetype: file.type
-      }));
+      return this.uploadToStorage(imageRef, file, filename);
     })));
   }
 
   deleteImage(url: string): Observable<void> {
+    if (url.startsWith('data:')) {
+      return from(Promise.resolve());
+    }
+
     return from(deleteObject(ref(this.firebaseService.storage, url)));
   }
 
@@ -61,33 +45,30 @@ export class UploadService {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     if (!allowedTypes.includes(file.type)) {
-      return { valid: false, error: 'Formato não suportado. Use JPG, PNG ou WebP.' };
+      return { valid: false, error: 'Formato nao suportado. Use JPG, PNG ou WebP.' };
     }
 
     if (file.size > maxSize) {
-      return { valid: false, error: 'Imagem muito grande. Máximo 2MB.' };
+      return { valid: false, error: 'Imagem muito grande. Maximo 2MB.' };
     }
 
     return { valid: true };
   }
 
-  private shouldUseLocalDataUrl(): boolean {
-    return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  private async uploadToStorage(imageRef: ReturnType<typeof ref>, file: File, filename: string): Promise<UploadResponse> {
+    const snapshot = await uploadBytes(imageRef, file, {
+      contentType: file.type
+    });
+
+    return {
+      url: await getDownloadURL(snapshot.ref),
+      filename,
+      size: file.size,
+      mimetype: file.type
+    };
   }
 
-  private fileToDataUrl(file: File): Promise<UploadResponse> {
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
-
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({
-        url: String(reader.result || ''),
-        filename,
-        size: file.size,
-        mimetype: file.type
-      });
-      reader.onerror = () => reject(new Error('Não foi possível ler a imagem selecionada.'));
-      reader.readAsDataURL(file);
-    });
+  private getFilename(file: File): string {
+    return `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
   }
 }

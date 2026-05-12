@@ -12,6 +12,7 @@ $sidebar-width: 260px;
 .admin-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
   background: $gray-light;
 }
 
@@ -145,6 +146,7 @@ $sidebar-width: 260px;
 // Main Wrapper
 .main-wrapper {
   flex: 1;
+  min-width: 0;
   margin-left: $sidebar-width;
   display: flex;
   flex-direction: column;
@@ -171,45 +173,39 @@ $sidebar-width: 260px;
 }
 
 .btn-toggle {
-  width: 40px;
+  min-width: 40px;
   height: 40px;
-  background: transparent;
-  border: none;
+  padding: 0 0.85rem 0 0.55rem;
+  background: $gray-light;
+  border: 1px solid #E9ECEF;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   border-radius: 8px;
-  transition: background 0.3s ease;
+  color: $dark;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
   
   &:hover {
-    background: $gray-light;
+    background: rgba($blue, 0.08);
+    border-color: rgba($blue, 0.22);
+    color: $blue;
   }
-  
-  .hamburger {
+
+  .toggle-icon {
     width: 24px;
-    height: 2px;
-    background: $dark;
-    position: relative;
-    transition: all 0.3s ease;
-    
-    &::before,
-    &::after {
-      content: '';
-      position: absolute;
-      width: 24px;
-      height: 2px;
-      background: $dark;
-      transition: all 0.3s ease;
-    }
-    
-    &::before {
-      top: -8px;
-    }
-    
-    &::after {
-      bottom: -8px;
-    }
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: $white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    font-size: 1.6rem;
+    line-height: 1;
   }
 }
 
@@ -267,6 +263,8 @@ $sidebar-width: 260px;
 // Content
 .content {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   padding: 2rem;
   overflow-y: auto;
 }
@@ -297,6 +295,15 @@ $sidebar-width: 260px;
 @media (max-width: 568px) {
   .topbar {
     padding: 0 1rem;
+  }
+
+  .toggle-text {
+    display: none;
+  }
+
+  .btn-toggle {
+    padding: 0;
+    width: 40px;
   }
   
   .content {

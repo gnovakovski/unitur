@@ -129,14 +129,24 @@ $dark: #1a1a2e;
   }
 
   &.price strong {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.12rem;
     color: $orange;
-    font-size: 1.45rem;
+    font-size: 1.25rem;
+    line-height: 1.15;
   }
 
   small {
     color: $gray;
     font-size: 0.85rem;
     font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .price-line span {
+    white-space: nowrap;
   }
 }
 
@@ -355,15 +365,26 @@ $dark: #1a1a2e;
     font-weight: 800;
   }
 
-  h2 {
+  h2,
+  .booking-price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.12rem;
     color: $orange;
-    font-size: 2.4rem;
+    font-size: clamp(1.9rem, 3.4vw, 2.35rem);
+    line-height: 1.08;
     margin: 0.7rem 0 1rem;
 
     small {
       color: $gray;
       font-size: 1rem;
       font-weight: 700;
+      white-space: nowrap;
+    }
+
+    span {
+      white-space: nowrap;
     }
   }
 
