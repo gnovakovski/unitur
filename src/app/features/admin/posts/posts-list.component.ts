@@ -196,19 +196,16 @@ export class PostsListComponent implements OnInit {
     return new Date(date).toLocaleDateString('pt-BR');
   }
 
+  brokenImages = new Set<number>();
+
   getPostImage(post: Post): string {
+    if (this.brokenImages.has(post.id)) return '';
     return post.featuredImage || post.contentImages?.[0] || '';
   }
 
   onPostImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    const container = img.parentElement;
-    img.remove();
-    if (container && !container.querySelector('.no-image')) {
-      const fallback = document.createElement('div');
-      fallback.className = 'no-image';
-      fallback.textContent = 'IMG';
-      container.appendChild(fallback);
-    }
+    const postId = Number(img.dataset['postId']);
+    if (postId) this.brokenImages.add(postId);
   }
 }

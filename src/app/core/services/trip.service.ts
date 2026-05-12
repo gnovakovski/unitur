@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import { Trip } from '../models/trip.model';
 import { FirebaseService } from './firebase.service';
 
@@ -25,197 +25,17 @@ export interface PaginatedResponse<T> {
 })
 export class TripService {
   private readonly collectionName = 'trips';
-  private readonly hiddenStaticTripsKey = 'unitur_hidden_static_trips';
   private readonly localTripsKey = 'unitur_admin_trips';
-  private readonly staticTrips: Trip[] = [
-    {
-      id: 1001,
-      title: 'Terra Santa',
-      slug: 'terra-santa',
-      tripType: 'peregrinacao',
-      destination: 'Israel',
-      country: 'Israel',
-      period: 'Junho 2026',
-      description: 'Uma jornada espiritual pelos lugares centrais da fe crista, com acompanhamento especializado, roteiro equilibrado e suporte em todos os deslocamentos.',
-      shortDescription: 'Uma jornada espiritual pelos lugares centrais da fe crista.',
-      categoryId: 0,
-      mainImage: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1600&h=900&fit=crop',
-      gallery: [],
-      startDate: new Date('2026-06-01T00:00:00'),
-      endDate: new Date('2026-06-12T00:00:00'),
-      duration: 12,
-      price: 25000,
-      foreignPrice: 'U$4.500,00',
-      availableSpots: 8,
-      showAvailableSpots: true,
-      spiritualGuide: 'Pe. Joao Batista',
-      coordinator: 'Ana Silva',
-      included: ['Hospedagem selecionada', 'Traslados do roteiro', 'Acompanhamento da Unitur', 'Seguro viagem', 'Cafe da manha'],
-      notIncluded: ['Passaporte e vistos', 'Despesas pessoais', 'Refeicoes nao mencionadas', 'Passeios opcionais'],
-      itinerary: 'Embarque e acolhida | Encontro do grupo, orientacoes iniciais e embarque internacional.\nGalileia e Nazare | Visitas aos principais locais biblicos da regiao norte.\nJerusalem e Belem | Roteiro pela Cidade Antiga, Via Dolorosa e Santo Sepulcro.\nEncerramento | Celebracao final, retorno e chegada ao Brasil.',
-      status: 'active',
-      featured: false,
-      createdAt: new Date('2026-01-01T00:00:00'),
-      updatedAt: new Date('2026-01-01T00:00:00')
-    },
-    {
-      id: 1002,
-      title: 'Caminho de Santiago',
-      slug: 'caminho-de-santiago',
-      tripType: 'peregrinacao',
-      destination: 'Espanha',
-      country: 'Espanha',
-      period: 'Agosto 2026',
-      description: 'Uma experiencia de caminhada, contemplacao e convivencia pelo tradicional Caminho de Santiago.',
-      shortDescription: 'Caminhada, contemplacao e convivencia pelo tradicional Caminho de Santiago.',
-      categoryId: 0,
-      mainImage: 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=1600&h=900&fit=crop',
-      gallery: [],
-      startDate: new Date('2026-08-01T00:00:00'),
-      endDate: new Date('2026-08-15T00:00:00'),
-      duration: 15,
-      price: 19900,
-      foreignPrice: 'U$3.580,00',
-      availableSpots: 12,
-      showAvailableSpots: true,
-      spiritualGuide: 'Pe. Carlos Mendes',
-      coordinator: 'Carlos Mendes',
-      included: ['Hospedagens', 'Apoio logistico', 'Traslados previstos', 'Seguro viagem', 'Orientacao do grupo'],
-      notIncluded: ['Equipamentos pessoais', 'Refeicoes extras', 'Despesas de documentacao'],
-      itinerary: 'Chegada a Espanha | Recepcao e preparacao para o inicio da caminhada.\nEtapas do Caminho | Percursos diarios com apoio e hospedagens planejadas.\nSantiago e retorno | Chegada a Catedral, celebracao final e retorno.',
-      status: 'active',
-      featured: false,
-      createdAt: new Date('2026-01-02T00:00:00'),
-      updatedAt: new Date('2026-01-02T00:00:00')
-    },
-    {
-      id: 1003,
-      title: 'Fatima e Lourdes',
-      slug: 'fatima-e-lourdes',
-      tripType: 'peregrinacao',
-      destination: 'Portugal e Franca',
-      country: 'Portugal e Franca',
-      period: 'Setembro 2026',
-      description: 'Roteiro mariano combinando espiritualidade, cultura, historia e acompanhamento cuidadoso.',
-      shortDescription: 'Roteiro mariano por dois grandes santuarios europeus.',
-      categoryId: 0,
-      mainImage: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1600&h=900&fit=crop',
-      gallery: [],
-      startDate: new Date('2026-09-01T00:00:00'),
-      endDate: new Date('2026-09-10T00:00:00'),
-      duration: 10,
-      price: 22500,
-      foreignPrice: 'U$4.050,00',
-      availableSpots: 15,
-      showAvailableSpots: true,
-      spiritualGuide: 'Pe. Andre Lima',
-      coordinator: 'Marina Costa',
-      included: ['Hospedagem', 'Traslados', 'Seguro viagem', 'Acompanhamento', 'Cafe da manha'],
-      notIncluded: ['Despesas pessoais', 'Refeicoes extras', 'Passeios opcionais'],
-      itinerary: 'Lisboa e Fatima | Chegada, visitas culturais e programacao no Santuario de Fatima.\nFranca e Lourdes | Deslocamento para Lourdes e vivencias no santuario.\nRetorno | Encerramento do roteiro e retorno ao Brasil.',
-      status: 'active',
-      featured: false,
-      createdAt: new Date('2026-01-03T00:00:00'),
-      updatedAt: new Date('2026-01-03T00:00:00')
-    },
-    {
-      id: 1004,
-      title: 'Europa Classica',
-      slug: 'europa-classica',
-      tripType: 'regular',
-      destination: 'Italia, Franca e Portugal',
-      country: 'Italia, Franca e Portugal',
-      period: 'Outubro 2026',
-      description: 'Circuito para conhecer destinos iconicos da Europa com conforto, organizacao e tempo para viver cada cidade.',
-      shortDescription: 'Circuito cultural por destinos iconicos da Europa.',
-      categoryId: 0,
-      mainImage: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1600&h=900&fit=crop',
-      gallery: [],
-      startDate: new Date('2026-10-01T00:00:00'),
-      endDate: new Date('2026-10-14T00:00:00'),
-      duration: 14,
-      price: 29900,
-      foreignPrice: 'U$5.380,00',
-      availableSpots: 10,
-      showAvailableSpots: true,
-      spiritualGuide: 'Equipe Unitur',
-      coordinator: 'Equipe Unitur',
-      included: ['Hospedagem', 'Traslados do roteiro', 'Seguro viagem', 'Guias locais em passeios selecionados'],
-      notIncluded: ['Ingressos opcionais', 'Refeicoes nao indicadas', 'Despesas pessoais'],
-      itinerary: 'Paris e Londres | Visitas panoramicas, pontos historicos e experiencias culturais.\nRoma e Vaticano | Pracas, basilicas, ruinas e principais cartoes-postais.\nBarcelona | Arquitetura, gastronomia e tempo livre orientado.',
-      status: 'active',
-      featured: false,
-      createdAt: new Date('2026-01-04T00:00:00'),
-      updatedAt: new Date('2026-01-04T00:00:00')
-    },
-    {
-      id: 1005,
-      title: 'Nordeste Encantador',
-      slug: 'nordeste-encantador',
-      tripType: 'regular',
-      destination: 'Brasil',
-      country: 'Brasil',
-      period: 'Julho 2026',
-      description: 'Roteiro nacional para descansar e conhecer paisagens marcantes do Nordeste.',
-      shortDescription: 'Roteiro nacional por paisagens marcantes do Nordeste.',
-      categoryId: 0,
-      mainImage: 'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?w=1600&h=900&fit=crop',
-      gallery: [],
-      startDate: new Date('2026-07-01T00:00:00'),
-      endDate: new Date('2026-07-08T00:00:00'),
-      duration: 8,
-      price: 4290,
-      availableSpots: 14,
-      showAvailableSpots: true,
-      spiritualGuide: 'Equipe Unitur',
-      coordinator: 'Equipe Unitur',
-      included: ['Hospedagem', 'Seguro viagem', 'Traslados previstos', 'Suporte Unitur'],
-      notIncluded: ['Passeios opcionais', 'Taxas locais', 'Despesas pessoais'],
-      itinerary: 'Chegada | Recepcao, check-in e primeiras experiencias.\nPasseios | Programacao com praias, cultura local e gastronomia.\nRetorno | Check-out e retorno.',
-      status: 'active',
-      featured: false,
-      createdAt: new Date('2026-01-05T00:00:00'),
-      updatedAt: new Date('2026-01-05T00:00:00')
-    },
-    {
-      id: 1006,
-      title: 'Patagonia Completa',
-      slug: 'patagonia-completa',
-      tripType: 'regular',
-      destination: 'Argentina e Chile',
-      country: 'Argentina e Chile',
-      period: 'Novembro 2026',
-      description: 'Roteiro para viver paisagens intensas e cidades cheias de historia no continente sul-americano.',
-      shortDescription: 'Paisagens intensas e experiencias ao ar livre na Patagonia.',
-      categoryId: 0,
-      mainImage: 'https://images.unsplash.com/photo-1531804159968-24716780d214?w=1600&h=900&fit=crop',
-      gallery: [],
-      startDate: new Date('2026-11-01T00:00:00'),
-      endDate: new Date('2026-11-11T00:00:00'),
-      duration: 11,
-      price: 31900,
-      foreignPrice: 'U$5.740,00',
-      availableSpots: 6,
-      showAvailableSpots: true,
-      spiritualGuide: 'Equipe Unitur',
-      coordinator: 'Equipe Unitur',
-      included: ['Hospedagem', 'Seguro viagem', 'Traslados previstos', 'Acompanhamento'],
-      notIncluded: ['Ingressos opcionais', 'Refeicoes extras', 'Despesas pessoais'],
-      itinerary: 'Buenos Aires | Historia, gastronomia e vida urbana.\nPatagonia | Natureza, montanhas e experiencias ao ar livre.\nRetorno | Encerramento da programacao.',
-      status: 'active',
-      featured: false,
-      createdAt: new Date('2026-01-06T00:00:00'),
-      updatedAt: new Date('2026-01-06T00:00:00')
-    }
-  ];
 
   constructor(private firebaseService: FirebaseService) {}
 
   getTrips(filters?: TripFilters): Observable<PaginatedResponse<Trip>> {
-    const firestoreTrips$ = from(this.firebaseService.withTimeout(getDocs(query(
-      collection(this.firebaseService.firestore, this.collectionName),
-      orderBy('createdAt', 'desc')
-    )), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
+    // Não usamos orderBy() na query porque documentos sem o campo `createdAt`
+    // (ou com tipo incompatível) são silenciosamente excluídos pelo Firestore.
+    // Ordenação é feita cliente-side em sortTrips().
+    const firestoreTrips$ = from(this.firebaseService.withTimeout(getDocs(
+      collection(this.firebaseService.firestore, this.collectionName)
+    ), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip)),
       tap(trips => {
         if (trips.length > 0) {
@@ -229,7 +49,7 @@ export class TripService {
       of(this.getLocalTrips()),
       firestoreTrips$
     ).pipe(
-      map(trips => this.mergeWithAdminTrips(trips)),
+      map(trips => this.sortTrips(trips)),
       map(trips => this.applyFilters(trips, filters))
     );
   }
@@ -249,6 +69,34 @@ export class TripService {
         }
 
         return trip;
+      })
+    );
+  }
+
+  getTripBySlug(slug: string): Observable<Trip | null> {
+    const normalized = String(slug || '').trim().toLowerCase();
+
+    if (!normalized) {
+      return of(null);
+    }
+
+    // Tenta primeiro o cache local (rápido) — se achar, retorna.
+    // Em paralelo, busca no Firestore e atualiza o cache.
+    return from(this.firebaseService.withTimeout(
+      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      'Tempo esgotado ao carregar viagem do Firestore.'
+    )).pipe(
+      map(snapshot => {
+        const trips = snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip);
+        if (trips.length > 0) {
+          this.replaceLocalTrips(trips);
+        }
+        const candidates = this.dedupeTrips([...trips, ...this.getLocalTrips()]);
+        return candidates.find(item => this.matchesSlug(item, normalized)) || null;
+      }),
+      catchError(() => {
+        const trip = this.getLocalTrips().find(item => this.matchesSlug(item, normalized));
+        return of(trip || null);
       })
     );
   }
@@ -311,12 +159,12 @@ export class TripService {
     const updatedTrip = {
       ...trip,
       slug: trip.slug || (trip.title ? this.generateSlug(trip.title) : trip.slug),
-      categoryId: trip.categoryId ? Number(trip.categoryId) : trip.categoryId,
+      categoryId: trip.categoryId !== undefined ? Number(trip.categoryId) : trip.categoryId,
       updatedAt: new Date()
     };
 
     const localTrip = {
-      ...(this.getLocalTrips().find(item => item.id === id) || this.staticTrips.find(item => item.id === id)),
+      ...(this.getLocalTrips().find(item => item.id === id)),
       id,
       ...updatedTrip
     } as Trip;
@@ -355,11 +203,19 @@ export class TripService {
     return title
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[̀-ͯ]/g, '')
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
+  }
+
+  private matchesSlug(trip: Trip, slug: string): boolean {
+    if (!slug) return false;
+    if (trip.slug && trip.slug.toLowerCase() === slug) return true;
+    if (this.generateSlug(trip.title || '') === slug) return true;
+    if (String(trip.id) === slug) return true;
+    return false;
   }
 
   private applyFilters(trips: Trip[], filters?: TripFilters): PaginatedResponse<Trip> {
@@ -380,7 +236,8 @@ export class TripService {
     }
 
     if (filters?.status) {
-      filteredTrips = filteredTrips.filter(trip => trip.status === filters.status);
+      // Viagens antigas sem o campo `status` são consideradas 'active' por padrão.
+      filteredTrips = filteredTrips.filter(trip => (trip.status || 'active') === filters.status);
     }
 
     const total = filteredTrips.length;
@@ -396,10 +253,8 @@ export class TripService {
     };
   }
 
-  private mergeWithAdminTrips(firestoreTrips: Trip[]): Trip[] {
-    const localTrips = this.getLocalTrips();
-    return this.dedupeTrips([...localTrips, ...firestoreTrips])
-      .sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
+  private sortTrips(trips: Trip[]): Trip[] {
+    return this.dedupeTrips(trips).sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
   }
 
   private dedupeTrips(trips: Trip[]): Trip[] {
@@ -445,33 +300,9 @@ export class TripService {
   }
 
   private replaceLocalTrips(trips: Trip[]) {
-    const localTrips = this.getLocalTrips();
-    const nextTrips = this.dedupeTrips([...localTrips, ...trips]);
-    localStorage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
-  }
-
-  private getVisibleStaticTrips(): Trip[] {
-    const hiddenIds = this.getHiddenStaticTripIds();
-    return this.staticTrips.filter(trip => !hiddenIds.includes(trip.id));
-  }
-
-  private getHiddenStaticTripIds(): number[] {
-    try {
-      return JSON.parse(localStorage.getItem(this.hiddenStaticTripsKey) || '[]');
-    } catch {
-      return [];
-    }
-  }
-
-  private hideStaticTrip(id: number) {
-    const hiddenIds = new Set(this.getHiddenStaticTripIds());
-    hiddenIds.add(id);
-    localStorage.setItem(this.hiddenStaticTripsKey, JSON.stringify([...hiddenIds]));
-  }
-
-  private unhideStaticTrip(id: number) {
-    const hiddenIds = this.getHiddenStaticTripIds().filter(item => item !== id);
-    localStorage.setItem(this.hiddenStaticTripsKey, JSON.stringify(hiddenIds));
+    // Substitui o cache local pelo que veio do Firestore (source of truth).
+    // Isso evita que viagens deletadas no Firestore voltem como zombies do cache.
+    localStorage.setItem(this.localTripsKey, JSON.stringify(trips));
   }
 
   private getTime(date?: Date): number {

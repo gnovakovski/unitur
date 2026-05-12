@@ -21,6 +21,13 @@ export class BannerService {
     );
   }
 
+  /** Banners visíveis no site público — somente ativos, ordenados por `order`. */
+  getActiveBanners(): Observable<Banner[]> {
+    return this.getBanners().pipe(
+      map(banners => banners.filter(b => b.status === 'active'))
+    );
+  }
+
   getBanner(id: number): Observable<Banner> {
     return this.getBanners().pipe(
       map(banners => {
@@ -38,6 +45,12 @@ export class BannerService {
   createBanner(banner: Partial<Banner>): Observable<Banner> {
     const id = Date.now();
     const now = new Date();
+    // Se ordem não veio do form (campo removido), usa o timestamp como base
+    // — qualquer banner novo entra no fim. Reorder via drag depois normaliza.
+    const order = banner.order !== undefined && banner.order !== null
+      ? Number(banner.order)
+      : id;
+
     const newBanner: Banner = {
       id,
       title: banner.title || '',
@@ -45,7 +58,7 @@ export class BannerService {
       imageUrl: banner.imageUrl || '',
       link: banner.link,
       buttonText: banner.buttonText,
-      order: Number(banner.order || 0),
+      order,
       status: banner.status || 'active',
       createdAt: now,
       updatedAt: now

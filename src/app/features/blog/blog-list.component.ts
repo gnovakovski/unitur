@@ -18,82 +18,13 @@ export class BlogListComponent implements OnInit {
   categories: Category[] = [];
   selectedCategory: number | null = null;
   loading = false;
-  
+  loaded = false;
+
   currentPage = 1;
   totalPages = 1;
   itemsPerPage = 9;
   blogOrigin = 'blog';
-  private readonly blogRequestTimeout = 1500;
-
-  private readonly fallbackCategories: Category[] = [
-    {
-      id: 1,
-      name: 'Dicas de viagem',
-      slug: 'dicas-de-viagem',
-      type: 'blog',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: 2,
-      name: 'Destinos',
-      slug: 'destinos',
-      type: 'blog',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ];
-
-  private readonly fallbackPosts: Post[] = [
-    {
-      id: 1,
-      title: 'Como planejar uma viagem sem imprevistos',
-      slug: 'como-planejar-uma-viagem-sem-imprevistos',
-      excerpt: 'Veja pontos essenciais para organizar documentos, roteiro, hospedagem e transporte antes de embarcar.',
-      content: '',
-      featuredImage: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=900&h=600&fit=crop',
-      categoryId: 1,
-      category: this.fallbackCategories[0],
-      tags: ['planejamento', 'turismo', 'dicas'],
-      status: 'published',
-      publishedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      author: { id: 1, name: 'Equipe Unitur' }
-    },
-    {
-      id: 2,
-      title: 'Destinos para conhecer em grupo',
-      slug: 'destinos-para-conhecer-em-grupo',
-      excerpt: 'Sugestões para quem busca experiências completas, seguras e bem acompanhadas em viagens nacionais e internacionais.',
-      content: '',
-      featuredImage: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&h=600&fit=crop',
-      categoryId: 2,
-      category: this.fallbackCategories[1],
-      tags: ['grupos', 'destinos', 'experiencias'],
-      status: 'published',
-      publishedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      author: { id: 1, name: 'Equipe Unitur' }
-    },
-    {
-      id: 3,
-      title: 'O que levar na mala de mão',
-      slug: 'o-que-levar-na-mala-de-mao',
-      excerpt: 'Uma lista prática para manter documentos, itens pessoais e objetos importantes sempre por perto.',
-      content: '',
-      featuredImage: 'https://images.unsplash.com/photo-1553531384-cc64ac80f931?w=900&h=600&fit=crop',
-      categoryId: 1,
-      category: this.fallbackCategories[0],
-      tags: ['bagagem', 'aeroporto', 'organizacao'],
-      status: 'published',
-      publishedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      author: { id: 1, name: 'Equipe Unitur' }
-    }
-  ];
+  private readonly blogRequestTimeout = 12000;
 
   constructor(
     private postService: PostService,
@@ -104,8 +35,6 @@ export class BlogListComponent implements OnInit {
   ngOnInit() {
     window.scrollTo({ top: 0, behavior: 'auto' });
     this.blogOrigin = this.route.snapshot.queryParamMap.get('origin') || 'blog';
-    this.categories = this.fallbackCategories;
-    this.posts = this.fallbackPosts;
 
     this.loadCategories();
     this.loadPosts();
@@ -114,9 +43,7 @@ export class BlogListComponent implements OnInit {
   loadCategories() {
     this.categoryService.getAllCategories().pipe(
       timeout(this.blogRequestTimeout),
-      catchError(() => {
-        return of(this.fallbackCategories);
-      })
+      catchError(() => of([] as Category[]))
     ).subscribe({
       next: (categories) => {
         this.categories = categories.filter(c => c.type === 'blog' || c.type === 'both');
@@ -125,7 +52,7 @@ export class BlogListComponent implements OnInit {
   }
 
   loadPosts() {
-    this.loading = this.posts.length === 0;
+    this.loading = true;
 
     const filters: PostFilters = {
       status: 'published',
@@ -139,21 +66,16 @@ export class BlogListComponent implements OnInit {
 
     this.postService.getPosts(filters).pipe(
       timeout(this.blogRequestTimeout),
-      catchError(() => {
-        const fallbackData = this.selectedCategory
-          ? this.fallbackPosts.filter(post => post.categoryId === this.selectedCategory)
-          : this.fallbackPosts;
-
-        return of({
-          data: fallbackData,
-          total: fallbackData.length,
-          page: this.currentPage,
-          limit: this.itemsPerPage,
-          totalPages: 1
-        });
-      }),
+      catchError(() => of({
+        data: [] as Post[],
+        total: 0,
+        page: this.currentPage,
+        limit: this.itemsPerPage,
+        totalPages: 1
+      })),
       finalize(() => {
         this.loading = false;
+        this.loaded = true;
       })
     ).subscribe({
       next: (response) => {
@@ -169,10 +91,6 @@ export class BlogListComponent implements OnInit {
   filterByCategory(categoryId: number | null) {
     this.selectedCategory = categoryId;
     this.currentPage = 1;
-    this.posts = categoryId
-      ? this.fallbackPosts.filter(post => post.categoryId === categoryId)
-      : this.fallbackPosts;
-
     this.loadPosts();
   }
 
@@ -194,18 +112,18 @@ export class BlogListComponent implements OnInit {
   getPageNumbers(): number[] {
     const pages: number[] = [];
     const maxVisible = 5;
-    
+
     let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(this.totalPages, start + maxVisible - 1);
-    
+
     if (end - start < maxVisible - 1) {
       start = Math.max(1, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     return pages;
   }
 }

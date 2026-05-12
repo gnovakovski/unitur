@@ -9,21 +9,43 @@ import { UploadService } from '../../../core/services/upload.service';
 import { Post, Category } from '../../../core/models/post.model';
 import { Trip } from '../../../core/models/trip.model';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
+import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
+import { UnsavedChangesModalComponent } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
+import { UnsavedFormBase } from '../../../shared/components/unsaved-changes-modal/unsaved-form.base';
 import { firstValueFrom, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-post-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent, SavingOverlayComponent, UnsavedChangesModalComponent],
   templateUrl: './post-form.component.html',
   styleUrl: './post-form.component.scss'
 })
-export class PostFormComponent implements OnInit {
+export class PostFormComponent extends UnsavedFormBase implements OnInit {
   postForm: FormGroup;
+
+  protected fieldLabels: Record<string, string> = {
+    title: 'Título',
+    slug: 'Slug',
+    excerpt: 'Resumo',
+    content: 'Conteúdo',
+    featuredImage: 'Imagem destacada',
+    contentImageUpload: 'Imagem do conteúdo',
+    contentImagesText: 'URLs de imagens',
+    categoryId: 'Categoria',
+    tags: 'Tags',
+    relatedTrips: 'Viagens relacionadas',
+    status: 'Status'
+  };
+
+  protected getMainForm(): FormGroup { return this.postForm; }
+  protected async triggerSave(): Promise<void> { await this.onSubmit(); }
+
   categories: Category[] = [];
   trips: Trip[] = [];
   loading = false;
   saving = false;
+  savingStep = '';
   error: string | null = null;
   isEditMode = false;
   postId: number | null = null;
@@ -37,6 +59,7 @@ export class PostFormComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute
   ) {
+    super();
     this.postForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       slug: ['', [Validators.required]],
@@ -84,6 +107,7 @@ export class PostFormComponent implements OnInit {
           relatedTrips: (post.relatedTrips || []).map(id => Number(id)).filter(Boolean).slice(0, 3),
           status: post.status
         });
+        this.postForm.markAsPristine();
         this.loading = false;
       },
       error: (err) => {
@@ -155,34 +179,74 @@ export class PostFormComponent implements OnInit {
     }
 
     this.saving = true;
+    this.markSaving(true);
     this.error = null;
+    this.savingStep = 'Salvando informações...';
 
     try {
       const formValue = this.postForm.value;
-      const { contentImagesText, contentImageUpload, ...baseValue } = formValue;
-      const uploadedContentImage = await this.uploadOptionalImage(contentImageUpload);
-      const postData: Partial<Post> = {
+      const { contentImagesText, contentImageUpload, featuredImage, ...baseValue } = formValue;
+
+      const featuredFile = featuredImage instanceof File ? featuredImage : null;
+      const contentFile = contentImageUpload instanceof File ? contentImageUpload : null;
+      const existingFeatured = featuredImage instanceof File ? '' : String(featuredImage || '');
+
+      const basePostData: Partial<Post> = {
         ...baseValue,
-        featuredImage: await this.uploadImageValue(baseValue.featuredImage),
+        featuredImage: existingFeatured,
         tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : [],
         relatedTrips: (formValue.relatedTrips || []).map((id: string | number) => Number(id)).filter(Boolean).slice(0, 3),
-        contentImages: [
-          ...this.parseLines(contentImagesText),
-          uploadedContentImage
-        ].filter(Boolean) as string[]
+        contentImages: this.parseLines(contentImagesText)
       };
 
-      const request = this.isEditMode && this.postId
-        ? this.postService.updatePost(this.postId, postData)
-        : this.postService.createPost(postData);
+      const saved = this.isEditMode && this.postId
+        ? await firstValueFrom(this.postService.updatePost(this.postId, basePostData))
+        : await firstValueFrom(this.postService.createPost(basePostData));
 
-      await firstValueFrom(request);
+      const postIdToUse = saved?.id || this.postId;
+
+      if ((featuredFile || contentFile) && postIdToUse) {
+        this.savingStep = 'Enviando imagens para o Firebase Storage...';
+        const updates: Partial<Post> = {};
+
+        try {
+          if (featuredFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(featuredFile, 'posts', postIdToUse).pipe(timeout(45000))
+            );
+            updates.featuredImage = uploaded.url;
+          }
+
+          if (contentFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(contentFile, 'posts', postIdToUse).pipe(timeout(45000))
+            );
+            updates.contentImages = [...(basePostData.contentImages || []), uploaded.url];
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await firstValueFrom(this.postService.updatePost(postIdToUse, updates));
+          }
+        } catch (uploadErr: any) {
+          this.error = `Post salvo, mas falhou o upload da imagem: ${uploadErr?.message || 'erro desconhecido'}. Edite o post novamente para tentar enviar a imagem.`;
+          console.error('Upload error', uploadErr);
+          this.saving = false;
+          this.savingStep = '';
+          return;
+        }
+      }
+
+      this.postForm.markAsPristine();
+      this.markSaving(false, true);
       this.router.navigate(['/admin/posts']);
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Erro ao salvar post';
       console.error(err);
+      this.markSaving(false, false);
+      throw err;
     } finally {
       this.saving = false;
+      this.savingStep = '';
     }
   }
 
@@ -195,22 +259,6 @@ export class PostFormComponent implements OnInit {
       const control = formGroup.get(key);
       control?.markAsTouched();
     });
-  }
-
-  private async uploadImageValue(value: unknown): Promise<string> {
-    if (value instanceof File) {
-      return (await firstValueFrom(this.uploadService.uploadImage(value).pipe(timeout(30000)))).url;
-    }
-
-    return String(value || '');
-  }
-
-  private async uploadOptionalImage(value: unknown): Promise<string> {
-    if (!value) {
-      return '';
-    }
-
-    return this.uploadImageValue(value);
   }
 
   isFieldInvalid(fieldName: string): boolean {

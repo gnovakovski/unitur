@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin, Subject, takeUntil, timer, switchMap } from 'rxjs';
 import { ExchangeRate, ExchangeRateService } from '../../core/services/exchange-rate.service';
@@ -17,7 +17,11 @@ export class FooterComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(private exchangeRateService: ExchangeRateService) {}
+  constructor(
+    private exchangeRateService: ExchangeRateService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
+  ) {}
 
   ngOnInit() {
     timer(0, 30 * 60 * 1000).pipe(
@@ -27,8 +31,18 @@ export class FooterComponent implements OnInit, OnDestroy {
       })),
       takeUntil(this.destroy$)
     ).subscribe(rates => {
-      this.dollarRate = rates.dollar;
-      this.euroRate = rates.euro;
+      // setTimeout dentro da zone garante que a atribuição cai em uma nova
+      // tarefa do event loop, depois do ciclo de change detection atual,
+      // evitando NG0100 quando o observable responde rápido demais.
+      this.ngZone.runOutsideAngular(() => {
+        setTimeout(() => {
+          this.ngZone.run(() => {
+            this.dollarRate = rates.dollar;
+            this.euroRate = rates.euro;
+            this.cdr.markForCheck();
+          });
+        }, 0);
+      });
     });
   }
 

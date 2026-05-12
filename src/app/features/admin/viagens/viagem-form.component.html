@@ -1,0 +1,274 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">{{ isEditMode ? 'Editar viagem' : 'Nova viagem' }}</h1>
+      <p class="af-page-header__subtitle">Preencha os dados que serão exibidos na home e na vitrine de viagens.</p>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  <form class="af-card" [formGroup]="tripForm" (ngSubmit)="saveTrip()">
+
+    <!-- Seção 1: Informações principais -->
+    <div class="af-section">
+      <div class="af-section__header">
+        <span class="af-section__step">1</span>
+        <h2 class="af-section__title">Informações principais</h2>
+      </div>
+
+      <div class="af-grid af-grid--2">
+        <div class="af-field af-field--span-2">
+          <label class="af-label">Nome da viagem <span class="af-label__required">*</span></label>
+          <input
+            class="af-control"
+            formControlName="title"
+            [class.is-invalid]="isFieldInvalid('title')"
+            placeholder="Ex: Terra Santa — Peregrinação 2026">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Tipo <span class="af-label__required">*</span></label>
+          <select class="af-control" formControlName="tripType">
+            <option value="peregrinacao">Viagens de Peregrinação</option>
+            <option value="regular">Viagens Regulares</option>
+            <option value="curadoria">Viagens de Curadoria</option>
+          </select>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">País principal <span class="af-label__required">*</span></label>
+          <input class="af-control" formControlName="country" placeholder="Ex: Israel">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Período <span class="af-label__required">*</span></label>
+          <input class="af-control" formControlName="period" placeholder="Ex: Junho 2026">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Data de embarque <span class="af-label__required">*</span></label>
+          <input class="af-control" type="date" formControlName="startDate">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Status <span class="af-label__required">*</span></label>
+          <select class="af-control" formControlName="status">
+            <option value="active">Ativa</option>
+            <option value="inactive">Inativa</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 2: Operacional -->
+    <div class="af-section">
+      <div class="af-section__header">
+        <span class="af-section__step">2</span>
+        <h2 class="af-section__title">Operacional</h2>
+      </div>
+
+      <div class="af-grid af-grid--3">
+        <div class="af-field">
+          <label class="af-label">Dias <span class="af-label__required">*</span></label>
+          <input class="af-control" type="number" formControlName="duration" min="1">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Vagas <span class="af-label__required">*</span></label>
+          <input class="af-control" type="number" formControlName="availableSpots" min="0">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Mostrar quantidade</label>
+          <select class="af-control" formControlName="showAvailableSpots">
+            <option [ngValue]="true">Sim, exibir vagas disponíveis</option>
+            <option [ngValue]="false">Não, ocultar</option>
+          </select>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Preço base <span class="af-label__required">*</span></label>
+          <div class="af-input-group">
+            <span class="af-input-group__addon">R$</span>
+            <input class="af-control" type="number" formControlName="price" min="1" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Moeda estrangeira <span class="af-label__optional">opcional</span></label>
+          <select class="af-control" formControlName="foreignCurrency">
+            <option value="">Sem valor estrangeiro</option>
+            <option value="USD">Dólar turismo (USD)</option>
+            <option value="EUR">Euro turismo (EUR)</option>
+          </select>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Valor convertido</label>
+          <input class="af-control" formControlName="foreignPrice" readonly placeholder="Calculado automaticamente">
+          @if (exchangeRateText) {
+            <span class="af-hint">{{ exchangeRateText }}</span>
+          }
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Guia espiritual <span class="af-label__optional">opcional</span></label>
+          <input class="af-control" formControlName="spiritualGuide" placeholder="Ex: Pe. João Batista">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Coordenador <span class="af-label__optional">opcional</span></label>
+          <input class="af-control" formControlName="coordinator" placeholder="Ex: Ana Silva">
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 3: Descrições -->
+    <div class="af-section">
+      <div class="af-section__header">
+        <span class="af-section__step">3</span>
+        <h2 class="af-section__title">Descrições e mídia</h2>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Chamada curta <span class="af-label__required">*</span></label>
+        <textarea
+          class="af-control af-control--textarea"
+          rows="3"
+          formControlName="shortDescription"
+          placeholder="Resumo usado em cards e seções de curadoria."></textarea>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Descrição completa <span class="af-label__required">*</span></label>
+        <textarea
+          class="af-control af-control--textarea"
+          rows="6"
+          formControlName="description"
+          placeholder="Texto completo da viagem, com diferenciais, contexto e o que esperar."></textarea>
+      </div>
+
+      <div class="af-field">
+        <app-image-upload
+          label="Imagem principal da viagem"
+          helper="Aparece no card, na home e no topo da página da viagem. Recomendado 1600×900."
+          formControlName="mainImage">
+        </app-image-upload>
+      </div>
+    </div>
+
+    <!-- Seção 4: Galeria, hotéis e roteiro -->
+    <div class="af-section">
+      <div class="af-section__header">
+        <span class="af-section__step">4</span>
+        <h2 class="af-section__title">Galeria, hotéis e roteiro</h2>
+      </div>
+
+      <div class="af-field">
+        <app-multi-image-upload
+          label="Galeria da experiência"
+          helper="Adicione várias fotos da viagem. Elas viram um carrossel no site público. Você pode reordenar."
+          formControlName="experienceImages">
+        </app-multi-image-upload>
+      </div>
+
+      <div class="af-field">
+        <app-hotel-list-upload
+          label="Hotéis do grupo"
+          helper="Adicione fotos dos hotéis e o nome de cada um. Aparecem em cards no detalhe da viagem."
+          formControlName="hotels">
+        </app-hotel-list-upload>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Roteiro detalhado</label>
+        <textarea
+          class="af-control af-control--textarea"
+          rows="5"
+          formControlName="itinerary"
+          placeholder="Use uma linha por dia ou etapa do roteiro."></textarea>
+      </div>
+    </div>
+
+    <!-- Seção 5: Comercial -->
+    <div class="af-section af-section--no-border">
+      <div class="af-section__header">
+        <span class="af-section__step">5</span>
+        <h2 class="af-section__title">Comercial</h2>
+      </div>
+
+      <div class="af-grid af-grid--2">
+        <div class="af-field">
+          <label class="af-label">Formas de pagamento</label>
+          <textarea
+            class="af-control af-control--textarea"
+            rows="4"
+            formControlName="paymentMethodsText"
+            placeholder="Uma forma de pagamento por linha."></textarea>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Política de cancelamento</label>
+          <textarea
+            class="af-control af-control--textarea"
+            rows="4"
+            formControlName="cancellationPolicy"
+            placeholder="Política padrão de cancelamento."></textarea>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Incluso</label>
+          <textarea
+            class="af-control af-control--textarea"
+            rows="5"
+            formControlName="includedText"
+            placeholder="Um item por linha."></textarea>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Não incluso</label>
+          <textarea
+            class="af-control af-control--textarea"
+            rows="5"
+            formControlName="notIncludedText"
+            placeholder="Um item por linha."></textarea>
+        </div>
+      </div>
+    </div>
+
+    @if (saving && savingStep) {
+      <div class="af-alert af-alert--info">
+        <span class="af-alert__icon">i</span>
+        <span>{{ savingStep }}</span>
+      </div>
+    }
+
+    <div class="af-actions">
+      <button class="af-btn af-btn--secondary" type="button" (click)="cancel()" [disabled]="saving">
+        Cancelar
+      </button>
+      <button class="af-btn af-btn--primary af-btn--lg" type="submit" [disabled]="!canSaveTrip || saving">
+        {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar viagem' : 'Salvar viagem') }}
+      </button>
+    </div>
+  </form>
+</section>
+
+<app-saving-overlay
+  [show]="saving"
+  [title]="isEditMode ? 'Atualizando viagem...' : 'Criando viagem...'"
+  [message]="savingStep || 'Aguarde enquanto salvamos sua viagem.'">
+</app-saving-overlay>
+
+<app-unsaved-changes-modal
+  [show]="unsavedModalOpen"
+  [canSave]="canSubmit()"
+  [changedFields]="changedFields"
+  (resolved)="onUnsavedResolved($event)">
+</app-unsaved-changes-modal>

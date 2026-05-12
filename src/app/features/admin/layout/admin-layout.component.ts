@@ -3,6 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
+interface MenuItem {
+  label: string;
+  route: string;
+  icon: string;
+}
+
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
@@ -14,27 +20,12 @@ export class AdminLayoutComponent implements OnInit {
   sidebarOpen = true;
   currentUser: any;
 
-  menuItems = [
-    { 
-      label: 'Posts', 
-      route: '/admin/posts' 
-    },
-    { 
-      label: 'Viagens', 
-      route: '/admin/viagens' 
-    },
-    { 
-      label: 'Categorias', 
-      route: '/admin/categorias' 
-    },
-    { 
-      label: 'Banners', 
-      route: '/admin/banners' 
-    },
-    { 
-      label: 'Depoimentos', 
-      route: '/admin/depoimentos' 
-    }
+  menuItems: MenuItem[] = [
+    { label: 'Viagens', route: '/admin/viagens', icon: 'trip' },
+    { label: 'Posts',    route: '/admin/posts',    icon: 'post' },
+    { label: 'Categorias', route: '/admin/categorias', icon: 'tag' },
+    { label: 'Banners',  route: '/admin/banners',  icon: 'banner' },
+    { label: 'Depoimentos', route: '/admin/depoimentos', icon: 'quote' }
   ];
 
   constructor(
@@ -60,5 +51,10 @@ export class AdminLayoutComponent implements OnInit {
 
   goToSite() {
     window.open('/', '_blank');
+  }
+
+  get userInitial(): string {
+    const name = this.currentUser?.name || this.currentUser?.email || '';
+    return name.charAt(0).toUpperCase() || 'U';
   }
 }

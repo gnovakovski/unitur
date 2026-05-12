@@ -2,220 +2,73 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { Trip } from '../../../core/models/trip.model';
 import { TripService } from '../../../core/services/trip.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode } from '../../../core/utils/currency-format';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
+import { MultiImageUploadComponent, GalleryItem } from '../../../shared/components/multi-image-upload/multi-image-upload.component';
+import { HotelListUploadComponent, HotelItem } from '../../../shared/components/hotel-list-upload/hotel-list-upload.component';
+import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
+import { UnsavedChangesModalComponent } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
+import { UnsavedFormBase } from '../../../shared/components/unsaved-changes-modal/unsaved-form.base';
 
 @Component({
   selector: 'app-viagem-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent],
-  template: `
-    <div class="page-container">
-      <div class="page-header">
-        <div>
-          <h1>{{ isEditMode ? 'Editar viagem' : 'Nova viagem' }}</h1>
-          <p>Preencha os dados que ser?o exibidos na home e na vitrine de viagens.</p>
-        </div>
-      </div>
-
-      @if (error) {
-        <div class="alert-error">{{ error }}</div>
-      }
-
-      <form class="form-card" [formGroup]="tripForm" (ngSubmit)="saveTrip()">
-        <div class="form-grid">
-          <label>
-            <span class="field-label">Nome da viagem <span class="required">*</span></span>
-            <input class="form-control" formControlName="title" placeholder="Ex: Terra Santa">
-          </label>
-
-          <label>
-            <span class="field-label">Tipo <span class="required">*</span></span>
-            <select class="form-control" formControlName="tripType">
-              <option value="peregrinacao">Viagens de Peregrinação</option>
-              <option value="regular">Viagens Regulares</option>
-              <option value="curadoria">Viagens de Curadoria</option>
-            </select>
-          </label>
-
-          <label>
-            <span class="field-label">País principal <span class="required">*</span></span>
-            <input class="form-control" formControlName="country" placeholder="Ex: Israel">
-          </label>
-
-          <label>
-            <span class="field-label">Período <span class="required">*</span></span>
-            <input class="form-control" formControlName="period" placeholder="Ex: Junho 2026">
-          </label>
-
-          <label>
-            <span class="field-label">Data de embarque <span class="required">*</span></span>
-            <input class="form-control" type="date" formControlName="startDate">
-          </label>
-
-          <label>
-            <span class="field-label">Dias <span class="required">*</span></span>
-            <input class="form-control" type="number" formControlName="duration" min="1">
-          </label>
-
-          <label>
-            <span class="field-label">Vagas <span class="required">*</span></span>
-            <input class="form-control" type="number" formControlName="availableSpots" min="0">
-          </label>
-
-          <label>
-            <span class="field-label">Preço <span class="required">*</span></span>
-            <input class="form-control" type="number" formControlName="price" min="1">
-          </label>
-
-          <label>
-            Tipo de moeda
-            <select class="form-control" formControlName="foreignCurrency">
-              <option value="">Sem valor estrangeiro</option>
-              <option value="USD">Dolar turismo</option>
-              <option value="EUR">Euro turismo</option>
-            </select>
-          </label>
-
-          <label>
-            Valor convertido
-            <input class="form-control" formControlName="foreignPrice" readonly placeholder="Calculado automaticamente">
-            @if (exchangeRateText) {
-              <span class="field-hint">{{ exchangeRateText }}</span>
-            }
-          </label>
-
-          <label>
-            <span class="field-label">Status <span class="required">*</span></span>
-            <select class="form-control" formControlName="status">
-              <option value="active">Ativa</option>
-              <option value="inactive">Inativa</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="form-grid">
-          <label>
-            Guia espiritual
-            <input class="form-control" formControlName="spiritualGuide" placeholder="Ex: Pe. Joao Batista">
-          </label>
-
-          <label>
-            Coordenador
-            <input class="form-control" formControlName="coordinator" placeholder="Ex: Ana Silva">
-          </label>
-
-          <label>
-            Mostrar quantidade de vagas
-            <select class="form-control" formControlName="showAvailableSpots">
-              <option [ngValue]="true">Sim</option>
-              <option [ngValue]="false">Não</option>
-            </select>
-          </label>
-
-          <app-image-upload label="Imagem principal" formControlName="mainImage"></app-image-upload>
-        </div>
-
-        <label>
-          <span class="field-label">Chamada curta <span class="required">*</span></span>
-          <textarea class="form-control" rows="3" formControlName="shortDescription" placeholder="Resumo para cards e curadoria"></textarea>
-        </label>
-
-        <label>
-          <span class="field-label">Descrição completa <span class="required">*</span></span>
-          <textarea class="form-control" rows="5" formControlName="description" placeholder="Descrição da viagem"></textarea>
-        </label>
-
-        <div class="form-grid wide">
-          <label>
-            Imagens da experiencia
-            <app-image-upload label="Selecionar imagem da experiência" formControlName="experienceImageUpload"></app-image-upload>
-          </label>
-
-          <label>
-            Roteiro
-            <textarea class="form-control" rows="4" formControlName="itinerary" placeholder="Use uma linha por dia ou etapa"></textarea>
-          </label>
-        </div>
-
-        <div class="form-grid wide">
-          <label>
-            Hotéis do grupo
-            <app-image-upload label="Selecionar imagem do hotel" formControlName="hotelImageUpload"></app-image-upload>
-          </label>
-
-          <label>
-            Formas de pagamento
-            <textarea class="form-control" rows="4" formControlName="paymentMethodsText" placeholder="Uma forma de pagamento por linha"></textarea>
-          </label>
-        </div>
-
-        <div class="form-grid wide">
-          <label>
-            Incluso
-            <textarea class="form-control" rows="4" formControlName="includedText" placeholder="Um item por linha"></textarea>
-          </label>
-
-          <label>
-            Não incluso
-            <textarea class="form-control" rows="4" formControlName="notIncludedText" placeholder="Um item por linha"></textarea>
-          </label>
-        </div>
-
-        <label>
-          Política de cancelamento
-          <textarea class="form-control" rows="4" formControlName="cancellationPolicy" placeholder="Política padrão de cancelamento"></textarea>
-        </label>
-
-        <div class="form-actions">
-          <button class="btn-secondary" type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
-          <button class="btn-primary" type="submit" [disabled]="!canSaveTrip || saving">
-            {{ saving ? 'Salvando...' : 'Salvar viagem' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .page-container { width: 100%; max-width: none; }
-    .page-header { margin-bottom: 2rem; }
-    .page-header h1 { color: #1a1a2e; margin: 0 0 0.35rem; font-size: 2rem; }
-    .page-header p { color: #6C757D; margin: 0; }
-    .alert-error { margin-bottom: 1rem; padding: 1rem; background: #ffebee; color: #c62828; border-radius: 18px; }
-    .form-card { background: white; border-radius: 24px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: grid; gap: 1rem; }
-    .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
-    .form-grid.wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    label { display: grid; gap: 0.35rem; color: #333; font-size: 0.9rem; font-weight: 700; align-content: start; }
-    .field-label { display: inline-flex; align-items: baseline; gap: 0.2rem; width: fit-content; white-space: nowrap; min-height: 1.2rem; }
-    .field-hint { color: #6C757D; font-size: 0.78rem; font-weight: 500; }
-    .form-control { width: 100%; border: 1px solid #e0e0e0; border-radius: 12px; padding: 0.75rem 0.9rem; font: inherit; }
-    .form-control[readonly] { background: #f8f9fa; color: #6C757D; }
-    textarea.form-control { resize: vertical; }
-    .form-control:focus { outline: none; border-color: #ff812c; box-shadow: 0 0 0 3px rgba(255,129,44,0.1); }
-    .required { color: #c62828; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-    .btn-primary, .btn-secondary { border: none; border-radius: 999px; padding: 0.85rem 1.5rem; font: inherit; font-weight: 800; cursor: pointer; }
-    .btn-primary { background: #ff812c; color: white; }
-    .btn-secondary { background: #f0f0f0; color: #333; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    @media (max-width: 980px) { .form-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 680px) { .form-grid { grid-template-columns: 1fr; } .form-actions { flex-direction: column; } }
-  `]
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ImageUploadComponent,
+    MultiImageUploadComponent,
+    HotelListUploadComponent,
+    SavingOverlayComponent,
+    UnsavedChangesModalComponent
+  ],
+  templateUrl: './viagem-form.component.html',
+  styleUrl: './viagem-form.component.scss'
 })
-export class ViagemFormComponent implements OnInit {
+export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   tripForm: FormGroup;
   isEditMode = false;
   tripId: number | null = null;
   saving = false;
+  savingStep = '';
   error = '';
   exchangeRateText = '';
   private lastExchangeRate: number | undefined;
+
+  protected fieldLabels: Record<string, string> = {
+    title: 'Nome da viagem',
+    tripType: 'Tipo',
+    country: 'País',
+    period: 'Período',
+    startDate: 'Data de embarque',
+    duration: 'Duração',
+    availableSpots: 'Vagas',
+    price: 'Preço',
+    foreignCurrency: 'Moeda estrangeira',
+    foreignPrice: 'Valor convertido',
+    status: 'Status',
+    spiritualGuide: 'Guia espiritual',
+    coordinator: 'Coordenador',
+    showAvailableSpots: 'Exibir vagas',
+    mainImage: 'Imagem principal',
+    shortDescription: 'Chamada curta',
+    description: 'Descrição completa',
+    experienceImages: 'Galeria da experiência',
+    hotels: 'Hotéis',
+    itinerary: 'Roteiro',
+    paymentMethodsText: 'Formas de pagamento',
+    includedText: 'Incluso',
+    notIncludedText: 'Não incluso',
+    cancellationPolicy: 'Política de cancelamento'
+  };
+
+  protected getMainForm(): FormGroup { return this.tripForm; }
+  protected async triggerSave(): Promise<void> { await this.saveTrip(); }
 
   constructor(
     private fb: FormBuilder,
@@ -225,6 +78,7 @@ export class ViagemFormComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute
   ) {
+    super();
     this.tripForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       tripType: ['peregrinacao', [Validators.required]],
@@ -243,10 +97,8 @@ export class ViagemFormComponent implements OnInit {
       mainImage: [''],
       shortDescription: ['', [Validators.required]],
       description: ['', [Validators.required]],
-      experienceImageUpload: [''],
-      experienceImagesText: [''],
-      hotelImageUpload: [''],
-      hotelsText: [''],
+      experienceImages: [[] as GalleryItem[]],
+      hotels: [[] as HotelItem[]],
       itinerary: [''],
       paymentMethodsText: [''],
       includedText: [''],
@@ -255,10 +107,8 @@ export class ViagemFormComponent implements OnInit {
     });
   }
 
-
   get canSaveTrip(): boolean {
-    const requiredFields = ['title', 'tripType', 'country', 'period', 'startDate', 'duration', 'availableSpots', 'price', 'status', 'shortDescription', 'description'];
-    return requiredFields.every(fieldName => this.tripForm.get(fieldName)?.valid);
+    return this.tripForm.valid;
   }
 
   ngOnInit() {
@@ -294,14 +144,15 @@ export class ViagemFormComponent implements OnInit {
           mainImage: trip.mainImage || '',
           shortDescription: trip.shortDescription || '',
           description: trip.description || '',
-          experienceImagesText: (trip.experienceImages || trip.gallery || []).join('\n'),
-          hotelsText: (trip.hotels || []).map(hotel => `${hotel.image} | ${hotel.name}`).join('\n'),
+          experienceImages: (trip.experienceImages || trip.gallery || []) as GalleryItem[],
+          hotels: (trip.hotels || []).map(h => ({ name: h.name, image: h.image })) as HotelItem[],
           itinerary: trip.itinerary || '',
           paymentMethodsText: (trip.paymentMethods || []).join('\n'),
           includedText: (trip.included || []).join('\n'),
           notIncludedText: (trip.notIncluded || []).join('\n'),
           cancellationPolicy: trip.cancellationPolicy || ''
         });
+        this.tripForm.markAsPristine();
         this.lastExchangeRate = trip.foreignExchangeRate;
         this.updateConvertedPrice();
       },
@@ -318,36 +169,45 @@ export class ViagemFormComponent implements OnInit {
     }
 
     this.saving = true;
+    this.markSaving(true);
     this.error = '';
+    this.savingStep = 'Salvando informações da viagem...';
 
     try {
-      await this.updateConvertedPrice(true);
+      try {
+        await this.updateConvertedPrice(true);
+      } catch (rateErr) {
+        console.warn('Câmbio indisponível, prosseguindo sem atualizar conversão.', rateErr);
+      }
       const value = this.tripForm.getRawValue();
       const {
-        experienceImagesText,
-        experienceImageUpload,
-        hotelsText,
-        hotelImageUpload,
         paymentMethodsText,
         includedText,
         notIncludedText,
+        mainImage,
+        experienceImages,
+        hotels,
         ...baseValue
       } = value;
-      const uploadedExperienceImage = await this.uploadOptionalImage(experienceImageUpload);
-      const uploadedHotelImage = await this.uploadOptionalImage(hotelImageUpload);
-      const experienceImages = [
-        ...this.parseLines(experienceImagesText),
-        uploadedExperienceImage
-      ].filter(Boolean) as string[];
-      const hotels = this.parseHotels([
-        hotelsText,
-        uploadedHotelImage ? `${uploadedHotelImage} | ` : ''
-      ].filter(Boolean).join('\n'));
+
+      const mainImageFile = mainImage instanceof File ? mainImage : null;
+      const existingMainImage = mainImage instanceof File ? '' : String(mainImage || '');
+
+      const galleryItems = (experienceImages || []) as GalleryItem[];
+      const hotelItems = (hotels || []) as HotelItem[];
+
+      // Separa o que já é URL (mantém) do que é File pendente
+      const existingExperienceUrls = galleryItems.filter(item => typeof item === 'string') as string[];
+      const existingHotelsResolved = hotelItems
+        .filter(item => typeof item.image === 'string')
+        .map(item => ({ name: item.name, image: item.image as string }));
+
       const now = new Date();
       const startDate = value.startDate ? new Date(`${value.startDate}T00:00:00`) : now;
+
       const tripData: Partial<Trip> = {
         ...baseValue,
-        mainImage: await this.uploadImageValue(baseValue.mainImage),
+        mainImage: existingMainImage,
         foreignPrice: baseValue.foreignCurrency ? baseValue.foreignPrice : '',
         foreignExchangeRate: baseValue.foreignCurrency ? this.lastExchangeRate : undefined,
         destination: value.country,
@@ -355,24 +215,106 @@ export class ViagemFormComponent implements OnInit {
         startDate,
         endDate: startDate,
         featured: value.tripType === 'curadoria',
-        experienceImages,
-        gallery: experienceImages,
-        hotels,
+        experienceImages: existingExperienceUrls,
+        gallery: existingExperienceUrls,
+        hotels: existingHotelsResolved,
         paymentMethods: this.parseLines(paymentMethodsText),
         included: this.parseLines(includedText),
         notIncluded: this.parseLines(notIncludedText)
       };
 
-      const request = this.isEditMode && this.tripId
-        ? this.tripService.updateTrip(this.tripId, tripData)
-        : this.tripService.createTrip(tripData);
+      const saved = this.isEditMode && this.tripId
+        ? await firstValueFrom(this.tripService.updateTrip(this.tripId, tripData))
+        : await firstValueFrom(this.tripService.createTrip(tripData));
 
-      await firstValueFrom(request);
+      const tripIdToUse = saved?.id || this.tripId;
+
+      const pendingExperienceFiles = galleryItems.filter(item => item instanceof File) as File[];
+      const pendingHotelItems = hotelItems.filter(item => item.image instanceof File);
+
+      const hasUploads = mainImageFile || pendingExperienceFiles.length > 0 || pendingHotelItems.length > 0;
+
+      if (hasUploads && tripIdToUse) {
+        const totalUploads = (mainImageFile ? 1 : 0) + pendingExperienceFiles.length + pendingHotelItems.length;
+        let done = 0;
+        const updateStep = () => {
+          done++;
+          this.savingStep = `Enviando imagens (${done}/${totalUploads})...`;
+        };
+
+        this.savingStep = `Enviando imagens (0/${totalUploads})...`;
+        const updates: Partial<Trip> = {};
+
+        try {
+          if (mainImageFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(mainImageFile, 'viagens', tripIdToUse).pipe(timeout(60000))
+            );
+            updates.mainImage = uploaded.url;
+            updateStep();
+          }
+
+          // Upload das imagens de experiência preservando a ordem original do array.
+          let experienceFinal: string[] = [];
+          if (pendingExperienceFiles.length > 0) {
+            const fileToUrl = new Map<File, string>();
+            for (const file of pendingExperienceFiles) {
+              const uploaded = await firstValueFrom(
+                this.uploadService.uploadToEntity(file, 'viagens', tripIdToUse).pipe(timeout(60000))
+              );
+              fileToUrl.set(file, uploaded.url);
+              updateStep();
+            }
+            experienceFinal = galleryItems.map(item =>
+              typeof item === 'string' ? item : (fileToUrl.get(item) || '')
+            ).filter(Boolean);
+            updates.experienceImages = experienceFinal;
+            updates.gallery = experienceFinal;
+          }
+
+          // Upload das imagens de hotéis preservando ordem e nomes.
+          if (pendingHotelItems.length > 0) {
+            const hotelFileToUrl = new Map<File, string>();
+            for (const hotel of pendingHotelItems) {
+              const uploaded = await firstValueFrom(
+                this.uploadService.uploadToEntity(hotel.image as File, 'viagens', tripIdToUse).pipe(timeout(60000))
+              );
+              hotelFileToUrl.set(hotel.image as File, uploaded.url);
+              updateStep();
+            }
+            const resolvedHotels = hotelItems.map(item => {
+              if (typeof item.image === 'string') {
+                return { name: item.name, image: item.image };
+              }
+              const url = hotelFileToUrl.get(item.image as File) || '';
+              return { name: item.name, image: url };
+            }).filter(h => h.image);
+            updates.hotels = resolvedHotels;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            this.savingStep = 'Finalizando...';
+            await firstValueFrom(this.tripService.updateTrip(tripIdToUse, updates));
+          }
+        } catch (uploadErr: any) {
+          this.error = `Viagem salva, mas falhou o upload de uma imagem: ${uploadErr?.message || 'erro desconhecido'}. Edite a viagem para tentar novamente.`;
+          console.error('Upload error', uploadErr);
+          this.saving = false;
+          this.savingStep = '';
+          return;
+        }
+      }
+
+      this.tripForm.markAsPristine();
+      this.markSaving(false, true);
       this.router.navigate(['/admin/viagens']);
     } catch (err: any) {
-      this.error = err?.message || 'Erro ao salvar viagem. Verifique permiss?o do Firestore.';
+      this.error = err?.message || 'Erro ao salvar viagem. Verifique permissão do Firestore.';
+      this.markSaving(false, false);
+      throw err;
     } finally {
       this.saving = false;
+      this.savingStep = '';
     }
   }
 
@@ -380,34 +322,16 @@ export class ViagemFormComponent implements OnInit {
     this.router.navigate(['/admin/viagens']);
   }
 
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.tripForm.get(fieldName);
+    return !!(field && field.invalid && field.touched);
+  }
+
   private parseLines(value: string): string[] {
     return String(value || '')
       .split('\n')
       .map(item => item.trim())
       .filter(Boolean);
-  }
-
-  private parseHotels(value: string): Array<{ name: string; image: string }> {
-    return this.parseLines(value).map(line => {
-      const [image = '', name = ''] = line.split('|').map(item => item.trim());
-      return { image, name: name || image };
-    });
-  }
-
-  private async uploadImageValue(value: unknown): Promise<string> {
-    if (value instanceof File) {
-      return (await firstValueFrom(this.uploadService.uploadImage(value))).url;
-    }
-
-    return String(value || '');
-  }
-
-  private async uploadOptionalImage(value: unknown): Promise<string> {
-    if (!value) {
-      return '';
-    }
-
-    return this.uploadImageValue(value);
   }
 
   private async updateConvertedPrice(waitForResult = false): Promise<void> {
@@ -425,7 +349,7 @@ export class ViagemFormComponent implements OnInit {
     const applyRate = (rate: number | null) => {
       if (!rate) {
         foreignPriceControl?.setValue('', { emitEvent: false });
-        this.exchangeRateText = 'Nao foi possivel carregar o cambio.';
+        this.exchangeRateText = 'Não foi possível carregar o câmbio.';
         this.lastExchangeRate = undefined;
         return;
       }
@@ -433,7 +357,7 @@ export class ViagemFormComponent implements OnInit {
       const convertedValue = price / rate;
       this.lastExchangeRate = rate;
       foreignPriceControl?.setValue(formatForeignCurrency(convertedValue, currency), { emitEvent: false });
-      this.exchangeRateText = `Cambio usado: 1 ${currency} = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      this.exchangeRateText = `Câmbio usado: 1 ${currency} = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     if (waitForResult) {

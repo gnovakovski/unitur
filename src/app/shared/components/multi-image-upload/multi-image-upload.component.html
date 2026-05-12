@@ -1,0 +1,97 @@
+<div class="mu-wrapper">
+  @if (label) {
+    <label class="mu-label" [for]="inputId">{{ label }}</label>
+  }
+
+  <div
+    class="mu-dropzone"
+    [class.is-drag]="dragOver"
+    (click)="triggerFileInput($event)"
+    (drop)="onDrop($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)">
+    <div class="mu-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/>
+        <polyline points="21 15 16 10 5 21"/>
+        <circle cx="9" cy="9" r="2"/>
+      </svg>
+    </div>
+    <p class="mu-text">Clique ou arraste imagens aqui</p>
+    <p class="mu-hint">
+      JPG, PNG ou WebP — até {{ maxSize }}MB cada · {{ items.length }}/{{ maxItems }}
+    </p>
+  </div>
+
+  <input
+    type="file"
+    [id]="inputId"
+    [accept]="accept"
+    multiple
+    (click)="$event.stopPropagation()"
+    (change)="onFileSelected($event)"
+    class="mu-file-input">
+
+  @if (items.length > 0) {
+    <div class="mu-gallery">
+      @for (item of items; track $index; let i = $index) {
+        <div class="mu-item">
+          <div class="mu-thumb">
+            <img [src]="previews[i]" [alt]="'Imagem ' + (i + 1)">
+
+            @if (isLocal(item)) {
+              <span class="mu-badge mu-badge--local">Pendente</span>
+            }
+
+            <div class="mu-thumb-actions">
+              <button
+                type="button"
+                class="mu-action"
+                (click)="moveUp(i, $event)"
+                [disabled]="i === 0"
+                title="Mover para cima">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="mu-action"
+                (click)="moveDown(i, $event)"
+                [disabled]="i === items.length - 1"
+                title="Mover para baixo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="mu-action mu-action--danger"
+                (click)="remove(i, $event)"
+                title="Remover imagem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="mu-meta">
+            <span class="mu-index">#{{ i + 1 }}</span>
+            @if (isLocal(item)) {
+              <span class="mu-size">{{ getFileSize(item) }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (helper && !error) {
+    <p class="mu-helper">{{ helper }}</p>
+  }
+
+  @if (error) {
+    <div class="mu-error" role="alert">{{ error }}</div>
+  }
+</div>

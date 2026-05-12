@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { Post } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
 
@@ -30,10 +30,9 @@ export class PostService {
   constructor(private firebaseService: FirebaseService) {}
 
   getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
-    const request = getDocs(query(
-      collection(this.firebaseService.firestore, this.collectionName),
-      orderBy('createdAt', 'desc')
-    ));
+    // Sem orderBy() na query para evitar exclusão silenciosa de docs sem `createdAt`.
+    // Ordenação é feita cliente-side em dedupePosts().
+    const request = getDocs(collection(this.firebaseService.firestore, this.collectionName));
 
     const firestorePosts$ = from(this.firebaseService.withTimeout(request, 'Tempo esgotado ao carregar posts do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post)),
@@ -49,7 +48,7 @@ export class PostService {
       of(this.getLocalPosts()),
       firestorePosts$
     ).pipe(
-      map(posts => this.dedupePosts([...this.getLocalPosts(), ...posts])),
+      map(posts => this.dedupePosts(posts)),
       map(posts => this.applyFilters(posts, filters))
     );
   }
@@ -80,6 +79,42 @@ export class PostService {
         return of(localPost);
       })
     );
+  }
+
+  getPostBySlug(slug: string): Observable<Post> {
+    const normalized = String(slug || '').trim().toLowerCase();
+
+    return from(this.firebaseService.withTimeout(
+      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      'Tempo esgotado ao carregar post do Firestore.'
+    )).pipe(
+      map(snapshot => {
+        const posts = snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post);
+        const candidates = this.dedupePosts([...posts, ...this.getLocalPosts()]);
+        const post = candidates.find(item => this.matchesSlug(item, normalized));
+
+        if (!post) {
+          throw new Error('Post não encontrado');
+        }
+
+        return post;
+      }),
+      catchError(() => {
+        const post = this.getLocalPosts().find(item => this.matchesSlug(item, normalized));
+        if (!post) {
+          throw new Error('Post não encontrado');
+        }
+        return of(post);
+      })
+    );
+  }
+
+  private matchesSlug(post: Post, slug: string): boolean {
+    if (!slug) return false;
+    if (post.slug && post.slug.toLowerCase() === slug) return true;
+    if (this.generateSlug(post.title || '') === slug) return true;
+    if (String(post.id) === slug) return true;
+    return false;
   }
 
   createPost(post: Partial<Post>): Observable<Post> {
@@ -176,7 +211,9 @@ export class PostService {
     }
 
     if (filters?.status) {
-      filteredPosts = filteredPosts.filter(post => post.status === filters.status);
+      // Posts sem o campo `status` são considerados 'published' por padrão
+      // (compat com documentos cadastrados antes do campo existir).
+      filteredPosts = filteredPosts.filter(post => (post.status || 'published') === filters.status);
     }
 
     const total = filteredPosts.length;
@@ -217,8 +254,8 @@ export class PostService {
   }
 
   private replaceLocalPosts(posts: Post[]) {
-    const nextPosts = this.dedupePosts([...this.getLocalPosts(), ...posts]);
-    localStorage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
+    // Source of truth = Firestore. Cache local é substituído para evitar zombies.
+    localStorage.setItem(this.localPostsKey, JSON.stringify(posts));
   }
 
   private removeLocalPost(id: number) {

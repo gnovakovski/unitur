@@ -67,37 +67,76 @@
     <p class="section-subtitle">Jornadas espirituais que transformam vidas</p>
   </div>
 
-  <div class="peregrinacoes-grid">
+  <div class="trip-grid">
     @for (peregrinacao of peregrinacoes; track peregrinacao.title) {
-      <div class="peregrinacao-card">
-        <div class="card-image">
-          <img [src]="peregrinacao.image" [alt]="peregrinacao.title" (error)="useFallbackImage($event)">
+      <article class="trip-card">
+        <a class="trip-card__media" [routerLink]="['/viagens', peregrinacao.slug]">
+          <img [src]="peregrinacao.image" [alt]="peregrinacao.title" (error)="useFallbackImage($event)" loading="lazy">
+          <div class="trip-card__media-gradient"></div>
+          <span class="trip-card__tag">Peregrinação</span>
           @if (peregrinacao.showSpots) {
-            <div class="card-badge-top">{{ peregrinacao.spots }}</div>
+            <span class="trip-card__spots">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              {{ peregrinacao.spots }}
+            </span>
           }
-          <div class="card-overlay">
-            <a class="card-button" [routerLink]="['/viagens', peregrinacao.slug]" [queryParams]="getTripQuery(peregrinacao)">Saiba Mais</a>
+        </a>
+        <div class="trip-card__body">
+          <div class="trip-card__header">
+            <h3 class="trip-card__title">{{ peregrinacao.title }}</h3>
+            <span class="trip-card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ peregrinacao.country }}
+            </span>
+          </div>
+
+          <div class="trip-card__meta">
+            <div class="trip-card__meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <div><span>Período</span><strong>{{ peregrinacao.date }}</strong></div>
+            </div>
+            <div class="trip-card__meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <div><span>Duração</span><strong>{{ peregrinacao.duration }}</strong></div>
+            </div>
+          </div>
+
+          <div class="trip-card__team">
+            <div>
+              <span class="trip-card__team-role">{{ peregrinacao.guideRole }}</span>
+              <strong>{{ peregrinacao.guide }}</strong>
+            </div>
+            <div>
+              <span class="trip-card__team-role">Coordenação</span>
+              <strong>{{ peregrinacao.coordinator }}</strong>
+            </div>
+          </div>
+
+          <div class="trip-card__footer">
+            <div class="trip-card__price">
+              <span class="trip-card__price-label">A partir de</span>
+              @if (peregrinacao.foreignPrice) {
+                <span class="trip-card__price-foreign">{{ peregrinacao.foreignPrice }}</span>
+              }
+              <strong>{{ peregrinacao.price }}</strong>
+            </div>
+            <a class="trip-card__cta" [routerLink]="['/viagens', peregrinacao.slug]">
+              Reservar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
           </div>
         </div>
-        <div class="card-content">
-          <div class="card-header">
-            <h3>{{ peregrinacao.title }}</h3>
-            <span class="location">Pa&iacute;s principal: {{ peregrinacao.country }}</span>
-          </div>
-          <div class="card-info">
-            <span class="info-item"><strong>Per&iacute;odo</strong>{{ peregrinacao.date }}</span>
-            <span class="info-item"><strong>Dias</strong>{{ peregrinacao.duration }}</span>
-          </div>
-          <div class="card-guide">
-            <span><strong>{{ peregrinacao.guideRole }}</strong>{{ peregrinacao.guide }}</span>
-            <span><strong>Coordenador</strong>{{ peregrinacao.coordinator }}</span>
-          </div>
-          <div class="card-footer">
-            <span class="price">@if (peregrinacao.foreignPrice) { <small>{{ peregrinacao.foreignPrice }}/</small> }{{ peregrinacao.price }}</span>
-            <a class="btn-reserve" [routerLink]="['/viagens', peregrinacao.slug]" [queryParams]="getTripQuery(peregrinacao)">Reservar</a>
-          </div>
-        </div>
-      </div>
+      </article>
     }
   </div>
 </section>
@@ -109,37 +148,76 @@
     <p class="section-subtitle">Roteiros completos para conhecer novos destinos com conforto</p>
   </div>
 
-  <div class="peregrinacoes-grid">
+  <div class="trip-grid">
     @for (regular of regulares; track regular.title) {
-      <div class="peregrinacao-card">
-        <div class="card-image">
-          <img [src]="regular.image" [alt]="regular.title" (error)="useFallbackImage($event)">
+      <article class="trip-card">
+        <a class="trip-card__media" [routerLink]="['/viagens', regular.slug]">
+          <img [src]="regular.image" [alt]="regular.title" (error)="useFallbackImage($event)" loading="lazy">
+          <div class="trip-card__media-gradient"></div>
+          <span class="trip-card__tag trip-card__tag--regular">Regular</span>
           @if (regular.showSpots) {
-            <div class="card-badge-top">{{ regular.spots }}</div>
+            <span class="trip-card__spots">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              {{ regular.spots }}
+            </span>
           }
-          <div class="card-overlay">
-            <a class="card-button" [routerLink]="['/viagens', regular.slug]" [queryParams]="getTripQuery(regular)">Saiba Mais</a>
+        </a>
+        <div class="trip-card__body">
+          <div class="trip-card__header">
+            <h3 class="trip-card__title">{{ regular.title }}</h3>
+            <span class="trip-card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ regular.country }}
+            </span>
+          </div>
+
+          <div class="trip-card__meta">
+            <div class="trip-card__meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <div><span>Período</span><strong>{{ regular.date }}</strong></div>
+            </div>
+            <div class="trip-card__meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <div><span>Duração</span><strong>{{ regular.duration }}</strong></div>
+            </div>
+          </div>
+
+          <div class="trip-card__team">
+            <div>
+              <span class="trip-card__team-role">{{ regular.guideRole }}</span>
+              <strong>{{ regular.guide }}</strong>
+            </div>
+            <div>
+              <span class="trip-card__team-role">Coordenação</span>
+              <strong>{{ regular.coordinator }}</strong>
+            </div>
+          </div>
+
+          <div class="trip-card__footer">
+            <div class="trip-card__price">
+              <span class="trip-card__price-label">A partir de</span>
+              @if (regular.foreignPrice) {
+                <span class="trip-card__price-foreign">{{ regular.foreignPrice }}</span>
+              }
+              <strong>{{ regular.price }}</strong>
+            </div>
+            <a class="trip-card__cta" [routerLink]="['/viagens', regular.slug]">
+              Reservar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
           </div>
         </div>
-        <div class="card-content">
-          <div class="card-header">
-            <h3>{{ regular.title }}</h3>
-            <span class="location">Pa&iacute;s principal: {{ regular.country }}</span>
-          </div>
-          <div class="card-info">
-            <span class="info-item"><strong>Per&iacute;odo</strong>{{ regular.date }}</span>
-            <span class="info-item"><strong>Dias</strong>{{ regular.duration }}</span>
-          </div>
-          <div class="card-guide">
-            <span><strong>{{ regular.guideRole }}</strong>{{ regular.guide }}</span>
-            <span><strong>Coordenador</strong>{{ regular.coordinator }}</span>
-          </div>
-          <div class="card-footer">
-            <span class="price">@if (regular.foreignPrice) { <small>{{ regular.foreignPrice }}/</small> }{{ regular.price }}</span>
-            <a class="btn-reserve" [routerLink]="['/viagens', regular.slug]" [queryParams]="getTripQuery(regular)">Reservar</a>
-          </div>
-        </div>
-      </div>
+      </article>
     }
   </div>
 </section>

@@ -62,10 +62,72 @@
               <span>{{ highlight }}</span>
             }
           </div>
-          @if (trip.experienceImages?.length) {
-            <div class="experience-gallery">
-              @for (image of trip.experienceImages; track image) {
-                <img [src]="image" [alt]="trip.title">
+          @if (galleryImages.length > 0) {
+            <div class="gallery-carousel">
+              <div class="gallery-stage">
+                @if (galleryImages.length > 1) {
+                  <button
+                    type="button"
+                    class="gallery-arrow gallery-arrow--prev"
+                    (click)="galleryPrev()"
+                    aria-label="Imagem anterior">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                  </button>
+                }
+
+                <button
+                  type="button"
+                  class="gallery-main"
+                  (click)="openLightbox(galleryIndex)"
+                  aria-label="Ampliar imagem">
+                  @for (image of galleryImages; track $index; let i = $index) {
+                    <img
+                      [src]="image"
+                      [alt]="trip.title"
+                      [class]="i === galleryIndex ? 'gallery-slide is-active' : 'gallery-slide'"
+                      [attr.fetchpriority]="i === 0 ? 'high' : 'auto'">
+                  }
+                  @if (galleryImages.length > 1) {
+                    <span class="gallery-counter">{{ galleryIndex + 1 }} / {{ galleryImages.length }}</span>
+                  }
+                  <span class="gallery-zoom" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"/>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      <line x1="11" y1="8" x2="11" y2="14"/>
+                      <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                  </span>
+                </button>
+
+                @if (galleryImages.length > 1) {
+                  <button
+                    type="button"
+                    class="gallery-arrow gallery-arrow--next"
+                    (click)="galleryNext()"
+                    aria-label="Próxima imagem">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                }
+              </div>
+
+              @if (galleryImages.length > 1) {
+                <div class="gallery-thumbs" role="tablist">
+                  @for (image of galleryImages; track $index; let i = $index) {
+                    <button
+                      type="button"
+                      class="gallery-thumb"
+                      [class.is-active]="i === galleryIndex"
+                      (click)="goToGallery(i)"
+                      [attr.aria-label]="'Ir para imagem ' + (i + 1)">
+                      <img [src]="image" [alt]="'Imagem ' + (i + 1)">
+                    </button>
+                  }
+                </div>
               }
             </div>
           }
@@ -112,16 +174,83 @@
         <section class="section-block">
           <div class="section-heading">
             <span>04</span>
-            <h2>Hoteis</h2>
+            <h2>Hotéis</h2>
           </div>
-          @if (trip.hotels?.length) {
-            <div class="hotels-grid">
-              @for (hotel of trip.hotels; track hotel.name) {
-                <article><img [src]="hotel.image" [alt]="hotel.name"><strong>{{ hotel.name }}</strong></article>
+          @if (hotelItems.length > 0) {
+            <div class="gallery-carousel">
+              <div class="gallery-stage">
+                @if (hotelItems.length > 1) {
+                  <button
+                    type="button"
+                    class="gallery-arrow gallery-arrow--prev"
+                    (click)="hotelPrev()"
+                    aria-label="Hotel anterior">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                  </button>
+                }
+
+                <button
+                  type="button"
+                  class="gallery-main gallery-main--hotel"
+                  (click)="openHotelLightbox(hotelIndex)"
+                  aria-label="Ampliar imagem do hotel">
+                  @for (hotel of hotelItems; track $index; let i = $index) {
+                    <img
+                      [src]="hotel.image"
+                      [alt]="hotel.name || ('Hotel ' + (i + 1))"
+                      [class]="i === hotelIndex ? 'gallery-slide is-active' : 'gallery-slide'">
+                  }
+                  @if (hotelItems.length > 1) {
+                    <span class="gallery-counter">{{ hotelIndex + 1 }} / {{ hotelItems.length }}</span>
+                  }
+                  @if (hotelItems[hotelIndex]?.name) {
+                    <span class="gallery-caption">{{ hotelItems[hotelIndex].name }}</span>
+                  }
+                  <span class="gallery-zoom" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"/>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      <line x1="11" y1="8" x2="11" y2="14"/>
+                      <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                  </span>
+                </button>
+
+                @if (hotelItems.length > 1) {
+                  <button
+                    type="button"
+                    class="gallery-arrow gallery-arrow--next"
+                    (click)="hotelNext()"
+                    aria-label="Próximo hotel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                }
+              </div>
+
+              @if (hotelItems.length > 1) {
+                <div class="gallery-thumbs" role="tablist">
+                  @for (hotel of hotelItems; track $index; let i = $index) {
+                    <button
+                      type="button"
+                      class="gallery-thumb"
+                      [class.is-active]="i === hotelIndex"
+                      (click)="goToHotel(i)"
+                      [attr.aria-label]="'Ir para ' + (hotel.name || 'hotel ' + (i + 1))">
+                      <img [src]="hotel.image" [alt]="hotel.name || 'Hotel ' + (i + 1)">
+                      @if (hotel.name) {
+                        <span class="gallery-thumb-label">{{ hotel.name }}</span>
+                      }
+                    </button>
+                  }
+                </div>
               }
             </div>
           } @else {
-            <p class="lead">Hoteis do grupo a confirmar.</p>
+            <p class="lead">Hotéis do grupo a confirmar.</p>
           }
         </section>
 
@@ -186,11 +315,92 @@
       </aside>
     </section>
   </main>
+  @if (galleryLightboxOpen && galleryImages.length > 0) {
+    <div class="gallery-lightbox" (click)="closeLightbox()" role="dialog" aria-modal="true">
+      <button type="button" class="gallery-lightbox__close" (click)="closeLightbox()" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="gallery-lightbox__arrow gallery-lightbox__arrow--prev"
+        (click)="$event.stopPropagation(); galleryPrev()"
+        [disabled]="galleryImages.length < 2"
+        aria-label="Imagem anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <img class="gallery-lightbox__image" [src]="galleryImages[galleryIndex]" [alt]="trip.title" (click)="$event.stopPropagation()">
+
+      <button
+        type="button"
+        class="gallery-lightbox__arrow gallery-lightbox__arrow--next"
+        (click)="$event.stopPropagation(); galleryNext()"
+        [disabled]="galleryImages.length < 2"
+        aria-label="Próxima imagem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      <span class="gallery-lightbox__counter">{{ galleryIndex + 1 }} / {{ galleryImages.length }}</span>
+    </div>
+  }
+
+  @if (hotelLightboxOpen && hotelItems.length > 0) {
+    <div class="gallery-lightbox" (click)="closeHotelLightbox()" role="dialog" aria-modal="true">
+      <button type="button" class="gallery-lightbox__close" (click)="closeHotelLightbox()" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="gallery-lightbox__arrow gallery-lightbox__arrow--prev"
+        (click)="$event.stopPropagation(); hotelPrev()"
+        [disabled]="hotelItems.length < 2"
+        aria-label="Hotel anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <img class="gallery-lightbox__image" [src]="hotelItems[hotelIndex].image" [alt]="hotelItems[hotelIndex].name" (click)="$event.stopPropagation()">
+
+      <button
+        type="button"
+        class="gallery-lightbox__arrow gallery-lightbox__arrow--next"
+        (click)="$event.stopPropagation(); hotelNext()"
+        [disabled]="hotelItems.length < 2"
+        aria-label="Próximo hotel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      @if (hotelItems[hotelIndex].name) {
+        <span class="gallery-lightbox__caption">{{ hotelItems[hotelIndex].name }}</span>
+      }
+      <span class="gallery-lightbox__counter">{{ hotelIndex + 1 }} / {{ hotelItems.length }}</span>
+    </div>
+  }
+} @else if (loading) {
+  <section class="not-found">
+    <h1>Carregando viagem...</h1>
+    <p>Buscando os detalhes do pacote.</p>
+  </section>
 } @else {
   <section class="not-found">
     <h1>Viagem não encontrada</h1>
-    <p>O pacote solicitado não está disponível no momento.</p>
-    <a routerLink="/" class="primary-cta">Voltar para a home</a>
+    <p>O pacote solicitado não está disponível no momento. Confira as viagens ativas.</p>
+    <a routerLink="/viagens" class="primary-cta">Ver viagens disponíveis</a>
   </section>
 }
 

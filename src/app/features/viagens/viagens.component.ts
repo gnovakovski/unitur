@@ -103,23 +103,6 @@ export class ViagensComponent implements OnInit, OnDestroy {
     this.selectedCategory = cat;
   }
 
-  getTripQuery(trip: ViagemCard): Record<string, string> {
-    return {
-      title: trip.title,
-      destination: trip.location,
-      date: trip.date,
-      duration: trip.duration,
-      price: trip.price,
-      spots: trip.spots,
-      showSpots: String(trip.showSpots),
-      foreignPrice: trip.foreignPrice || '',
-      guide: trip.guide,
-      coordinator: trip.coordinator,
-      image: trip.image,
-      category: trip.category
-    };
-  }
-
   useFallbackImage(event: Event) {
     const image = event.target as HTMLImageElement;
     image.onerror = null;
@@ -130,7 +113,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
 
-    this.tripService.getTrips({ limit: 100 }).pipe(
+    this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
       catchError((err) => {
         console.error('Erro ao carregar viagens publicas', err);
         this.error = 'Não foi possível carregar as viagens cadastradas.';
@@ -141,11 +124,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       })
     ).subscribe(response => {
-      const activeTrips = response.data.filter(trip => trip.status !== 'inactive');
-      const nextTrips = activeTrips.map(trip => this.mapTrip(trip));
-      if (nextTrips.length > 0 || this.viagens.length === 0) {
-        this.viagens = nextTrips;
-      }
+      this.viagens = response.data.map(trip => this.mapTrip(trip));
       this.cdr.detectChanges();
     });
   }

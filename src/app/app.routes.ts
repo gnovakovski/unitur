@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
   // Public routes
@@ -66,19 +67,23 @@ export const routes: Routes = [
       },
       {
         path: 'posts/novo',
-        loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent)
+        loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent),
+        canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'posts/:id/editar',
-        loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent)
+        loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent),
+        canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'viagens/nova',
-        loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent)
+        loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent),
+        canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'viagens/:id/editar',
-        loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent)
+        loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent),
+        canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'viagens',

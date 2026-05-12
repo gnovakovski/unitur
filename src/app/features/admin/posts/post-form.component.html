@@ -1,212 +1,242 @@
-<div class="post-form">
-  <div class="page-header">
+<section class="af-page">
+  <header class="af-page-header">
     <div>
-      <h1>{{ isEditMode ? 'Editar post' : 'Novo post' }}</h1>
-      <p>{{ isEditMode ? 'Atualize as informações do post' : 'Crie um novo post para o blog' }}</p>
+      <h1 class="af-page-header__title">{{ isEditMode ? 'Editar post' : 'Novo post' }}</h1>
+      <p class="af-page-header__subtitle">
+        {{ isEditMode ? 'Atualize informações, imagens e categorias do post.' : 'Publique conteúdo no blog com imagem destacada e viagens relacionadas.' }}
+      </p>
     </div>
-  </div>
+  </header>
 
   @if (loading) {
-    <div class="loading-state">
-      <div class="spinner"></div>
+    <div class="af-loading">
+      <div class="af-spinner"></div>
       <p>Carregando post...</p>
     </div>
   }
 
   @if (!loading) {
-    <form [formGroup]="postForm" (ngSubmit)="onSubmit()">
-      <div class="form-grid">
-        <div class="main-column">
-          <div class="form-card">
-            <div class="form-group">
-              <label for="title" class="form-label">
-                <span class="field-label">Título <span class="required">*</span></span>
+    <form [formGroup]="postForm" (ngSubmit)="onSubmit()" class="af-grid af-grid--main">
+      <div class="af-col">
+        <div class="af-card">
+          <div class="af-section">
+            <div class="af-section__header">
+              <span class="af-section__step">1</span>
+              <h2 class="af-section__title">Informações principais</h2>
+            </div>
+
+            <div class="af-field">
+              <label for="title" class="af-label">
+                Título <span class="af-label__required">*</span>
               </label>
               <input
-                type="text"
                 id="title"
+                type="text"
                 formControlName="title"
-                class="form-control"
-                [class.invalid]="isFieldInvalid('title')"
-                placeholder="Digite o título do post">
+                class="af-control"
+                [class.is-invalid]="isFieldInvalid('title')"
+                placeholder="Ex: 5 dicas para sua peregrinação a Israel">
               @if (isFieldInvalid('title')) {
-                <div class="error-message">{{ getFieldError('title') }}</div>
+                <span class="af-error">{{ getFieldError('title') }}</span>
               }
             </div>
 
-            <div class="form-group">
-              <label for="slug" class="form-label">
-                <span class="field-label">Slug (URL) <span class="required">*</span></span>
+            <div class="af-field">
+              <label for="slug" class="af-label">
+                Slug (URL) <span class="af-label__required">*</span>
               </label>
-              <input
-                type="text"
-                id="slug"
-                formControlName="slug"
-                class="form-control"
-                [class.invalid]="isFieldInvalid('slug')"
-                placeholder="slug-do-post">
+              <div class="af-input-group" [class.is-invalid]="isFieldInvalid('slug')">
+                <span class="af-input-group__addon">/blog/</span>
+                <input
+                  id="slug"
+                  type="text"
+                  formControlName="slug"
+                  class="af-control"
+                  placeholder="dicas-peregrinacao-israel">
+              </div>
+              <span class="af-hint">Gerado automaticamente a partir do título — pode ser editado.</span>
               @if (isFieldInvalid('slug')) {
-                <div class="error-message">{{ getFieldError('slug') }}</div>
+                <span class="af-error">{{ getFieldError('slug') }}</span>
               }
-              <small class="form-hint">Gerado automaticamente a partir do título</small>
             </div>
           </div>
 
-          <div class="form-card">
-            <div class="form-group">
-              <label for="excerpt" class="form-label">
-                <span class="field-label">Resumo <span class="required">*</span></span>
+          <div class="af-section">
+            <div class="af-section__header">
+              <span class="af-section__step">2</span>
+              <h2 class="af-section__title">Resumo e conteúdo</h2>
+            </div>
+
+            <div class="af-field">
+              <label for="excerpt" class="af-label">
+                Resumo <span class="af-label__required">*</span>
               </label>
               <textarea
                 id="excerpt"
                 formControlName="excerpt"
-                class="form-control"
-                [class.invalid]="isFieldInvalid('excerpt')"
+                class="af-control af-control--textarea"
+                [class.is-invalid]="isFieldInvalid('excerpt')"
                 rows="3"
-                placeholder="Breve descrição do post (máx. 200 caracteres)"></textarea>
+                placeholder="Resumo curto para listas e cards do blog (até 200 caracteres)"></textarea>
+              <div class="af-hint af-hint--counter">
+                {{ postForm.get('excerpt')?.value?.length || 0 }} / 200
+              </div>
               @if (isFieldInvalid('excerpt')) {
-                <div class="error-message">{{ getFieldError('excerpt') }}</div>
+                <span class="af-error">{{ getFieldError('excerpt') }}</span>
               }
-              <small class="form-hint">
-                {{ postForm.get('excerpt')?.value?.length || 0 }}/200 caracteres
-              </small>
             </div>
-          </div>
 
-          <div class="form-card">
-            <div class="form-group">
-              <label for="content" class="form-label">
-                <span class="field-label">Conteúdo <span class="required">*</span></span>
+            <div class="af-field">
+              <label for="content" class="af-label">
+                Conteúdo completo <span class="af-label__required">*</span>
               </label>
               <textarea
                 id="content"
                 formControlName="content"
-                class="form-control content-editor"
-                [class.invalid]="isFieldInvalid('content')"
+                class="af-control af-control--textarea af-control--editor"
+                [class.is-invalid]="isFieldInvalid('content')"
                 rows="15"
-                placeholder="Escreva o conteúdo completo do post..."></textarea>
+                placeholder="Texto completo do post. Suporta HTML básico (<p>, <strong>, <a href>, <img src>, etc.)."></textarea>
+              <span class="af-hint">Mínimo de 50 caracteres. Use HTML para formatação.</span>
               @if (isFieldInvalid('content')) {
-                <div class="error-message">{{ getFieldError('content') }}</div>
+                <span class="af-error">{{ getFieldError('content') }}</span>
               }
-              <small class="form-hint">Mínimo de 50 caracteres</small>
             </div>
           </div>
 
-          <div class="form-card">
-            <div class="form-group">
-              <label class="form-label">Imagens no texto</label>
-              <app-image-upload label="Selecionar imagem" formControlName="contentImageUpload"></app-image-upload>
-              <small class="form-hint">As imagens aparecem no início do conteúdo. Também é possível inserir tags &lt;img&gt; direto no texto.</small>
+          <div class="af-section af-section--no-border">
+            <div class="af-section__header">
+              <span class="af-section__step">3</span>
+              <h2 class="af-section__title">Mídia e metadados</h2>
             </div>
 
-            <div class="form-group">
-              <label for="tags" class="form-label">Tags</label>
+            <div class="af-field">
+              <app-image-upload
+                label="Imagem complementar do conteúdo"
+                helper="Aparece no início do texto. Você também pode inserir <img src=...> direto no conteúdo."
+                formControlName="contentImageUpload">
+              </app-image-upload>
+            </div>
+
+            <div class="af-field">
+              <label for="tags" class="af-label">Tags</label>
               <input
-                type="text"
                 id="tags"
+                type="text"
                 formControlName="tags"
-                class="form-control"
-                placeholder="viagem, turismo, dicas (separadas por vírgula)">
-              <small class="form-hint">Separe as tags com vírgulas</small>
+                class="af-control"
+                placeholder="viagem, peregrinação, dicas">
+              <span class="af-hint">Separe múltiplas tags com vírgula.</span>
             </div>
           </div>
-        </div>
-
-        <div class="sidebar-column">
-          <div class="form-card">
-            <h3 class="card-title">Imagem destacada</h3>
-            <app-image-upload label="Imagem destacada" formControlName="featuredImage"></app-image-upload>
-          </div>
-
-          <div class="form-card">
-            <h3 class="card-title">Categoria</h3>
-            <div class="form-group">
-              <select
-                formControlName="categoryId"
-                class="form-control"
-                [class.invalid]="isFieldInvalid('categoryId')">
-                <option value="">Selecione uma categoria</option>
-                @for (category of categories; track category.id) {
-                  <option [value]="category.id">{{ category.name }}</option>
-                }
-              </select>
-              @if (isFieldInvalid('categoryId')) {
-                <div class="error-message">{{ getFieldError('categoryId') }}</div>
-              }
-            </div>
-          </div>
-
-          <div class="form-card">
-            <h3 class="card-title">Viagens relacionadas</h3>
-            <div class="form-group">
-              <div class="related-trips-list">
-                @for (trip of trips; track trip.id) {
-                  <button
-                    type="button"
-                    class="related-trip-option"
-                    [class.selected]="isTripSelected(trip.id)"
-                    [disabled]="!canSelectRelatedTrip(trip.id)"
-                    (click)="toggleRelatedTrip(trip.id)">
-                    <span>{{ trip.title }}</span>
-                    @if (isTripSelected(trip.id)) {
-                      <span class="selected-marker">Selecionada</span>
-                    }
-                  </button>
-                } @empty {
-                  <p class="empty-related-trips">Nenhuma viagem cadastrada.</p>
-                }
-              </div>
-              <small class="form-hint">Selecione até 3 viagens relacionadas. {{ selectedRelatedTripIds.length }}/3 selecionadas.</small>
-            </div>
-          </div>
-
-          <div class="form-card">
-            <h3 class="card-title">Status</h3>
-            <div class="form-group">
-              <div class="radio-group">
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    formControlName="status"
-                    value="draft">
-                  <span>Rascunho</span>
-                </label>
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    formControlName="status"
-                    value="published">
-                  <span>Publicado</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-card">
-            <div class="form-actions">
-              <button
-                type="button"
-                (click)="onCancel()"
-                class="btn btn-secondary btn-block"
-                [disabled]="saving">
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                class="btn btn-primary btn-block"
-                [disabled]="saving || postForm.invalid">
-                {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar' : 'Criar post') }}
-              </button>
-            </div>
-          </div>
-
-          @if (error) {
-            <div class="error-alert">
-              {{ error }}
-            </div>
-          }
         </div>
       </div>
+
+      <aside class="af-col">
+        <div class="af-card">
+          <h3 class="af-section__title">Imagem destacada</h3>
+          <app-image-upload
+            label=""
+            helper="Recomendamos imagens em 1200×675 (16:9). Será enviada ao Firebase Storage ao salvar."
+            formControlName="featuredImage">
+          </app-image-upload>
+        </div>
+
+        <div class="af-card">
+          <h3 class="af-section__title">Categoria</h3>
+          <div class="af-field">
+            <select
+              formControlName="categoryId"
+              class="af-control"
+              [class.is-invalid]="isFieldInvalid('categoryId')">
+              <option value="">Selecione uma categoria</option>
+              @for (category of categories; track category.id) {
+                <option [value]="category.id">{{ category.name }}</option>
+              }
+            </select>
+            @if (isFieldInvalid('categoryId')) {
+              <span class="af-error">{{ getFieldError('categoryId') }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="af-card">
+          <h3 class="af-section__title">Viagens relacionadas</h3>
+          <p class="af-hint">Selecione até 3 viagens — aparecem ao final do post.</p>
+          <div class="related-trips-list">
+            @for (trip of trips; track trip.id) {
+              <button
+                type="button"
+                class="af-chip"
+                [class.is-active]="isTripSelected(trip.id)"
+                [disabled]="!canSelectRelatedTrip(trip.id)"
+                (click)="toggleRelatedTrip(trip.id)">
+                {{ trip.title }}
+              </button>
+            } @empty {
+              <p class="af-hint">Nenhuma viagem cadastrada.</p>
+            }
+          </div>
+          <span class="af-hint">{{ selectedRelatedTripIds.length }}/3 selecionadas</span>
+        </div>
+
+        <div class="af-card">
+          <h3 class="af-section__title">Publicação</h3>
+          <div class="af-radio-group">
+            <label class="af-radio">
+              <input type="radio" formControlName="status" value="draft">
+              <span>Salvar como rascunho</span>
+            </label>
+            <label class="af-radio">
+              <input type="radio" formControlName="status" value="published">
+              <span>Publicar imediatamente</span>
+            </label>
+          </div>
+        </div>
+
+        @if (error) {
+          <div class="af-alert af-alert--error">
+            <span class="af-alert__icon">!</span>
+            <span>{{ error }}</span>
+          </div>
+        }
+
+        @if (saving && savingStep) {
+          <div class="af-alert af-alert--info">
+            <span class="af-alert__icon">i</span>
+            <span>{{ savingStep }}</span>
+          </div>
+        }
+
+        <div class="af-actions af-actions--stack">
+          <button
+            type="submit"
+            class="af-btn af-btn--primary af-btn--block af-btn--lg"
+            [disabled]="saving || postForm.invalid">
+            {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar post' : 'Criar post') }}
+          </button>
+          <button
+            type="button"
+            (click)="onCancel()"
+            class="af-btn af-btn--secondary af-btn--block"
+            [disabled]="saving">
+            Cancelar
+          </button>
+        </div>
+      </aside>
     </form>
   }
-</div>
+</section>
+
+<app-saving-overlay
+  [show]="saving"
+  [title]="isEditMode ? 'Atualizando post...' : 'Criando post...'"
+  [message]="savingStep || 'Aguarde enquanto salvamos suas alterações.'">
+</app-saving-overlay>
+
+<app-unsaved-changes-modal
+  [show]="unsavedModalOpen"
+  [canSave]="canSubmit()"
+  [changedFields]="changedFields"
+  (resolved)="onUnsavedResolved($event)">
+</app-unsaved-changes-modal>

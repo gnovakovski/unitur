@@ -1,148 +1,207 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize, firstValueFrom } from 'rxjs';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { finalize, firstValueFrom, timeout } from 'rxjs';
 import { Banner } from '../../../core/models/banner.model';
 import { BannerService } from '../../../core/services/banner.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
+import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
+import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
 
 @Component({
   selector: 'app-banners-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent],
+  imports: [CommonModule, ReactiveFormsModule, DragDropModule, ImageUploadComponent, SavingOverlayComponent, UnsavedChangesModalComponent],
   template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Banners</h1>
-        <button class="btn-primary" type="button" (click)="openForm()">+ Novo Banner</button>
-      </div>
+    <section class="af-page">
+      <header class="af-page-header">
+        <div>
+          <h1 class="af-page-header__title">Banners da home</h1>
+          <p class="af-page-header__subtitle">Configure o carrossel principal exibido aos visitantes.</p>
+        </div>
+        <div class="af-page-header__actions">
+          <button class="af-btn af-btn--primary" type="button" (click)="openForm()">
+            + Novo banner
+          </button>
+        </div>
+      </header>
 
       @if (error) {
-        <div class="alert-error">{{ error }}</div>
+        <div class="af-alert af-alert--error">
+          <span class="af-alert__icon">!</span>
+          <span>{{ error }}</span>
+        </div>
       }
 
       @if (loading) {
-        <div class="empty-state"><h3>Carregando banners...</h3></div>
+        <div class="af-loading">
+          <div class="af-spinner"></div>
+          <p>Carregando banners...</p>
+        </div>
       } @else if (banners.length === 0) {
         <div class="empty-state">
-          <span class="empty-icon">IMG</span>
+          <div class="empty-state__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <circle cx="8" cy="10" r="1.5"/>
+              <path d="M21 16l-5-5-9 8"/>
+            </svg>
+          </div>
           <h3>Nenhum banner cadastrado</h3>
           <p>Adicione imagens para o carrossel da home.</p>
+          <button class="af-btn af-btn--primary" type="button" (click)="openForm()">
+            + Adicionar primeiro banner
+          </button>
         </div>
       } @else {
-        <div class="table-card">
-          <table>
-            <thead>
-              <tr>
-                <th>Imagem</th>
-                <th>Título</th>
-                <th>Ordem</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (banner of banners; track banner.id) {
-                <tr>
-                  <td><img class="thumb" [src]="banner.imageUrl" [alt]="banner.title"></td>
-                  <td>
-                    <strong>{{ banner.title }}</strong>
-                    <span>{{ banner.subtitle || '-' }}</span>
-                  </td>
-                  <td>{{ banner.order }}</td>
-                  <td>{{ banner.status === 'active' ? 'Ativo' : 'Inativo' }}</td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="btn-small" type="button" (click)="openForm(banner)">Editar</button>
-                      <button class="btn-small danger" type="button" (click)="deleteBanner(banner)" [disabled]="deletingId === banner.id">
-                        {{ deletingId === banner.id ? 'Excluindo...' : 'Excluir' }}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <p class="banners-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="5 9 2 12 5 15"/>
+            <polyline points="9 5 12 2 15 5"/>
+            <polyline points="15 19 12 22 9 19"/>
+            <polyline points="19 9 22 12 19 15"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <line x1="12" y1="2" x2="12" y2="22"/>
+          </svg>
+          Arraste os banners para reordenar — a ordem define como aparecem no carrossel da home.
+        </p>
+        <div class="banner-list" cdkDropList (cdkDropListDropped)="onBannerDrop($event)">
+          @for (banner of banners; track banner.id) {
+            <div class="banner-row" cdkDrag [cdkDragData]="banner">
+              <div class="banner-row__placeholder" *cdkDragPlaceholder></div>
+
+              <button type="button" class="banner-row__handle" cdkDragHandle title="Arrastar para reordenar" aria-label="Arrastar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/>
+                  <circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>
+                </svg>
+              </button>
+
+              <span class="banner-row__position">{{ $index + 1 }}</span>
+
+              <img class="banner-row__thumb" [src]="banner.imageUrl" [alt]="banner.title">
+
+              <div class="banner-row__info">
+                <strong>{{ banner.title }}</strong>
+                @if (banner.subtitle) {
+                  <span class="muted">{{ banner.subtitle }}</span>
+                }
+              </div>
+
+              <span class="status-pill" [class.is-active]="banner.status === 'active'">
+                {{ banner.status === 'active' ? 'Ativo' : 'Inativo' }}
+              </span>
+
+              <div class="banner-row__actions">
+                <button class="af-btn af-btn--ghost af-btn--sm" type="button" (click)="openForm(banner)">Editar</button>
+                <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="deleteBanner(banner)" [disabled]="deletingId === banner.id">
+                  {{ deletingId === banner.id ? 'Excluindo...' : 'Excluir' }}
+                </button>
+              </div>
+            </div>
+          }
         </div>
+
+        @if (reordering) {
+          <p class="banners-saving-order">
+            <span class="af-spinner af-spinner--small"></span>
+            Salvando nova ordem...
+          </p>
+        }
       }
-    </div>
+    </section>
 
     @if (formOpen) {
-      <div class="modal-overlay" (click)="closeForm()">
-        <form class="modal-card" [formGroup]="bannerForm" (ngSubmit)="saveBanner()" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h2>{{ editingBanner ? 'Editar banner' : 'Novo banner' }}</h2>
-            <button class="btn-close" type="button" (click)="closeForm()">X</button>
+      <div class="af-modal-overlay" (click)="closeForm()">
+        <form class="af-modal" [formGroup]="bannerForm" (ngSubmit)="saveBanner()" (click)="$event.stopPropagation()">
+          <div class="af-modal__header">
+            <div>
+              <h2 class="af-modal__title">{{ editingBanner ? 'Editar banner' : 'Novo banner' }}</h2>
+              <p class="af-modal__subtitle">Configure imagem, link e visibilidade.</p>
+            </div>
+            <button class="af-modal__close" type="button" (click)="closeForm()" aria-label="Fechar">✕</button>
           </div>
-          <div class="form-grid">
-            <label>Título <span class="required">*</span><input class="form-control" formControlName="title"></label>
-            <label>Subtítulo <input class="form-control" formControlName="subtitle"></label>
-            <label>Link <input class="form-control" formControlName="link"></label>
-            <label>Texto do botão <input class="form-control" formControlName="buttonText"></label>
-            <label>Ordem <input class="form-control" type="number" formControlName="order"></label>
-            <label>Status
-              <select class="form-control" formControlName="status">
+
+          <div class="af-grid af-grid--2">
+            <div class="af-field af-field--span-2">
+              <label class="af-label">Título <span class="af-label__required">*</span></label>
+              <input class="af-control" formControlName="title" placeholder="Ex: Peregrinação Terra Santa">
+            </div>
+
+            <div class="af-field af-field--span-2">
+              <label class="af-label">Subtítulo <span class="af-label__optional">opcional</span></label>
+              <input class="af-control" formControlName="subtitle" placeholder="Texto secundário do banner">
+            </div>
+
+            <div class="af-field af-field--span-2">
+              <label class="af-label">Status</label>
+              <select class="af-control" formControlName="status">
                 <option value="active">Ativo</option>
                 <option value="inactive">Inativo</option>
               </select>
-            </label>
+            </div>
           </div>
-          <app-image-upload label="Imagem do banner *" formControlName="imageUrl"></app-image-upload>
-          <div class="form-actions">
-            <button class="btn-secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
-            <button class="btn-primary" type="submit" [disabled]="bannerForm.invalid || saving">{{ saving ? 'Salvando...' : 'Salvar' }}</button>
+
+          <app-image-upload
+            label="Imagem do banner *"
+            helper="Recomendado 1920×720. Será enviada ao Firebase Storage ao salvar."
+            formControlName="imageUrl">
+          </app-image-upload>
+
+          @if (saving && savingStep) {
+            <div class="af-alert af-alert--info">
+              <span class="af-alert__icon">i</span>
+              <span>{{ savingStep }}</span>
+            </div>
+          }
+
+          <div class="af-actions">
+            <button class="af-btn af-btn--secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
+            <button class="af-btn af-btn--primary" type="submit" [disabled]="bannerForm.invalid || saving">
+              {{ saving ? 'Salvando...' : 'Salvar banner' }}
+            </button>
           </div>
         </form>
       </div>
     }
+
+    <app-saving-overlay
+      [show]="saving"
+      [title]="editingBanner ? 'Atualizando banner...' : 'Criando banner...'"
+      [message]="savingStep || 'Aguarde enquanto salvamos o banner.'">
+    </app-saving-overlay>
+
+    <app-unsaved-changes-modal
+      [show]="unsavedModalOpen"
+      [canSave]="canSubmit()"
+      [changedFields]="changedFields"
+      (resolved)="onUnsavedResolved($event)">
+    </app-unsaved-changes-modal>
   `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .page-container { width: 100%; max-width: none; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .page-header h1 { font-size: 2rem; color: #1a1a2e; margin: 0; }
-    .btn-primary, .btn-secondary, .btn-small { border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-primary { padding: 0.75rem 1.5rem; background: #ff812c; color: white; }
-    .btn-secondary { padding: 0.75rem 1.25rem; background: #f0f0f0; color: #333; }
-    .btn-small { padding: 0.5rem 0.75rem; background: #eef3f8; color: #3a75c3; white-space: nowrap; }
-    .btn-small.danger { background: #ffebee; color: #c62828; }
-    .alert-error { margin-bottom: 1rem; padding: 1rem; background: #ffebee; color: #c62828; border-radius: 8px; }
-    .empty-state, .table-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .empty-state { text-align: center; padding: 4rem 2rem; }
-    .empty-icon { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 16px; background: #eef3f8; color: #3a75c3; font-weight: 800; margin-bottom: 1rem; }
-    .table-card { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
-    th { color: #6C757D; font-size: 0.78rem; text-transform: uppercase; background: #F8F9FA; }
-    td strong, td span { display: block; }
-    td span { color: #6C757D; font-size: 0.88rem; margin-top: 0.2rem; }
-    .thumb { width: 96px; height: 54px; object-fit: cover; border-radius: 8px; background: #f0f0f0; }
-    .row-actions { display: flex; gap: 0.5rem; }
-    .modal-overlay { position: fixed; inset: 0; z-index: 1400; background: rgba(0,0,0,0.45); display: grid; place-items: start center; padding: 6rem 1rem 2rem; overflow-y: auto; }
-    .modal-card { width: min(760px, 100%); max-height: calc(100vh - 8rem); overflow: auto; background: white; border-radius: 16px; padding: 1.5rem; display: grid; gap: 1rem; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-    .modal-header h2 { margin: 0; color: #1a1a2e; }
-    .btn-close { border: none; background: #f0f0f0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-    label { display: grid; gap: 0.5rem; color: #333; font-weight: 600; font-size: 0.9rem; }
-    .field-label { display: inline-flex; align-items: baseline; gap: 0.2rem; width: fit-content; white-space: nowrap; }
-    .required { color: #c62828; }
-    .form-control { width: 100%; border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.75rem 1rem; font: inherit; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    @media (max-width: 760px) { .page-header, .form-actions { flex-direction: column; align-items: stretch; } .form-grid { grid-template-columns: 1fr; } }
-  `]
+  styleUrl: './banners-list.component.scss'
 })
 export class BannersListComponent implements OnInit {
   banners: Banner[] = [];
   bannerForm: FormGroup;
   loading = false;
   saving = false;
+  savingStep = '';
   formOpen = false;
   error = '';
   editingBanner: Banner | null = null;
   deletingId: number | null = null;
+  unsavedModalOpen = false;
+  changedFields: string[] = [];
+  reordering = false;
+
+  private readonly fieldLabels: Record<string, string> = {
+    title: 'Título',
+    subtitle: 'Subtítulo',
+    imageUrl: 'Imagem',
+    status: 'Status'
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -154,9 +213,6 @@ export class BannersListComponent implements OnInit {
       title: ['', [Validators.required]],
       subtitle: [''],
       imageUrl: ['', [Validators.required]],
-      link: [''],
-      buttonText: [''],
-      order: [0],
       status: ['active', [Validators.required]]
     });
   }
@@ -168,12 +224,17 @@ export class BannersListComponent implements OnInit {
   loadBanners() {
     this.loading = true;
     this.error = '';
-    this.bannerService.getBanners().pipe(finalize(() => {
-      this.loading = false;
-      this.cdr.detectChanges();
-    })).subscribe({
-      next: banners => this.banners = banners,
-      error: err => this.error = err?.message || 'Erro ao carregar banners.'
+    this.bannerService.getBanners().subscribe({
+      next: banners => {
+        this.banners = banners;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.error = err?.message || 'Erro ao carregar banners.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -184,18 +245,65 @@ export class BannersListComponent implements OnInit {
       title: banner?.title || '',
       subtitle: banner?.subtitle || '',
       imageUrl: banner?.imageUrl || '',
-      link: banner?.link || '',
-      buttonText: banner?.buttonText || '',
-      order: banner?.order || 0,
       status: banner?.status || 'active'
     });
+    this.bannerForm.markAsPristine();
   }
 
-  closeForm() {
-    if (!this.saving) {
-      this.formOpen = false;
-      this.editingBanner = null;
+  async onBannerDrop(event: CdkDragDrop<Banner[]>) {
+    if (event.previousIndex === event.currentIndex) return;
+
+    moveItemInArray(this.banners, event.previousIndex, event.currentIndex);
+    this.reordering = true;
+    this.cdr.detectChanges();
+
+    try {
+      const ids = this.banners.map(b => b.id);
+      await firstValueFrom(this.bannerService.reorderBanners(ids).pipe(timeout(20000)));
+    } catch (err: any) {
+      this.error = err?.message || 'Erro ao salvar nova ordem dos banners.';
+    } finally {
+      this.reordering = false;
+      this.cdr.detectChanges();
     }
+  }
+
+  closeForm(force = false) {
+    if (this.saving) return;
+    if (!force && this.bannerForm.dirty) {
+      this.changedFields = this.computeChangedFields();
+      this.unsavedModalOpen = true;
+      return;
+    }
+    this.formOpen = false;
+    this.editingBanner = null;
+  }
+
+  canSubmit(): boolean {
+    return this.bannerForm.valid;
+  }
+
+  async onUnsavedResolved(action: UnsavedAction) {
+    this.unsavedModalOpen = false;
+    if (action === 'cancel') return;
+    if (action === 'discard') {
+      this.bannerForm.markAsPristine();
+      this.closeForm(true);
+      return;
+    }
+    if (action === 'save') {
+      this.saveBanner();
+    }
+  }
+
+  private computeChangedFields(): string[] {
+    const labels: string[] = [];
+    Object.keys(this.bannerForm.controls).forEach(name => {
+      if (this.bannerForm.get(name)?.dirty) {
+        labels.push(this.fieldLabels[name] || name);
+      }
+    });
+    return labels;
   }
 
   async saveBanner() {
@@ -206,32 +314,51 @@ export class BannersListComponent implements OnInit {
 
     this.saving = true;
     this.error = '';
+    this.savingStep = 'Salvando banner...';
 
     try {
-      const value = {
-        ...this.bannerForm.value,
-        imageUrl: await this.uploadImageValue(this.bannerForm.value.imageUrl)
-      };
-      const request = this.editingBanner
-        ? this.bannerService.updateBanner(this.editingBanner.id, value)
-        : this.bannerService.createBanner(value);
+      const { imageUrl, ...rest } = this.bannerForm.value;
+      const imageFile = imageUrl instanceof File ? imageUrl : null;
+      const existingUrl = imageUrl instanceof File ? '' : String(imageUrl || '');
 
-      await firstValueFrom(request);
+      const baseData: Partial<Banner> = {
+        ...rest,
+        imageUrl: existingUrl
+      };
+
+      const saved = this.editingBanner
+        ? await firstValueFrom(this.bannerService.updateBanner(this.editingBanner.id, baseData))
+        : await firstValueFrom(this.bannerService.createBanner(baseData));
+
+      const bannerIdToUse = saved?.id || this.editingBanner?.id;
+
+      if (imageFile && bannerIdToUse) {
+        this.savingStep = 'Enviando imagem para o Firebase Storage...';
+        try {
+          const uploaded = await firstValueFrom(
+            this.uploadService.uploadToEntity(imageFile, 'banners', bannerIdToUse).pipe(timeout(45000))
+          );
+          await firstValueFrom(this.bannerService.updateBanner(bannerIdToUse, { imageUrl: uploaded.url }));
+        } catch (uploadErr: any) {
+          this.error = `Banner salvo, mas falhou o upload da imagem: ${uploadErr?.message || 'erro desconhecido'}.`;
+          console.error('Upload error', uploadErr);
+          this.saving = false;
+          this.savingStep = '';
+          this.loadBanners();
+          return;
+        }
+      }
+
       this.saving = false;
-      this.closeForm();
+      this.savingStep = '';
+      this.bannerForm.markAsPristine();
+      this.closeForm(true);
       this.loadBanners();
     } catch (err: any) {
       this.error = err?.message || 'Erro ao salvar banner.';
       this.saving = false;
+      this.savingStep = '';
     }
-  }
-
-  private async uploadImageValue(value: unknown): Promise<string> {
-    if (value instanceof File) {
-      return (await firstValueFrom(this.uploadService.uploadImage(value))).url;
-    }
-
-    return String(value || '');
   }
 
   deleteBanner(banner: Banner) {

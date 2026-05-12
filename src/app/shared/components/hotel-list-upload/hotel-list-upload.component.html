@@ -1,0 +1,98 @@
+<div class="hu-wrapper">
+  @if (label) {
+    <label class="hu-label" [for]="inputId">{{ label }}</label>
+  }
+
+  <div
+    class="hu-dropzone"
+    [class.is-drag]="dragOver"
+    (click)="triggerFileInput($event)"
+    (drop)="onDrop($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)">
+    <div class="hu-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18M3 7v14M21 7v14M6 11h.01M6 15h.01M10 11h.01M10 15h.01M14 11h.01M14 15h.01M18 11h.01M18 15h.01M5 21V7l7-4 7 4v14"/>
+      </svg>
+    </div>
+    <p class="hu-text">Clique ou arraste fotos dos hotéis</p>
+    <p class="hu-hint">
+      JPG, PNG ou WebP — até {{ maxSize }}MB cada · {{ items.length }}/{{ maxItems }}
+    </p>
+  </div>
+
+  <input
+    type="file"
+    [id]="inputId"
+    [accept]="accept"
+    multiple
+    (click)="$event.stopPropagation()"
+    (change)="onFileSelected($event)"
+    class="hu-file-input">
+
+  @if (items.length > 0) {
+    <div class="hu-list">
+      @for (item of items; track $index; let i = $index) {
+        <div class="hu-row">
+          <div class="hu-thumb">
+            <img [src]="previews[i]" [alt]="item.name || 'Hotel ' + (i + 1)">
+            @if (isLocal(item)) {
+              <span class="hu-badge">Pendente</span>
+            }
+          </div>
+
+          <div class="hu-fields">
+            <label class="hu-field-label">Nome do hotel #{{ i + 1 }}</label>
+            <input
+              type="text"
+              class="hu-input"
+              placeholder="Ex: Hotel Galilee Premium"
+              [value]="item.name"
+              (input)="updateName(i, $any($event.target).value)">
+          </div>
+
+          <div class="hu-actions">
+            <button
+              type="button"
+              class="hu-btn"
+              (click)="moveUp(i, $event)"
+              [disabled]="i === 0"
+              title="Mover para cima">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="hu-btn"
+              (click)="moveDown(i, $event)"
+              [disabled]="i === items.length - 1"
+              title="Mover para baixo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="hu-btn hu-btn--danger"
+              (click)="remove(i, $event)"
+              title="Remover hotel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (helper && !error) {
+    <p class="hu-helper">{{ helper }}</p>
+  }
+
+  @if (error) {
+    <div class="hu-error" role="alert">{{ error }}</div>
+  }
+</div>

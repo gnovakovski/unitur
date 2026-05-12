@@ -1,0 +1,138 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Viagens</h1>
+      <p class="af-page-header__subtitle">Cadastre viagens que aparecem na home por tipo.</p>
+    </div>
+    <div class="af-page-header__actions">
+      <a class="af-btn af-btn--primary" routerLink="/admin/viagens/nova">+ Nova viagem</a>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  <div class="filters-card">
+    <div class="filters-form">
+      <div class="filters-form__search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="af-control" type="search" [(ngModel)]="searchTerm" placeholder="Buscar por nome, país, período...">
+      </div>
+      <select class="af-control" [(ngModel)]="typeFilter">
+        <option value="">Todos os tipos</option>
+        <option value="peregrinacao">Peregrinação</option>
+        <option value="regular">Regular</option>
+        <option value="curadoria">Curadoria</option>
+      </select>
+      <select class="af-control" [(ngModel)]="statusFilter">
+        <option value="">Todos os status</option>
+        <option value="active">Ativa</option>
+        <option value="inactive">Inativa</option>
+      </select>
+      <button type="button" class="af-btn af-btn--secondary" (click)="clearFilters()">Limpar</button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando viagens...</p>
+    </div>
+  } @else if (trips.length === 0) {
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"/>
+          <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <line x1="12" y1="11" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <h3>Nenhuma viagem cadastrada</h3>
+      <p>Comece criando sua primeira viagem.</p>
+      <a class="af-btn af-btn--primary" routerLink="/admin/viagens/nova">+ Criar primeira viagem</a>
+    </div>
+  } @else if (filteredTrips.length === 0) {
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h3>Nenhuma viagem encontrada</h3>
+      <p>Ajuste os filtros para ver outros resultados.</p>
+      <button type="button" class="af-btn af-btn--secondary" (click)="clearFilters()">Limpar filtros</button>
+    </div>
+  } @else {
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Viagem</th>
+            <th>Tipo</th>
+            <th>Período</th>
+            <th>Dias</th>
+            <th>Preço</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (trip of filteredTrips; track trip.id) {
+            <tr>
+              <td>
+                <div class="trip-cell">
+                  <div class="trip-thumb">
+                    @if (getTripImage(trip)) {
+                      <img [src]="getTripImage(trip)" [alt]="trip.title" [attr.data-trip-id]="trip.id" (error)="onTripImageError($event)">
+                    } @else {
+                      <div class="no-image">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/>
+                          <circle cx="8.5" cy="8.5" r="1.5"/>
+                          <path d="M21 16l-5-5-9 8"/>
+                        </svg>
+                      </div>
+                    }
+                  </div>
+                  <div class="trip-info">
+                    <strong>{{ trip.title }}</strong>
+                    <span class="muted">{{ trip.country || trip.destination }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="type-pill" [attr.data-type]="trip.tripType">
+                  {{ getTypeLabel(trip.tripType) }}
+                </span>
+              </td>
+              <td class="nowrap">{{ trip.period || formatDate(trip.startDate) }}</td>
+              <td class="nowrap">{{ trip.duration }} dias</td>
+              <td class="nowrap"><strong class="price">{{ formatPrice(trip.price) }}</strong></td>
+              <td>
+                <span class="status-pill" [attr.data-status]="trip.status">
+                  {{ trip.status === 'active' ? 'Ativa' : 'Inativa' }}
+                </span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a class="af-btn af-btn--ghost af-btn--sm" [routerLink]="['/admin/viagens', trip.id, 'editar']">Editar</a>
+                  <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="deleteTrip(trip)" [disabled]="deletingId === trip.id">
+                    {{ deletingId === trip.id ? 'Excluindo...' : 'Excluir' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

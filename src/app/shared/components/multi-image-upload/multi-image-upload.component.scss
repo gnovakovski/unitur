@@ -1,0 +1,215 @@
+$orange: #ff812c;
+$orange-soft: rgba(255, 129, 44, 0.1);
+$blue: #3a75c3;
+$blue-soft: rgba(58, 117, 195, 0.1);
+$dark: #1a1a2e;
+$muted: #6b7280;
+$border: #e2e6ee;
+$border-strong: #c9cfd9;
+$bg: #f7f8fb;
+$error: #d93025;
+$success: #1f9d55;
+
+.mu-wrapper {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mu-label {
+  display: block;
+  font-weight: 600;
+  color: $dark;
+  font-size: 0.85rem;
+}
+
+.mu-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mu-dropzone {
+  position: relative;
+  border: 2px dashed $border-strong;
+  border-radius: 14px;
+  padding: 1.2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: $bg;
+  transition: all 0.2s ease;
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  min-height: 120px;
+
+  &:hover {
+    border-color: $orange;
+    background: $orange-soft;
+  }
+
+  &.is-drag {
+    border-color: $blue;
+    background: $blue-soft;
+    border-style: solid;
+  }
+}
+
+.mu-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: $orange-soft;
+  color: $orange;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg { width: 22px; height: 22px; }
+}
+
+.mu-text {
+  margin: 0;
+  font-weight: 600;
+  color: $dark;
+  font-size: 0.9rem;
+}
+
+.mu-hint {
+  margin: 0;
+  color: $muted;
+  font-size: 0.78rem;
+}
+
+.mu-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.mu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.mu-thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: $bg;
+  border: 1px solid $border;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.mu-badge {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: rgba($success, 0.92);
+  backdrop-filter: blur(4px);
+
+  &--local {
+    background: rgba($orange, 0.95);
+  }
+}
+
+.mu-thumb-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+
+  .mu-thumb:hover & {
+    opacity: 1;
+  }
+}
+
+.mu-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: $dark;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(4px);
+  padding: 0;
+
+  svg { width: 14px; height: 14px; }
+
+  &:hover:not(:disabled) {
+    background: $orange;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &--danger:hover:not(:disabled) {
+    background: $error;
+    color: #fff;
+  }
+}
+
+.mu-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0 0.1rem;
+  font-size: 0.7rem;
+  color: $muted;
+}
+
+.mu-index {
+  font-weight: 700;
+  color: $dark;
+}
+
+.mu-size {
+  font-variant-numeric: tabular-nums;
+}
+
+.mu-helper {
+  margin: 0;
+  font-size: 0.78rem;
+  color: $muted;
+}
+
+.mu-error {
+  padding: 0.55rem 0.75rem;
+  background: rgba($error, 0.08);
+  color: $error;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid rgba($error, 0.15);
+}

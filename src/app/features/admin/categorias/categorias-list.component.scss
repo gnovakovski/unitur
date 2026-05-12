@@ -1,0 +1,111 @@
+@import '../shared/admin-forms.scss';
+
+:host { display: block; width: 100%; }
+
+.empty-state, .table-card {
+  background: $af-surface;
+  border-radius: $af-radius-lg;
+  border: 1px solid $af-border;
+  box-shadow: $af-shadow-sm;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  display: grid;
+  place-items: center;
+  gap: 0.75rem;
+
+  &__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: $af-orange-soft;
+    color: $af-orange;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    svg { width: 32px; height: 32px; }
+  }
+
+  h3 { margin: 0; color: $af-dark; font-size: 1.1rem; }
+  p { margin: 0; color: $af-muted; }
+}
+
+.table-card { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid $af-border;
+    vertical-align: middle;
+  }
+
+  th {
+    color: $af-muted;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    background: $af-bg;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .muted { color: $af-muted; font-size: 0.88rem; }
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 600;
+  color: $af-dark;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.slug-pill {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  background: $af-bg;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.78rem;
+  color: $af-muted;
+  border: 1px solid $af-border;
+}
+
+.type-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: $af-bg;
+  color: $af-muted;
+
+  &[data-type="blog"]  { background: $af-blue-soft; color: #1f487e; }
+  &[data-type="trip"]  { background: $af-orange-soft; color: #b94d09; }
+  &[data-type="both"]  { background: #efe7ff; color: #553aa1; }
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}

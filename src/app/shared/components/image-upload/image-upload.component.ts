@@ -19,12 +19,16 @@ import { UploadService } from '../../../core/services/upload.service';
 })
 export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
   @Input() label = 'Imagem';
+  @Input() helper = '';
   @Input() accept = 'image/jpeg,image/jpg,image/png,image/webp';
-  @Input() maxSize = 2; // MB
+  @Input() maxSize = 5; // MB
+  @Input() aspectRatio: 'wide' | 'square' | 'auto' = 'wide';
+  @Input() compact = false;
   @Output() uploaded = new EventEmitter<File>();
 
   imageUrl: string | null = null;
   selectedFileName: string | null = null;
+  selectedFileSize: number | null = null;
   imagePath: string | null = null;
   isLocalFile = false;
   uploading = false;
@@ -34,7 +38,6 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
 
   private onChange: (value: string | File | null) => void = () => {};
   private onTouched: () => void = () => {};
-  private openingFilePicker = false;
   private objectUrl: string | null = null;
 
   constructor(private uploadService: UploadService) {}
@@ -50,6 +53,7 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
     this.imagePath = value || null;
     this.isLocalFile = false;
     this.selectedFileName = value ? this.getFileNameFromUrl(value) : null;
+    this.selectedFileSize = null;
   }
 
   registerOnChange(fn: (value: string | File | null) => void): void {
@@ -68,9 +72,6 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
     }
 
     input.value = '';
-    setTimeout(() => {
-      this.openingFilePicker = false;
-    }, 800);
   }
 
   onDrop(event: DragEvent): void {
@@ -95,7 +96,6 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
   private handleFile(file: File): void {
     this.error = null;
 
-    // Validação
     const validation = this.uploadService.validateImage(file);
     if (!validation.valid) {
       this.error = validation.error || 'Arquivo inválido';
@@ -108,39 +108,51 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
     this.onTouched();
   }
 
-  removeImage(): void {
-    if (this.imageUrl) {
-      // Opcional: deletar do servidor
-      // this.uploadService.deleteImage(this.imageUrl).subscribe();
-      
-      this.imageUrl = null;
-      this.selectedFileName = null;
-      this.imagePath = null;
-      this.isLocalFile = false;
-      this.clearObjectUrl();
-      this.onChange(null);
-      this.error = null;
-    }
+  removeImage(event?: Event): void {
+    event?.stopPropagation();
+    this.imageUrl = null;
+    this.selectedFileName = null;
+    this.selectedFileSize = null;
+    this.imagePath = null;
+    this.isLocalFile = false;
+    this.clearObjectUrl();
+    this.onChange(null);
+    this.error = null;
   }
 
-  triggerFileInput(event?: MouseEvent): void {
-    event?.preventDefault();
+  replaceImage(event?: Event): void {
     event?.stopPropagation();
+    this.triggerFileInput();
+  }
 
-    if (this.openingFilePicker || this.uploading) {
+  triggerFileInput(event?: MouseEvent | Event): void {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (this.uploading) {
       return;
     }
 
-    this.openingFilePicker = true;
-    const input = document.getElementById(this.inputId) as HTMLInputElement;
-    input?.click();
-    setTimeout(() => {
-      this.openingFilePicker = false;
-    }, 1200);
+    const input = document.getElementById(this.inputId) as HTMLInputElement | null;
+    if (!input) {
+      return;
+    }
+
+    // Reseta o value para que o mesmo arquivo possa ser selecionado novamente
+    // e para garantir que o evento `change` sempre dispare.
+    input.value = '';
+    input.click();
   }
 
   ngOnDestroy(): void {
     this.clearObjectUrl();
+  }
+
+  formatSize(bytes: number | null): string {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
   private setSelectedFile(file: File): void {
@@ -148,8 +160,10 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
     this.objectUrl = URL.createObjectURL(file);
     this.imageUrl = this.objectUrl;
     this.selectedFileName = file.name;
+    this.selectedFileSize = file.size;
     this.imagePath = null;
     this.isLocalFile = true;
+    this.error = null;
   }
 
   private clearObjectUrl(): void {

@@ -5,85 +5,50 @@ import { catchError, finalize, from, of, switchMap, timeout } from 'rxjs';
 import { Category } from '../../../core/models/post.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { CategoryService } from '../../../core/services/category.service';
+import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
+import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
 
 @Component({
   selector: 'app-categorias-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SavingOverlayComponent, UnsavedChangesModalComponent],
   template: `
-    <div class="page-container">
-      <div class="page-header">
+    <section class="af-page">
+      <header class="af-page-header">
         <div>
-          <h1>Categorias</h1>
-          <p>Organize posts e viagens por tipo de conteúdo.</p>
+          <h1 class="af-page-header__title">Categorias</h1>
+          <p class="af-page-header__subtitle">Organize posts e viagens por tipo de conteúdo.</p>
         </div>
-        <button class="btn-primary" type="button" (click)="openForm()">
-          <span>+</span> Nova Categoria
-        </button>
-      </div>
+        <div class="af-page-header__actions">
+          <button class="af-btn af-btn--primary" type="button" (click)="openForm()">
+            + Nova categoria
+          </button>
+        </div>
+      </header>
 
       @if (error) {
-        <div class="alert-error">{{ error }}</div>
-      }
-
-      @if (formOpen) {
-        <div class="modal-overlay" (click)="closeForm()">
-        <form class="form-card modal-card" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h2>{{ editingCategory ? 'Editar categoria' : 'Nova categoria' }}</h2>
-            <button class="btn-close" type="button" (click)="closeForm()">X</button>
-          </div>
-          <div class="form-grid">
-            <label>
-              Nome
-              <input class="form-control" type="text" formControlName="name" placeholder="Ex: Dicas de viagem">
-            </label>
-
-            <label>
-              Slug
-              <input class="form-control" type="text" formControlName="slug" placeholder="dicas-de-viagem">
-            </label>
-
-            <label>
-              Tipo
-              <select class="form-control" formControlName="type">
-                <option value="blog">Blog</option>
-                <option value="trip">Viagens</option>
-                <option value="both">Blog e viagens</option>
-              </select>
-            </label>
-
-            <label>
-              Cor
-              <input class="form-control" type="color" formControlName="color">
-            </label>
-          </div>
-
-          <label>
-            Descrição
-            <textarea class="form-control" rows="3" formControlName="description" placeholder="Descrição opcional"></textarea>
-          </label>
-
-          <div class="form-actions">
-            <button class="btn-secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
-            <button class="btn-primary" type="submit" [disabled]="categoryForm.invalid || saving">
-              {{ saving ? 'Salvando...' : (editingCategory ? 'Atualizar' : 'Criar') }}
-            </button>
-          </div>
-        </form>
+        <div class="af-alert af-alert--error">
+          <span class="af-alert__icon">!</span>
+          <span>{{ error }}</span>
         </div>
       }
 
       @if (loading) {
-        <div class="empty-state">
-          <span class="empty-icon">...</span>
-          <h3>Carregando categorias</h3>
+        <div class="af-loading">
+          <div class="af-spinner"></div>
+          <p>Carregando categorias...</p>
         </div>
       } @else if (categories.length === 0) {
         <div class="empty-state">
-          <span class="empty-icon">#</span>
+          <div class="empty-state__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+          </div>
           <h3>Nenhuma categoria cadastrada</h3>
           <p>Crie categorias para organizar posts e viagens.</p>
+          <button class="af-btn af-btn--primary" type="button" (click)="openForm()">+ Adicionar primeira categoria</button>
         </div>
       } @else {
         <div class="table-card">
@@ -106,13 +71,13 @@ import { CategoryService } from '../../../core/services/category.service';
                       {{ category.name }}
                     </div>
                   </td>
-                  <td>{{ category.slug }}</td>
-                  <td>{{ getTypeLabel(category.type) }}</td>
-                  <td>{{ category.description || '-' }}</td>
+                  <td><code class="slug-pill">{{ category.slug }}</code></td>
+                  <td><span class="type-pill" [attr.data-type]="category.type">{{ getTypeLabel(category.type) }}</span></td>
+                  <td class="muted">{{ category.description || '—' }}</td>
                   <td>
                     <div class="row-actions">
-                      <button class="btn-small" type="button" (click)="openForm(category)">Editar</button>
-                      <button class="btn-small danger" type="button" (click)="deleteCategory(category)" [disabled]="deletingId === category.id">
+                      <button class="af-btn af-btn--ghost af-btn--sm" type="button" (click)="openForm(category)">Editar</button>
+                      <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="deleteCategory(category)" [disabled]="deletingId === category.id">
                         {{ deletingId === category.id ? 'Excluindo...' : 'Excluir' }}
                       </button>
                     </div>
@@ -123,51 +88,78 @@ import { CategoryService } from '../../../core/services/category.service';
           </table>
         </div>
       }
-    </div>
-  `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .page-container { width: 100%; max-width: none; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 2rem; }
-    .page-header h1 { font-size: 2rem; color: #1a1a2e; margin: 0 0 0.35rem; }
-    .page-header p { color: #6C757D; margin: 0; }
-    .btn-primary, .btn-secondary, .btn-small { border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-primary { padding: 0.75rem 1.5rem; background: #ff812c; color: white; display: inline-flex; align-items: center; gap: 0.5rem; }
-    .btn-primary:hover:not(:disabled) { background: #e67424; }
-    .btn-secondary { padding: 0.75rem 1.25rem; background: #f0f0f0; color: #333; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .alert-error { margin-bottom: 1rem; padding: 1rem; background: #ffebee; color: #c62828; border-radius: 8px; }
-    .form-card, .table-card, .empty-state { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
-    .form-card { padding: 1.5rem; margin-bottom: 1.5rem; display: grid; gap: 1rem; }
-    .modal-overlay { position: fixed; inset: 0; z-index: 1400; background: rgba(0,0,0,0.45); display: grid; place-items: start center; padding: 6rem 1rem 2rem; overflow-y: auto; }
-    .modal-card { width: min(760px, 100%); max-height: calc(100vh - 8rem); overflow: auto; margin-bottom: 0; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-    .modal-header h2 { margin: 0; color: #1a1a2e; }
-    .btn-close { border: none; background: #f0f0f0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
-    .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
-    label { display: grid; gap: 0.5rem; color: #333; font-weight: 600; font-size: 0.9rem; }
-    .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid #e0e0e0; border-radius: 8px; font: inherit; }
-    .form-control:focus { outline: none; border-color: #ff812c; box-shadow: 0 0 0 3px rgba(255, 129, 44, 0.1); }
-    input[type="color"].form-control { padding: 0.25rem; height: 46px; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-    .empty-state { text-align: center; padding: 4rem 2rem; }
-    .empty-icon { font-size: 3rem; display: block; margin-bottom: 1rem; color: #ff812c; font-weight: 800; }
-    .empty-state h3 { color: #1a1a2e; margin-bottom: 0.5rem; }
-    .empty-state p { color: #6C757D; }
-    .table-card { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #edf0f2; vertical-align: top; }
-    th { color: #6C757D; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; background: #F8F9FA; }
-    .name-cell { display: flex; align-items: center; gap: 0.65rem; font-weight: 700; color: #1a1a2e; }
-    .color-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
-    .row-actions { display: flex; gap: 0.5rem; }
-    .btn-small { padding: 0.5rem 0.75rem; background: #eef3f8; color: #3a75c3; white-space: nowrap; }
-    .btn-small.danger { background: #ffebee; color: #c62828; }
-    @media (max-width: 900px) {
-      .page-header { flex-direction: column; }
-      .form-grid { grid-template-columns: 1fr; }
+    </section>
+
+    @if (formOpen) {
+      <div class="af-modal-overlay" (click)="closeForm()">
+        <form class="af-modal" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" (click)="$event.stopPropagation()">
+          <div class="af-modal__header">
+            <div>
+              <h2 class="af-modal__title">{{ editingCategory ? 'Editar categoria' : 'Nova categoria' }}</h2>
+              <p class="af-modal__subtitle">Use categorias para organizar e filtrar conteúdo.</p>
+            </div>
+            <button class="af-modal__close" type="button" (click)="closeForm()" aria-label="Fechar">✕</button>
+          </div>
+
+          <div class="af-grid af-grid--2">
+            <div class="af-field">
+              <label class="af-label">Nome <span class="af-label__required">*</span></label>
+              <input class="af-control" type="text" formControlName="name" placeholder="Ex: Dicas de viagem">
+            </div>
+
+            <div class="af-field">
+              <label class="af-label">Slug <span class="af-label__required">*</span></label>
+              <div class="af-input-group">
+                <span class="af-input-group__addon">/</span>
+                <input class="af-control" type="text" formControlName="slug" placeholder="dicas-de-viagem">
+              </div>
+            </div>
+
+            <div class="af-field">
+              <label class="af-label">Tipo</label>
+              <select class="af-control" formControlName="type">
+                <option value="blog">Blog</option>
+                <option value="trip">Viagens</option>
+                <option value="both">Blog e viagens</option>
+              </select>
+            </div>
+
+            <div class="af-field">
+              <label class="af-label">Cor de destaque</label>
+              <input class="af-control af-control--color" type="color" formControlName="color">
+              <span class="af-hint">Aparece como marca da categoria.</span>
+            </div>
+          </div>
+
+          <div class="af-field">
+            <label class="af-label">Descrição <span class="af-label__optional">opcional</span></label>
+            <textarea class="af-control af-control--textarea" rows="3" formControlName="description" placeholder="Descrição que aparece nas páginas de categoria."></textarea>
+          </div>
+
+          <div class="af-actions">
+            <button class="af-btn af-btn--secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
+            <button class="af-btn af-btn--primary" type="submit" [disabled]="categoryForm.invalid || saving">
+              {{ saving ? 'Salvando...' : (editingCategory ? 'Atualizar' : 'Criar categoria') }}
+            </button>
+          </div>
+        </form>
+      </div>
     }
-  `]
+
+    <app-saving-overlay
+      [show]="saving"
+      [title]="editingCategory ? 'Atualizando categoria...' : 'Criando categoria...'"
+      message="Aguarde enquanto salvamos a categoria.">
+    </app-saving-overlay>
+
+    <app-unsaved-changes-modal
+      [show]="unsavedModalOpen"
+      [canSave]="canSubmit()"
+      [changedFields]="changedFields"
+      (resolved)="onUnsavedResolved($event)">
+    </app-unsaved-changes-modal>
+  `,
+  styleUrl: './categorias-list.component.scss'
 })
 export class CategoriasListComponent implements OnInit {
   categories: Category[] = [];
@@ -178,6 +170,16 @@ export class CategoriasListComponent implements OnInit {
   error = '';
   editingCategory: Category | null = null;
   deletingId: number | null = null;
+  unsavedModalOpen = false;
+  changedFields: string[] = [];
+
+  private readonly fieldLabels: Record<string, string> = {
+    name: 'Nome',
+    slug: 'Slug',
+    type: 'Tipo',
+    description: 'Descrição',
+    color: 'Cor'
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -187,7 +189,7 @@ export class CategoriasListComponent implements OnInit {
   ) {
     this.categoryForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
-      slug: ['', [Validators.required]],
+      slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
       type: ['blog', [Validators.required]],
       description: [''],
       color: ['#ff812c']
@@ -249,9 +251,16 @@ export class CategoriasListComponent implements OnInit {
         color: '#ff812c'
       });
     }
+    this.categoryForm.markAsPristine();
   }
 
-  closeForm() {
+  closeForm(force = false) {
+    if (!force && this.categoryForm.dirty && !this.saving) {
+      this.changedFields = this.computeChangedFields();
+      this.unsavedModalOpen = true;
+      return;
+    }
+
     this.formOpen = false;
     this.editingCategory = null;
     this.categoryForm.reset({
@@ -261,6 +270,33 @@ export class CategoriasListComponent implements OnInit {
       description: '',
       color: '#ff812c'
     });
+  }
+
+  canSubmit(): boolean {
+    return this.categoryForm.valid;
+  }
+
+  async onUnsavedResolved(action: UnsavedAction) {
+    this.unsavedModalOpen = false;
+    if (action === 'cancel') return;
+    if (action === 'discard') {
+      this.categoryForm.markAsPristine();
+      this.closeForm(true);
+      return;
+    }
+    if (action === 'save') {
+      this.saveCategory();
+    }
+  }
+
+  private computeChangedFields(): string[] {
+    const labels: string[] = [];
+    Object.keys(this.categoryForm.controls).forEach(name => {
+      if (this.categoryForm.get(name)?.dirty) {
+        labels.push(this.fieldLabels[name] || name);
+      }
+    });
+    return labels;
   }
 
   saveCategory() {
@@ -279,7 +315,8 @@ export class CategoriasListComponent implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
-        this.closeForm();
+        this.categoryForm.markAsPristine();
+        this.closeForm(true);
         this.loadCategories();
         this.cdr.detectChanges();
       },
@@ -333,6 +370,3 @@ export class CategoriasListComponent implements OnInit {
     });
   }
 }
-
-
-

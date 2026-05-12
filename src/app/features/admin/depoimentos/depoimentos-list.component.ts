@@ -1,34 +1,54 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize, firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom, timeout } from 'rxjs';
 import { Testimonial } from '../../../core/models/testimonial.model';
 import { TestimonialService } from '../../../core/services/testimonial.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
+import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
+import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
 
 @Component({
   selector: 'app-depoimentos-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent, SavingOverlayComponent, UnsavedChangesModalComponent],
   template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Depoimentos</h1>
-        <button class="btn-primary" type="button" (click)="openForm()">+ Novo Depoimento</button>
-      </div>
+    <section class="af-page">
+      <header class="af-page-header">
+        <div>
+          <h1 class="af-page-header__title">Depoimentos</h1>
+          <p class="af-page-header__subtitle">Gerencie a vitrine de feedbacks dos clientes.</p>
+        </div>
+        <div class="af-page-header__actions">
+          <button class="af-btn af-btn--primary" type="button" (click)="openForm()">
+            + Novo depoimento
+          </button>
+        </div>
+      </header>
 
       @if (error) {
-        <div class="alert-error">{{ error }}</div>
+        <div class="af-alert af-alert--error">
+          <span class="af-alert__icon">!</span>
+          <span>{{ error }}</span>
+        </div>
       }
 
       @if (loading) {
-        <div class="empty-state"><h3>Carregando depoimentos...</h3></div>
+        <div class="af-loading">
+          <div class="af-spinner"></div>
+          <p>Carregando depoimentos...</p>
+        </div>
       } @else if (testimonials.length === 0) {
         <div class="empty-state">
-          <span class="empty-icon">TXT</span>
+          <div class="empty-state__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+          </div>
           <h3>Nenhum depoimento cadastrado</h3>
           <p>Adicione feedback de clientes satisfeitos.</p>
+          <button class="af-btn af-btn--primary" type="button" (click)="openForm()">+ Adicionar depoimento</button>
         </div>
       } @else {
         <div class="table-card">
@@ -36,8 +56,8 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
             <thead>
               <tr>
                 <th>Cliente</th>
-                <th>Texto</th>
-                <th>Avaliação</th>
+                <th>Depoimento</th>
+                <th>Nota</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -50,18 +70,33 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
                       @if (testimonial.clientPhoto) {
                         <img [src]="testimonial.clientPhoto" [alt]="testimonial.clientName">
                       } @else {
-                        <span>{{ testimonial.clientName.slice(0, 1).toUpperCase() }}</span>
+                        <span class="avatar-fallback">{{ testimonial.clientName.slice(0, 1).toUpperCase() }}</span>
                       }
-                      <strong>{{ testimonial.clientName }}</strong>
+                      <div>
+                        <strong>{{ testimonial.clientName }}</strong>
+                        @if (testimonial.clientEmail) {
+                          <span class="muted">{{ testimonial.clientEmail }}</span>
+                        }
+                      </div>
                     </div>
                   </td>
-                  <td>{{ testimonial.text }}</td>
-                  <td>{{ testimonial.rating }}/5</td>
-                  <td>{{ getStatusLabel(testimonial.status) }}</td>
+                  <td class="testimonial-text">{{ testimonial.text }}</td>
+                  <td>
+                    <div class="rating">
+                      @for (n of [1,2,3,4,5]; track n) {
+                        <span class="star" [class.is-active]="n <= testimonial.rating">★</span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-pill" [attr.data-status]="testimonial.status">
+                      {{ getStatusLabel(testimonial.status) }}
+                    </span>
+                  </td>
                   <td>
                     <div class="row-actions">
-                      <button class="btn-small" type="button" (click)="openForm(testimonial)">Editar</button>
-                      <button class="btn-small danger" type="button" (click)="deleteTestimonial(testimonial)" [disabled]="deletingId === testimonial.id">
+                      <button class="af-btn af-btn--ghost af-btn--sm" type="button" (click)="openForm(testimonial)">Editar</button>
+                      <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="deleteTestimonial(testimonial)" [disabled]="deletingId === testimonial.id">
                         {{ deletingId === testimonial.id ? 'Excluindo...' : 'Excluir' }}
                       </button>
                     </div>
@@ -72,84 +107,123 @@ import { ImageUploadComponent } from '../../../shared/components/image-upload/im
           </table>
         </div>
       }
-    </div>
+    </section>
 
     @if (formOpen) {
-      <div class="modal-overlay" (click)="closeForm()">
-        <form class="modal-card" [formGroup]="testimonialForm" (ngSubmit)="saveTestimonial()" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h2>{{ editingTestimonial ? 'Editar depoimento' : 'Novo depoimento' }}</h2>
-            <button class="btn-close" type="button" (click)="closeForm()">X</button>
+      <div class="af-modal-overlay" (click)="closeForm()">
+        <form class="af-modal" [formGroup]="testimonialForm" (ngSubmit)="saveTestimonial()" (click)="$event.stopPropagation()">
+          <div class="af-modal__header">
+            <div>
+              <h2 class="af-modal__title">{{ editingTestimonial ? 'Editar depoimento' : 'Novo depoimento' }}</h2>
+              <p class="af-modal__subtitle">Adicione um feedback que será exibido no site.</p>
+            </div>
+            <button class="af-modal__close" type="button" (click)="closeForm()" aria-label="Fechar">✕</button>
           </div>
-          <div class="form-grid">
-            <label><span class="field-label">Nome do cliente <span class="required">*</span></span><input class="form-control" formControlName="clientName"></label>
-            <label>E-mail <input class="form-control" type="email" formControlName="clientEmail"></label>
-            <label>Avaliação <input class="form-control" type="number" min="1" max="5" formControlName="rating"></label>
-            <label>Status
-              <select class="form-control" formControlName="status">
+
+          <div class="af-grid af-grid--2">
+            <div class="af-field">
+              <label class="af-label">Nome do cliente <span class="af-label__required">*</span></label>
+              <input class="af-control" formControlName="clientName" placeholder="Ex: Maria das Graças">
+            </div>
+
+            <div class="af-field">
+              <label class="af-label">E-mail <span class="af-label__optional">opcional</span></label>
+              <input class="af-control" type="email" formControlName="clientEmail" placeholder="cliente@email.com">
+            </div>
+
+            <div class="af-field">
+              <label class="af-label">Avaliação <span class="af-label__required">*</span></label>
+              <div class="rating-input">
+                @for (n of [1,2,3,4,5]; track n) {
+                  <button
+                    type="button"
+                    class="rating-input__star"
+                    [class.is-active]="n <= (testimonialForm.get('rating')?.value || 0)"
+                    (click)="setRating(n)"
+                    [attr.aria-label]="n + ' estrelas'">
+                    ★
+                  </button>
+                }
+                <span class="rating-input__value">{{ testimonialForm.get('rating')?.value || 0 }}/5</span>
+              </div>
+            </div>
+
+            <div class="af-field">
+              <label class="af-label">Status</label>
+              <select class="af-control" formControlName="status">
                 <option value="pending">Pendente</option>
                 <option value="approved">Aprovado</option>
                 <option value="rejected">Rejeitado</option>
               </select>
-            </label>
+            </div>
           </div>
-          <app-image-upload label="Foto do cliente" formControlName="clientPhoto"></app-image-upload>
-          <label><span class="field-label">Depoimento <span class="required">*</span></span><textarea class="form-control" rows="5" formControlName="text"></textarea></label>
-          <div class="form-actions">
-            <button class="btn-secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
-            <button class="btn-primary" type="submit" [disabled]="testimonialForm.invalid || saving">{{ saving ? 'Salvando...' : 'Salvar' }}</button>
+
+          <app-image-upload
+            label="Foto do cliente (opcional)"
+            helper="Ideal em formato quadrado. Será gravada no Storage ao salvar."
+            aspectRatio="square"
+            [compact]="true"
+            formControlName="clientPhoto">
+          </app-image-upload>
+
+          <div class="af-field">
+            <label class="af-label">Depoimento <span class="af-label__required">*</span></label>
+            <textarea class="af-control af-control--textarea" rows="5" formControlName="text" placeholder="Texto do depoimento do cliente"></textarea>
+          </div>
+
+          @if (saving && savingStep) {
+            <div class="af-alert af-alert--info">
+              <span class="af-alert__icon">i</span>
+              <span>{{ savingStep }}</span>
+            </div>
+          }
+
+          <div class="af-actions">
+            <button class="af-btn af-btn--secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
+            <button class="af-btn af-btn--primary" type="submit" [disabled]="testimonialForm.invalid || saving">
+              {{ saving ? 'Salvando...' : 'Salvar depoimento' }}
+            </button>
           </div>
         </form>
       </div>
     }
+
+    <app-saving-overlay
+      [show]="saving"
+      [title]="editingTestimonial ? 'Atualizando depoimento...' : 'Criando depoimento...'"
+      [message]="savingStep || 'Aguarde enquanto salvamos o depoimento.'">
+    </app-saving-overlay>
+
+    <app-unsaved-changes-modal
+      [show]="unsavedModalOpen"
+      [canSave]="canSubmit()"
+      [changedFields]="changedFields"
+      (resolved)="onUnsavedResolved($event)">
+    </app-unsaved-changes-modal>
   `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .page-container { width: 100%; max-width: none; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .page-header h1 { font-size: 2rem; color: #1a1a2e; margin: 0; }
-    .btn-primary, .btn-secondary, .btn-small { border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-primary { padding: 0.75rem 1.5rem; background: #ff812c; color: white; }
-    .btn-secondary { padding: 0.75rem 1.25rem; background: #f0f0f0; color: #333; }
-    .btn-small { padding: 0.5rem 0.75rem; background: #eef3f8; color: #3a75c3; white-space: nowrap; }
-    .btn-small.danger { background: #ffebee; color: #c62828; }
-    .alert-error { margin-bottom: 1rem; padding: 1rem; background: #ffebee; color: #c62828; border-radius: 8px; }
-    .empty-state, .table-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .empty-state { text-align: center; padding: 4rem 2rem; }
-    .empty-icon { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 16px; background: #eef3f8; color: #3a75c3; font-weight: 800; margin-bottom: 1rem; }
-    .table-card { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #edf0f2; vertical-align: top; }
-    th { color: #6C757D; font-size: 0.78rem; text-transform: uppercase; background: #F8F9FA; }
-    .client-cell { display: flex; align-items: center; gap: 0.75rem; min-width: 180px; }
-    .client-cell img, .client-cell span { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex: none; }
-    .client-cell span { display: inline-flex; align-items: center; justify-content: center; background: #eef3f8; color: #3a75c3; font-weight: 800; }
-    .row-actions { display: flex; gap: 0.5rem; }
-    .modal-overlay { position: fixed; inset: 0; z-index: 1400; background: rgba(0,0,0,0.45); display: grid; place-items: start center; padding: 6rem 1rem 2rem; overflow-y: auto; }
-    .modal-card { width: min(760px, 100%); max-height: calc(100vh - 8rem); overflow: auto; background: white; border-radius: 16px; padding: 1.5rem; display: grid; gap: 1rem; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-    .modal-header h2 { margin: 0; color: #1a1a2e; }
-    .btn-close { border: none; background: #f0f0f0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-    label { display: grid; gap: 0.5rem; color: #333; font-weight: 600; font-size: 0.9rem; }
-    .field-label { display: inline-flex; align-items: baseline; gap: 0.2rem; width: fit-content; white-space: nowrap; }
-    .required { color: #c62828; }
-    .form-control { width: 100%; border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.75rem 1rem; font: inherit; }
-    textarea.form-control { resize: vertical; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    @media (max-width: 760px) { .page-header, .form-actions { flex-direction: column; align-items: stretch; } .form-grid { grid-template-columns: 1fr; } }
-  `]
+  styleUrl: './depoimentos-list.component.scss'
 })
 export class DepoimentosListComponent implements OnInit {
   testimonials: Testimonial[] = [];
   testimonialForm: FormGroup;
   loading = false;
   saving = false;
+  savingStep = '';
   formOpen = false;
   error = '';
   editingTestimonial: Testimonial | null = null;
   deletingId: number | null = null;
+  unsavedModalOpen = false;
+  changedFields: string[] = [];
+
+  private readonly fieldLabels: Record<string, string> = {
+    clientName: 'Nome do cliente',
+    clientEmail: 'E-mail',
+    clientPhoto: 'Foto',
+    text: 'Depoimento',
+    rating: 'Avaliação',
+    status: 'Status'
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -158,10 +232,10 @@ export class DepoimentosListComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.testimonialForm = this.fb.group({
-      clientName: ['', [Validators.required]],
-      clientEmail: [''],
+      clientName: ['', [Validators.required, Validators.minLength(2)]],
+      clientEmail: ['', [Validators.email]],
       clientPhoto: [''],
-      text: ['', [Validators.required]],
+      text: ['', [Validators.required, Validators.minLength(10)]],
       rating: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
       status: ['approved', [Validators.required]]
     });
@@ -194,13 +268,51 @@ export class DepoimentosListComponent implements OnInit {
       rating: testimonial?.rating || 5,
       status: testimonial?.status || 'approved'
     });
+    this.testimonialForm.markAsPristine();
   }
 
-  closeForm() {
-    if (!this.saving) {
-      this.formOpen = false;
-      this.editingTestimonial = null;
+  closeForm(force = false) {
+    if (this.saving) return;
+    if (!force && this.testimonialForm.dirty) {
+      this.changedFields = this.computeChangedFields();
+      this.unsavedModalOpen = true;
+      return;
     }
+    this.formOpen = false;
+    this.editingTestimonial = null;
+  }
+
+  canSubmit(): boolean {
+    return this.testimonialForm.valid;
+  }
+
+  async onUnsavedResolved(action: UnsavedAction) {
+    this.unsavedModalOpen = false;
+    if (action === 'cancel') return;
+    if (action === 'discard') {
+      this.testimonialForm.markAsPristine();
+      this.closeForm(true);
+      return;
+    }
+    if (action === 'save') {
+      this.saveTestimonial();
+    }
+  }
+
+  setRating(value: number) {
+    const ctrl = this.testimonialForm.get('rating');
+    ctrl?.setValue(value);
+    ctrl?.markAsDirty();
+  }
+
+  private computeChangedFields(): string[] {
+    const labels: string[] = [];
+    Object.keys(this.testimonialForm.controls).forEach(name => {
+      if (this.testimonialForm.get(name)?.dirty) {
+        labels.push(this.fieldLabels[name] || name);
+      }
+    });
+    return labels;
   }
 
   async saveTestimonial() {
@@ -211,32 +323,51 @@ export class DepoimentosListComponent implements OnInit {
 
     this.saving = true;
     this.error = '';
+    this.savingStep = 'Salvando depoimento...';
 
     try {
-      const value = {
-        ...this.testimonialForm.value,
-        clientPhoto: await this.uploadImageValue(this.testimonialForm.value.clientPhoto)
-      };
-      const request = this.editingTestimonial
-        ? this.testimonialService.updateTestimonial(this.editingTestimonial.id, value)
-        : this.testimonialService.createTestimonial(value);
+      const { clientPhoto, ...rest } = this.testimonialForm.value;
+      const photoFile = clientPhoto instanceof File ? clientPhoto : null;
+      const existingPhoto = clientPhoto instanceof File ? '' : String(clientPhoto || '');
 
-      await firstValueFrom(request);
+      const baseData: Partial<Testimonial> = {
+        ...rest,
+        clientPhoto: existingPhoto
+      };
+
+      const saved = this.editingTestimonial
+        ? await firstValueFrom(this.testimonialService.updateTestimonial(this.editingTestimonial.id, baseData))
+        : await firstValueFrom(this.testimonialService.createTestimonial(baseData));
+
+      const idToUse = saved?.id || this.editingTestimonial?.id;
+
+      if (photoFile && idToUse) {
+        this.savingStep = 'Enviando foto para o Firebase Storage...';
+        try {
+          const uploaded = await firstValueFrom(
+            this.uploadService.uploadToEntity(photoFile, 'depoimentos', idToUse).pipe(timeout(45000))
+          );
+          await firstValueFrom(this.testimonialService.updateTestimonial(idToUse, { clientPhoto: uploaded.url }));
+        } catch (uploadErr: any) {
+          this.error = `Depoimento salvo, mas falhou o upload da foto: ${uploadErr?.message || 'erro desconhecido'}.`;
+          console.error('Upload error', uploadErr);
+          this.saving = false;
+          this.savingStep = '';
+          this.loadTestimonials();
+          return;
+        }
+      }
+
       this.saving = false;
-      this.closeForm();
+      this.savingStep = '';
+      this.testimonialForm.markAsPristine();
+      this.closeForm(true);
       this.loadTestimonials();
     } catch (err: any) {
       this.error = err?.message || 'Erro ao salvar depoimento.';
       this.saving = false;
+      this.savingStep = '';
     }
-  }
-
-  private async uploadImageValue(value: unknown): Promise<string> {
-    if (value instanceof File) {
-      return (await firstValueFrom(this.uploadService.uploadImage(value))).url;
-    }
-
-    return String(value || '');
   }
 
   deleteTestimonial(testimonial: Testimonial) {

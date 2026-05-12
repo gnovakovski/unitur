@@ -139,22 +139,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.currentSlide = index;
   }
 
-  getTripQuery(trip: HomeTripCard): Record<string, string> {
-    return {
-      title: trip.title,
-      destination: trip.country,
-      date: trip.date,
-      duration: trip.duration,
-      price: trip.price,
-      spots: trip.spots,
-      showSpots: String(trip.showSpots),
-      foreignPrice: trip.foreignPrice || '',
-      guide: trip.guide,
-      coordinator: trip.coordinator,
-      image: trip.image
-    };
-  }
-
   useFallbackImage(event: Event) {
     const image = event.target as HTMLImageElement;
     image.onerror = null;
@@ -180,38 +164,37 @@ export class HomeComponent implements OnInit, OnDestroy {
       totalPages: 1
     };
 
-    this.tripService.getTrips({ limit: 100 }).pipe(
+    this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
       catchError(() => of(emptyResponse))
     ).subscribe(response => {
-      const activeTrips = response.data.filter(trip => trip.status !== 'inactive');
-      const peregrinacoes = activeTrips.filter(trip => trip.tripType === 'peregrinacao');
-      const regulares = activeTrips.filter(trip => trip.tripType === 'regular');
-      const curadoria = activeTrips.filter(trip => trip.tripType === 'curadoria');
-      const nextPeregrinacoes = peregrinacoes.map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
-      const nextRegulares = regulares.map(trip => this.mapTripCard(trip, 'Guia'));
-      const nextCuradoria = curadoria.map(trip => this.mapCuradoriaCard(trip));
-      const nextContinents = this.mapWorldCards(activeTrips);
+      const activeTrips = response.data;
+      this.peregrinacoes = activeTrips
+        .filter(trip => trip.tripType === 'peregrinacao')
+        .map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
+      this.regulares = activeTrips
+        .filter(trip => trip.tripType === 'regular')
+        .map(trip => this.mapTripCard(trip, 'Guia'));
+      this.curadoria = activeTrips
+        .filter(trip => trip.tripType === 'curadoria')
+        .map(trip => this.mapCuradoriaCard(trip));
+      this.continents = this.mapWorldCards(activeTrips);
 
-      if (activeTrips.length > 0 || this.hasNoTripContent()) {
-        this.peregrinacoes = nextPeregrinacoes;
-        this.regulares = nextRegulares;
-        this.curadoria = nextCuradoria;
-        this.continents = nextContinents;
-      }
       this.cdr.detectChanges();
     });
   }
 
   private loadBanners() {
-    this.bannerService.getBanners().pipe(
+    this.bannerService.getActiveBanners().pipe(
       timeout(12000),
       catchError(() => of([]))
     ).subscribe(banners => {
       this.bannerImages = banners
-        .filter(banner => banner.status === 'active' && banner.imageUrl)
+        .filter(banner => banner.imageUrl)
         .map(banner => this.normalizeImage(banner.imageUrl));
       this.currentSlide = 0;
-      this.startSlideShow();
+      if (this.bannerImages.length > 0) {
+        this.startSlideShow();
+      }
       this.cdr.detectChanges();
     });
   }
@@ -332,13 +315,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       image: this.normalizeImage(testimonial.clientPhoto),
       trip: testimonial.trip?.title || 'Cliente Unitur'
     };
-  }
-
-  private hasNoTripContent(): boolean {
-    return this.peregrinacoes.length === 0 &&
-      this.regulares.length === 0 &&
-      this.curadoria.length === 0 &&
-      this.continents.length === 0;
   }
 
   private mapBlogPostCard(post: Post): HomeBlogPostCard {

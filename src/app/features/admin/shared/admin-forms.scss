@@ -1,0 +1,800 @@
+// ============================================================================
+//  Design System - Formularios do Admin Unitur
+//  Importado pelos componentes de cadastro/edicao para visual consistente.
+// ============================================================================
+
+// ---------- Tokens ----------------------------------------------------------
+$af-orange: #ff812c;
+$af-orange-hover: #e6701f;
+$af-orange-soft: rgba(255, 129, 44, 0.1);
+$af-blue: #3a75c3;
+$af-blue-soft: #eef3f8;
+$af-dark: #1a1a2e;
+$af-text: #2d3142;
+$af-muted: #6b7280;
+$af-border: #e2e6ee;
+$af-border-strong: #c9cfd9;
+$af-bg: #f7f8fb;
+$af-surface: #ffffff;
+$af-error: #d93025;
+$af-error-soft: #fde7e6;
+$af-success: #1f9d55;
+$af-success-soft: #e8f7ee;
+
+$af-radius-sm: 8px;
+$af-radius-md: 12px;
+$af-radius-lg: 16px;
+$af-radius-xl: 20px;
+$af-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+$af-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+$af-shadow-lg: 0 14px 40px rgba(15, 23, 42, 0.14);
+
+// ---------- Header da pagina -----------------------------------------------
+.af-page {
+  display: block;
+  width: 100%;
+  color: $af-text;
+}
+
+.af-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+
+  &__title {
+    margin: 0 0 0.35rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $af-dark;
+    letter-spacing: -0.01em;
+  }
+
+  &__subtitle {
+    margin: 0;
+    color: $af-muted;
+    font-size: 0.95rem;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+// ---------- Card do formulario ---------------------------------------------
+.af-card {
+  background: $af-surface;
+  border-radius: $af-radius-lg;
+  border: 1px solid $af-border;
+  box-shadow: $af-shadow-sm;
+  padding: 1.75rem;
+  display: grid;
+  gap: 1.5rem;
+
+  @media (max-width: 640px) {
+    padding: 1.25rem;
+    border-radius: $af-radius-md;
+  }
+}
+
+.af-section {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid $af-border;
+
+  &:last-of-type,
+  &--no-border {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  &__step {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: $af-orange-soft;
+    color: $af-orange;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $af-dark;
+  }
+
+  &__hint {
+    margin: 0;
+    color: $af-muted;
+    font-size: 0.85rem;
+  }
+}
+
+// ---------- Grid de campos --------------------------------------------------
+.af-grid {
+  display: grid;
+  gap: 1.1rem;
+
+  &--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  &--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  &--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  &--main {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    &--3, &--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    &--2, &--3, &--4 { grid-template-columns: 1fr; }
+  }
+}
+
+.af-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+// ---------- Campos ----------------------------------------------------------
+.af-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+
+  &--span-2 { grid-column: span 2; }
+  &--span-3 { grid-column: span 3; }
+  &--span-4 { grid-column: span 4; }
+
+  @media (max-width: 900px) {
+    &--span-3, &--span-4 { grid-column: span 2; }
+  }
+
+  @media (max-width: 640px) {
+    &--span-2, &--span-3, &--span-4 { grid-column: span 1; }
+  }
+}
+
+.af-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $af-dark;
+  letter-spacing: 0.01em;
+
+  &__required {
+    color: $af-error;
+    font-weight: 700;
+  }
+
+  &__optional {
+    color: $af-muted;
+    font-weight: 500;
+    font-size: 0.78rem;
+    margin-left: 0.25rem;
+  }
+}
+
+.af-hint {
+  color: $af-muted;
+  font-size: 0.78rem;
+  line-height: 1.35;
+
+  &--right { justify-self: end; }
+  &--counter { font-variant-numeric: tabular-nums; }
+}
+
+.af-error {
+  color: $af-error;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  &::before {
+    content: "!";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: $af-error;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+}
+
+.af-control {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: $af-surface;
+  border: 1.5px solid $af-border;
+  border-radius: $af-radius-sm;
+  font: inherit;
+  font-size: 0.92rem;
+  color: $af-text;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+
+  &::placeholder {
+    color: #a4a9b3;
+  }
+
+  &:hover:not(:disabled):not([readonly]) {
+    border-color: $af-border-strong;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $af-orange;
+    box-shadow: 0 0 0 3px $af-orange-soft;
+  }
+
+  &[readonly] {
+    background: #f4f5f8;
+    color: $af-muted;
+    cursor: default;
+  }
+
+  &:disabled {
+    background: #f4f5f8;
+    color: $af-muted;
+    cursor: not-allowed;
+  }
+
+  &.is-invalid,
+  &.ng-touched.ng-invalid {
+    border-color: $af-error;
+    background: $af-error-soft;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.12);
+    }
+  }
+
+  &--textarea {
+    resize: vertical;
+    min-height: 110px;
+    line-height: 1.5;
+  }
+
+  &--editor {
+    min-height: 360px;
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  &--color {
+    padding: 0.2rem;
+    height: 44px;
+    cursor: pointer;
+  }
+}
+
+// Select com chevron
+select.af-control {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%236b7280' d='M6 8.5L1.5 4h9z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.25rem;
+}
+
+// Input prefix/sufix
+.af-input-group {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid $af-border;
+  border-radius: $af-radius-sm;
+  background: $af-surface;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+
+  &:focus-within {
+    border-color: $af-orange;
+    box-shadow: 0 0 0 3px $af-orange-soft;
+  }
+
+  &.is-invalid {
+    border-color: $af-error;
+  }
+
+  &__addon {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.85rem;
+    background: #f4f5f8;
+    color: $af-muted;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-right: 1px solid $af-border;
+
+    &--right {
+      border-right: none;
+      border-left: 1px solid $af-border;
+    }
+  }
+
+  .af-control {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+
+    &:focus {
+      box-shadow: none;
+    }
+  }
+}
+
+// ---------- Checkbox/Radio modernos ----------------------------------------
+.af-radio-group,
+.af-check-group {
+  display: grid;
+  gap: 0.5rem;
+
+  &--row {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+
+    @media (max-width: 640px) {
+      grid-auto-flow: row;
+    }
+  }
+}
+
+.af-radio,
+.af-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid $af-border;
+  border-radius: $af-radius-sm;
+  background: $af-surface;
+  cursor: pointer;
+  font-weight: 500;
+  color: $af-text;
+  transition: all 0.15s ease;
+
+  input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid $af-border-strong;
+    border-radius: 50%;
+    flex: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+
+    &:checked {
+      border-color: $af-orange;
+      background: $af-orange;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 3px;
+        background: white;
+        border-radius: 50%;
+      }
+    }
+  }
+
+  &:hover {
+    border-color: $af-orange;
+    background: $af-orange-soft;
+  }
+
+  &--selected,
+  &:has(input:checked) {
+    border-color: $af-orange;
+    background: $af-orange-soft;
+    color: $af-dark;
+    font-weight: 600;
+  }
+}
+
+.af-check input {
+  border-radius: 4px;
+
+  &:checked {
+    &::after {
+      inset: 0;
+      background: $af-orange;
+      border-radius: 4px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+      background-size: 14px 14px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+  }
+}
+
+.af-check { border-radius: $af-radius-sm; }
+.af-radio--card { padding: 1rem; }
+
+// ---------- Toggle ----------------------------------------------------------
+.af-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: $af-dark;
+
+  input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 38px;
+    height: 22px;
+    border-radius: 999px;
+    background: $af-border-strong;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease;
+    }
+
+    &:checked {
+      background: $af-orange;
+
+      &::after { transform: translateX(16px); }
+    }
+  }
+}
+
+// ---------- Chips/Tags ------------------------------------------------------
+.af-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.af-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid $af-border;
+  border-radius: 999px;
+  background: $af-surface;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $af-text;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: $af-orange;
+    background: $af-orange-soft;
+  }
+
+  &--selected,
+  &.is-active {
+    border-color: $af-orange;
+    background: $af-orange;
+    color: white;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &__remove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.7;
+
+    &:hover { opacity: 1; }
+  }
+}
+
+// ---------- Botoes ----------------------------------------------------------
+.af-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.25rem;
+  border: 1.5px solid transparent;
+  border-radius: $af-radius-sm;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-decoration: none;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  &--block { width: 100%; }
+  &--sm { padding: 0.45rem 0.85rem; font-size: 0.82rem; }
+  &--lg { padding: 0.85rem 1.5rem; font-size: 0.95rem; }
+
+  &--primary {
+    background: $af-orange;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $af-orange-hover;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(255, 129, 44, 0.32);
+    }
+  }
+
+  &--secondary {
+    background: $af-bg;
+    color: $af-text;
+    border-color: $af-border;
+
+    &:hover:not(:disabled) {
+      background: $af-surface;
+      border-color: $af-border-strong;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $af-blue;
+
+    &:hover:not(:disabled) {
+      background: $af-blue-soft;
+    }
+  }
+
+  &--danger {
+    background: $af-error-soft;
+    color: $af-error;
+
+    &:hover:not(:disabled) {
+      background: $af-error;
+      color: white;
+    }
+  }
+}
+
+.af-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid $af-border;
+
+  &--stack {
+    flex-direction: column;
+    border: none;
+    padding-top: 0;
+  }
+
+  &--sticky {
+    position: sticky;
+    bottom: 0;
+    background: $af-surface;
+    margin: 1rem -1.75rem -1.75rem;
+    padding: 1rem 1.75rem;
+    border-radius: 0 0 $af-radius-lg $af-radius-lg;
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.06);
+    z-index: 5;
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column-reverse;
+  }
+}
+
+// ---------- Alertas ---------------------------------------------------------
+.af-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: $af-radius-sm;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+
+  &__icon {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: white;
+  }
+
+  &--error {
+    background: $af-error-soft;
+    color: #8a1f17;
+    border-color: rgba(217, 48, 37, 0.2);
+
+    .af-alert__icon { background: $af-error; }
+  }
+
+  &--success {
+    background: $af-success-soft;
+    color: #136734;
+    border-color: rgba(31, 157, 85, 0.2);
+
+    .af-alert__icon { background: $af-success; }
+  }
+
+  &--info {
+    background: $af-blue-soft;
+    color: #1f487e;
+    border-color: rgba(58, 117, 195, 0.18);
+
+    .af-alert__icon { background: $af-blue; }
+  }
+}
+
+// ---------- Modal genérico --------------------------------------------------
+.af-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: start center;
+  padding: 4rem 1rem 2rem;
+  overflow-y: auto;
+  animation: af-fade-in 0.18s ease;
+}
+
+.af-modal {
+  width: min(820px, 100%);
+  max-height: calc(100vh - 6rem);
+  overflow: auto;
+  background: $af-surface;
+  border-radius: $af-radius-lg;
+  box-shadow: $af-shadow-lg;
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  animation: af-slide-up 0.22s ease;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid $af-border;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: $af-dark;
+  }
+
+  &__subtitle {
+    margin: 0.25rem 0 0;
+    color: $af-muted;
+    font-size: 0.88rem;
+  }
+
+  &__close {
+    border: none;
+    background: $af-bg;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: 600;
+    color: $af-muted;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: $af-error-soft;
+      color: $af-error;
+    }
+  }
+
+  @media (max-width: 640px) {
+    padding: 1.25rem;
+    border-radius: $af-radius-md;
+  }
+}
+
+@keyframes af-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes af-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ---------- Loading / spinner ----------------------------------------------
+.af-loading {
+  display: grid;
+  place-items: center;
+  padding: 4rem 1rem;
+  background: $af-surface;
+  border-radius: $af-radius-lg;
+  border: 1px solid $af-border;
+  gap: 1rem;
+  color: $af-muted;
+  font-weight: 500;
+}
+
+.af-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid $af-border;
+  border-top-color: $af-orange;
+  border-radius: 50%;
+  animation: af-spin 0.85s linear infinite;
+}
+
+@keyframes af-spin {
+  to { transform: rotate(360deg); }
+}
