@@ -100,6 +100,27 @@ export const routes: Routes = [
       {
         path: 'depoimentos',
         loadComponent: () => import('./features/admin/depoimentos/depoimentos-list.component').then(m => m.DepoimentosListComponent)
+      },
+      {
+        path: 'conteudo',
+        loadComponent: () => import('./features/admin/conteudo/conteudo-hub.component').then(m => m.ConteudoHubComponent)
+      },
+      {
+        path: 'conteudo/cabecalho',
+        loadComponent: () => import('./features/admin/conteudo/cabecalho-form.component').then(m => m.CabecalhoFormComponent)
+      },
+      {
+        path: 'conteudo/contato',
+        loadComponent: () => import('./features/admin/conteudo/contato-form.component').then(m => m.ContatoFormComponent)
+      },
+      {
+        path: 'conteudo/sobre',
+        loadComponent: () => import('./features/admin/sobre/sobre-form.component').then(m => m.SobreFormComponent)
+      },
+      {
+        path: 'sobre',
+        redirectTo: 'conteudo/sobre',
+        pathMatch: 'full'
       }
     ]
   },

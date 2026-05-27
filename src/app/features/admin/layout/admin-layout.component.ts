@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { SiteContentService } from '../../../core/services/site-content.service';
 
 interface MenuItem {
   label: string;
@@ -24,12 +25,13 @@ export class AdminLayoutComponent implements OnInit {
     { label: 'Viagens', route: '/admin/viagens', icon: 'trip' },
     { label: 'Posts',    route: '/admin/posts',    icon: 'post' },
     { label: 'Categorias', route: '/admin/categorias', icon: 'tag' },
-    { label: 'Banners',  route: '/admin/banners',  icon: 'banner' },
-    { label: 'Depoimentos', route: '/admin/depoimentos', icon: 'quote' }
+    { label: 'Depoimentos', route: '/admin/depoimentos', icon: 'quote' },
+    { label: 'Conteúdo do site', route: '/admin/conteudo', icon: 'content' }
   ];
 
   constructor(
     private authService: AuthService,
+    private siteContentService: SiteContentService,
     private router: Router
   ) {}
 
@@ -37,6 +39,7 @@ export class AdminLayoutComponent implements OnInit {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
     });
+    this.siteContentService.migrateDefaultsIfMissing();
   }
 
   toggleSidebar() {

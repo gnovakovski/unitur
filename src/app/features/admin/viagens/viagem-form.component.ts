@@ -7,7 +7,7 @@ import { Trip } from '../../../core/models/trip.model';
 import { TripService } from '../../../core/services/trip.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode } from '../../../core/utils/currency-format';
+import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode, parseForeignAmount } from '../../../core/utils/currency-format';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 import { MultiImageUploadComponent, GalleryItem } from '../../../shared/components/multi-image-upload/multi-image-upload.component';
 import { HotelListUploadComponent, HotelItem } from '../../../shared/components/hotel-list-upload/hotel-list-upload.component';
@@ -38,6 +38,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   savingStep = '';
   error = '';
   exchangeRateText = '';
+  itineraryDays: Array<{ title: string; description: string }> = [];
   private lastExchangeRate: number | undefined;
 
   protected fieldLabels: Record<string, string> = {
@@ -52,7 +53,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     foreignCurrency: 'Moeda estrangeira',
     foreignPrice: 'Valor convertido',
     status: 'Status',
-    spiritualGuide: 'Guia espiritual',
+    spiritualGuide: 'Guia Espiritual Convidado',
     coordinator: 'Coordenador',
     showAvailableSpots: 'Exibir vagas',
     mainImage: 'Imagem principal',
@@ -89,7 +90,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       availableSpots: [0, [Validators.required, Validators.min(0)]],
       price: ['', [Validators.required, Validators.min(1)]],
       foreignCurrency: [''],
-      foreignPrice: [{ value: '', disabled: true }],
+      foreignPrice: [''],
       status: ['active', [Validators.required]],
       spiritualGuide: [''],
       coordinator: [''],
@@ -109,6 +110,14 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
 
   get canSaveTrip(): boolean {
     return this.tripForm.valid;
+  }
+
+  get includedPreview(): string[] {
+    return this.parseLines(this.tripForm.get('includedText')?.value || '');
+  }
+
+  get notIncludedPreview(): string[] {
+    return this.parseLines(this.tripForm.get('notIncludedText')?.value || '');
   }
 
   ngOnInit() {
@@ -152,6 +161,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           notIncludedText: (trip.notIncluded || []).join('\n'),
           cancellationPolicy: trip.cancellationPolicy || ''
         });
+        this.itineraryDays = this.parseItineraryDays(trip.itinerary || '');
         this.tripForm.markAsPristine();
         this.lastExchangeRate = trip.foreignExchangeRate;
         this.updateConvertedPrice();
@@ -208,7 +218,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       const tripData: Partial<Trip> = {
         ...baseValue,
         mainImage: existingMainImage,
-        foreignPrice: baseValue.foreignCurrency ? baseValue.foreignPrice : '',
+        foreignPrice: baseValue.foreignCurrency ? (parseForeignAmount(baseValue.foreignPrice) ?? '') : '',
         foreignExchangeRate: baseValue.foreignCurrency ? this.lastExchangeRate : undefined,
         destination: value.country,
         categoryId: 0,
@@ -218,6 +228,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         experienceImages: existingExperienceUrls,
         gallery: existingExperienceUrls,
         hotels: existingHotelsResolved,
+        itinerary: this.serializeItineraryDays(this.itineraryDays),
         paymentMethods: this.parseLines(paymentMethodsText),
         included: this.parseLines(includedText),
         notIncluded: this.parseLines(notIncludedText)
@@ -327,6 +338,65 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     return !!(field && field.invalid && field.touched);
   }
 
+  addItineraryDay() {
+    this.itineraryDays = [...this.itineraryDays, { title: '', description: '' }];
+    this.tripForm.markAsDirty();
+  }
+
+  removeItineraryDay(index: number) {
+    this.itineraryDays = this.itineraryDays.filter((_, i) => i !== index);
+    this.tripForm.markAsDirty();
+  }
+
+  updateItineraryTitle(index: number, value: string) {
+    const next = [...this.itineraryDays];
+    if (!next[index]) return;
+    next[index] = { ...next[index], title: value };
+    this.itineraryDays = next;
+    this.tripForm.markAsDirty();
+  }
+
+  updateItineraryDescription(index: number, value: string) {
+    const next = [...this.itineraryDays];
+    if (!next[index]) return;
+    next[index] = { ...next[index], description: value };
+    this.itineraryDays = next;
+    this.tripForm.markAsDirty();
+  }
+
+  moveItineraryDay(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= this.itineraryDays.length) return;
+    const next = [...this.itineraryDays];
+    [next[index], next[target]] = [next[target], next[index]];
+    this.itineraryDays = next;
+    this.tripForm.markAsDirty();
+  }
+
+  private parseItineraryDays(value: string): Array<{ title: string; description: string }> {
+    return String(value || '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const [title = '', description = ''] = line.split('|').map(item => item.trim());
+        return { title, description };
+      });
+  }
+
+  private serializeItineraryDays(days: Array<{ title: string; description: string }>): string {
+    return days
+      .map(day => {
+        const title = (day.title || '').trim();
+        const description = (day.description || '').trim();
+        if (!title && !description) return '';
+        if (!description) return title;
+        return `${title} | ${description}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+
   private parseLines(value: string): string[] {
     return String(value || '')
       .split('\n')
@@ -335,19 +405,27 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   private async updateConvertedPrice(waitForResult = false): Promise<void> {
-    const price = Number(this.tripForm.get('price')?.value || 0);
+    const rawPrice = this.tripForm.get('price')?.value;
+    const price = Number(rawPrice);
     const currency = this.tripForm.get('foreignCurrency')?.value as ForeignCurrencyCode | '';
     const foreignPriceControl = this.tripForm.get('foreignPrice');
 
-    if (!currency || !price || Number.isNaN(price)) {
+    if (!currency) {
       foreignPriceControl?.setValue('', { emitEvent: false });
       this.exchangeRateText = '';
       this.lastExchangeRate = undefined;
       return;
     }
 
+    if (!price || Number.isNaN(price) || price <= 0) {
+      foreignPriceControl?.setValue('', { emitEvent: false });
+      this.exchangeRateText = 'Informe o preço base para calcular a conversão.';
+      this.lastExchangeRate = undefined;
+      return;
+    }
+
     const applyRate = (rate: number | null) => {
-      if (!rate) {
+      if (!rate || rate <= 0) {
         foreignPriceControl?.setValue('', { emitEvent: false });
         this.exchangeRateText = 'Não foi possível carregar o câmbio.';
         this.lastExchangeRate = undefined;

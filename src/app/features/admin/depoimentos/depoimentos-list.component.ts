@@ -162,6 +162,7 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
             label="Foto do cliente (opcional)"
             helper="Ideal em formato quadrado. Será gravada no Storage ao salvar."
             aspectRatio="square"
+            [cropRatio]="1"
             [compact]="true"
             formControlName="clientPhoto">
           </app-image-upload>

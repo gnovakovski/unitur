@@ -4,7 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
-import { formatForeignCurrency } from '../../core/utils/currency-format';
+import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
+import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 
 interface ProductTrip {
   slug: string;
@@ -21,6 +22,9 @@ interface ProductTrip {
   coordinator: string;
   operator?: string;
   image: string;
+  imagePosition?: string;
+  imageFit?: string;
+  imageRotation?: number;
   summary: string;
   description?: string;
   experienceImages?: string[];
@@ -53,6 +57,7 @@ export class ProductDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private tripService: TripService,
+    private exchangeRateService: ExchangeRateService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) {}
@@ -190,7 +195,7 @@ export class ProductDetailComponent implements OnInit {
           if (!trip) {
             this.trip = null;
             this.notFound = true;
-          } else if (trip.status === 'inactive') {
+          } else if (trip.status === 'inactive' || trip.status === 'draft') {
             this.trip = null;
             this.notFound = true;
           } else {
@@ -218,7 +223,7 @@ export class ProductDetailComponent implements OnInit {
     const price = trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte';
     const summary = trip.shortDescription || trip.description || 'Roteiro organizado pela Unitur com acompanhamento e suporte em todas as etapas.';
 
-    return {
+    const mapped: ProductTrip = {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
       title: trip.title,
       eyebrow: this.getTripTypeLabel(trip.tripType),
@@ -226,13 +231,16 @@ export class ProductDetailComponent implements OnInit {
       date: trip.period || this.formatPeriod(trip.startDate),
       duration,
       price,
-      foreignPrice: this.formatForeignPrice(trip.foreignPrice),
+      foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
       guide: trip.spiritualGuide || 'A definir',
       coordinator: trip.coordinator || 'Equipe Unitur',
       operator: trip.operator || 'Unitur',
       image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=900&fit=crop',
+      imagePosition: trip.mainImagePosition || '50% 50%',
+      imageFit: trip.mainImageFit || 'cover',
+      imageRotation: Number(trip.mainImageRotation || 0),
       summary,
       description: trip.description || '',
       experienceImages: trip.experienceImages || trip.gallery || [],
@@ -246,6 +254,19 @@ export class ProductDetailComponent implements OnInit {
       paymentMethods: trip.paymentMethods?.length ? trip.paymentMethods : this.defaultPaymentMethods(),
       cancellationPolicy: trip.cancellationPolicy || this.defaultCancellationPolicy()
     };
+    this.attachForeignPrice(mapped, trip);
+    return mapped;
+  }
+
+  private attachForeignPrice(card: ProductTrip, trip: Trip) {
+    const currency = trip.foreignCurrency as ForeignCurrencyCode | '' | undefined;
+    if (!currency || !trip.price || Number(trip.price) <= 0) return;
+    this.exchangeRateService.convertFromBRL(Number(trip.price), currency).subscribe(({ value }) => {
+      if (value && value > 0) {
+        card.foreignPrice = formatForeignAmount(value, currency);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private parseItinerary(value: string): Array<{ day: string; title: string; description: string }> {
@@ -256,10 +277,6 @@ export class ProductDetailComponent implements OnInit {
         return { day: `Dia ${index + 1}`, title, description: description || title };
       })
       .filter(item => item.title);
-  }
-
-  private formatForeignPrice(value?: number | string): string {
-    return formatForeignCurrency(value);
   }
 
   private defaultPaymentMethods(): string[] {

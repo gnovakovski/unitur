@@ -97,4 +97,14 @@
     (click)="$event.stopPropagation()"
     (change)="onFileSelected($event)"
     class="iu-file-input">
+
+  @if (pendingFile) {
+    <app-image-cropper-modal
+      [file]="pendingFile"
+      [aspectRatio]="getCropRatio()"
+      [title]="'Ajustar ' + (label || 'imagem')"
+      (confirmed)="onCropConfirmed($event)"
+      (cancelled)="onCropCancelled()">
+    </app-image-cropper-modal>
+  }
 </div>

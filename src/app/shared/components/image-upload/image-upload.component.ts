@@ -2,11 +2,12 @@ import { Component, Input, Output, EventEmitter, forwardRef, OnDestroy } from '@
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UploadService } from '../../../core/services/upload.service';
+import { ImageCropperModalComponent } from '../image-cropper-modal/image-cropper-modal.component';
 
 @Component({
   selector: 'app-image-upload',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageCropperModalComponent],
   templateUrl: './image-upload.component.html',
   styleUrl: './image-upload.component.scss',
   providers: [
@@ -24,7 +25,11 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
   @Input() maxSize = 5; // MB
   @Input() aspectRatio: 'wide' | 'square' | 'auto' = 'wide';
   @Input() compact = false;
+  @Input() cropRatio?: number;
+  @Input() enableCrop = true;
   @Output() uploaded = new EventEmitter<File>();
+
+  pendingFile: File | null = null;
 
   imageUrl: string | null = null;
   selectedFileName: string | null = null;
@@ -102,6 +107,31 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
       return;
     }
 
+    if (this.enableCrop) {
+      this.pendingFile = file;
+      return;
+    }
+
+    this.acceptFile(file);
+  }
+
+  onCropConfirmed(file: File) {
+    this.pendingFile = null;
+    this.acceptFile(file);
+  }
+
+  onCropCancelled() {
+    this.pendingFile = null;
+  }
+
+  getCropRatio(): number | undefined {
+    if (this.cropRatio) return this.cropRatio;
+    if (this.aspectRatio === 'wide') return 16 / 9;
+    if (this.aspectRatio === 'square') return 1;
+    return undefined;
+  }
+
+  private acceptFile(file: File) {
     this.setSelectedFile(file);
     this.onChange(file);
     this.uploaded.emit(file);

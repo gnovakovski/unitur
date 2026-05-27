@@ -34,7 +34,10 @@
       @for (viagem of filtered; track viagem.title) {
         <div class="viagem-card">
           <div class="card-image">
-            <img [src]="viagem.image" [alt]="viagem.title" (error)="useFallbackImage($event)">
+            <img [src]="viagem.image" [alt]="viagem.title" (error)="useFallbackImage($event)"
+                 [style.object-fit]="viagem.imageFit || 'cover'"
+                 [style.object-position]="viagem.imagePosition || '50% 50%'"
+                 [style.transform]="'rotate(' + (viagem.imageRotation || 0) + 'deg)'">
             <span class="badge-category">{{ viagem.category }}</span>
             @if (viagem.showSpots) {
               <span class="badge-spots">{{ viagem.spots }}</span>
@@ -50,7 +53,7 @@
               <span><strong>Dias</strong>{{ viagem.duration }}</span>
             </div>
             <div class="card-team">
-              <span><strong>Guia Espiritual</strong>{{ viagem.guide }}</span>
+              <span><strong>Guia Espiritual Convidado</strong>{{ viagem.guide }}</span>
               <span><strong>Coordenador</strong>{{ viagem.coordinator }}</span>
             </div>
             <div class="card-footer">

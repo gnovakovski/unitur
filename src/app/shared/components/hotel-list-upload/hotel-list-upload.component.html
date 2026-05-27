@@ -95,4 +95,14 @@
   @if (error) {
     <div class="hu-error" role="alert">{{ error }}</div>
   }
+
+  @if (currentCropFile) {
+    <app-image-cropper-modal
+      [file]="currentCropFile"
+      [aspectRatio]="cropRatio"
+      [title]="'Ajustar foto do hotel (' + cropQueue.length + ' restante' + (cropQueue.length > 1 ? 's' : '') + ')'"
+      (confirmed)="onCropConfirmed($event)"
+      (cancelled)="onCropCancelled()">
+    </app-image-cropper-modal>
+  }
 </div>

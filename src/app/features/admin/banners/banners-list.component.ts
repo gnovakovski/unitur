@@ -35,6 +35,13 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
         </div>
       }
 
+      @if (feedback) {
+        <div class="af-alert af-alert--success">
+          <span class="af-alert__icon">✓</span>
+          <span>{{ feedback }}</span>
+        </div>
+      }
+
       @if (loading) {
         <div class="af-loading">
           <div class="af-spinner"></div>
@@ -147,6 +154,7 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
           <app-image-upload
             label="Imagem do banner *"
             helper="Recomendado 1920×720. Será enviada ao Firebase Storage ao salvar."
+            [cropRatio]="1920/720"
             formControlName="imageUrl">
           </app-image-upload>
 
@@ -190,6 +198,7 @@ export class BannersListComponent implements OnInit {
   savingStep = '';
   formOpen = false;
   error = '';
+  feedback = '';
   editingBanner: Banner | null = null;
   deletingId: number | null = null;
   unsavedModalOpen = false;
@@ -219,6 +228,22 @@ export class BannersListComponent implements OnInit {
 
   ngOnInit() {
     this.loadBanners();
+  }
+
+  private showSuccess(message: string) {
+    this.feedback = message;
+    this.error = '';
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.feedback = '';
+      this.cdr.detectChanges();
+    }, 2500);
+  }
+
+  private showError(message: string) {
+    this.error = message;
+    this.feedback = '';
+    this.cdr.detectChanges();
   }
 
   loadBanners() {
@@ -260,8 +285,9 @@ export class BannersListComponent implements OnInit {
     try {
       const ids = this.banners.map(b => b.id);
       await firstValueFrom(this.bannerService.reorderBanners(ids).pipe(timeout(20000)));
+      this.showSuccess('Ordem dos banners atualizada.');
     } catch (err: any) {
-      this.error = err?.message || 'Erro ao salvar nova ordem dos banners.';
+      this.showError(err?.message || 'Erro ao salvar nova ordem dos banners.');
     } finally {
       this.reordering = false;
       this.cdr.detectChanges();
@@ -354,10 +380,11 @@ export class BannersListComponent implements OnInit {
       this.bannerForm.markAsPristine();
       this.closeForm(true);
       this.loadBanners();
+      this.showSuccess(this.editingBanner ? 'Banner atualizado com sucesso.' : 'Banner criado com sucesso.');
     } catch (err: any) {
-      this.error = err?.message || 'Erro ao salvar banner.';
       this.saving = false;
       this.savingStep = '';
+      this.showError(err?.message || 'Erro ao salvar banner.');
     }
   }
 
@@ -368,8 +395,11 @@ export class BannersListComponent implements OnInit {
 
     this.deletingId = banner.id;
     this.bannerService.deleteBanner(banner.id).pipe(finalize(() => this.deletingId = null)).subscribe({
-      next: () => this.loadBanners(),
-      error: err => this.error = err?.message || 'Erro ao excluir banner.'
+      next: () => {
+        this.loadBanners();
+        this.showSuccess('Banner excluído com sucesso.');
+      },
+      error: err => this.showError(err?.message || 'Erro ao excluir banner.')
     });
   }
 }

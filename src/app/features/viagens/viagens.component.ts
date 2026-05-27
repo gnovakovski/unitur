@@ -4,7 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, finalize, of, Subscription } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
-import { formatForeignCurrency } from '../../core/utils/currency-format';
+import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
+import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 
 interface ViagemCard {
   slug: string;
@@ -13,6 +14,9 @@ interface ViagemCard {
   date: string;
   duration: string;
   image: string;
+  imagePosition?: string;
+  imageFit?: string;
+  imageRotation?: number;
   price: string;
   spots: string;
   showSpots: boolean;
@@ -48,6 +52,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private tripService: TripService,
+    private exchangeRateService: ExchangeRateService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -130,15 +135,18 @@ export class ViagensComponent implements OnInit, OnDestroy {
   }
 
   private mapTrip(trip: Trip): ViagemCard {
-    return {
+    const card: ViagemCard = {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
       title: trip.title,
       location: trip.country || trip.destination || 'A definir',
       date: trip.period || this.formatPeriod(trip.startDate),
       duration: trip.duration ? `${trip.duration} dias` : 'A definir',
       image: this.normalizeImage(trip.mainImage),
+      imagePosition: trip.mainImagePosition || '50% 50%',
+      imageFit: trip.mainImageFit || 'cover',
+      imageRotation: Number(trip.mainImageRotation || 0),
       price: trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte',
-      foreignPrice: this.formatForeignPrice(trip.foreignPrice),
+      foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
       guide: trip.spiritualGuide || 'A definir',
@@ -146,10 +154,19 @@ export class ViagensComponent implements OnInit, OnDestroy {
       category: this.getCategoryLabel(trip.tripType),
       startDate: trip.startDate
     };
+    this.attachForeignPrice(card, trip);
+    return card;
   }
 
-  private formatForeignPrice(value?: number | string): string {
-    return formatForeignCurrency(value);
+  private attachForeignPrice(card: ViagemCard, trip: Trip) {
+    const currency = trip.foreignCurrency as ForeignCurrencyCode | '' | undefined;
+    if (!currency || !trip.price || Number(trip.price) <= 0) return;
+    this.exchangeRateService.convertFromBRL(Number(trip.price), currency).subscribe(({ value }) => {
+      if (value && value > 0) {
+        card.foreignPrice = formatForeignAmount(value, currency);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private normalizeImage(value?: string): string {

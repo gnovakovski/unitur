@@ -7,7 +7,7 @@ import { FirebaseService } from './firebase.service';
 export interface TripFilters {
   search?: string;
   categoryId?: number;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'draft';
   page?: number;
   limit?: number;
 }

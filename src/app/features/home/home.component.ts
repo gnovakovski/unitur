@@ -10,7 +10,10 @@ import { TestimonialService } from '../../core/services/testimonial.service';
 import { BannerService } from '../../core/services/banner.service';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { formatForeignCurrency } from '../../core/utils/currency-format';
+import { ForeignCurrencyCode, formatForeignAmount, parseForeignAmount } from '../../core/utils/currency-format';
+import { ExchangeRateService } from '../../core/services/exchange-rate.service';
+import { AboutContentService } from '../../core/services/about-content.service';
+import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about-content.model';
 
 interface HomeTripCard {
   slug: string;
@@ -19,6 +22,9 @@ interface HomeTripCard {
   date: string;
   duration: string;
   image: string;
+  imagePosition?: string;
+  imageFit?: string;
+  imageRotation?: number;
   price: string;
   spots: string;
   showSpots: boolean;
@@ -82,9 +88,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     private testimonialService: TestimonialService,
     private bannerService: BannerService,
     private postService: PostService,
+    private aboutContentService: AboutContentService,
+    private exchangeRateService: ExchangeRateService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
+
+  homeAbout: HomeAboutContent = JSON.parse(JSON.stringify(DEFAULT_ABOUT_CONTENT.home));
 
   bannerImages: string[] = [];
 
@@ -105,6 +115,15 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadTrips();
     this.loadTestimonials();
     this.loadPosts();
+    this.loadAboutContent();
+  }
+
+  private loadAboutContent() {
+    this.aboutContentService.content$.subscribe(content => {
+      this.homeAbout = content.home;
+      this.cdr.detectChanges();
+    });
+    this.aboutContentService.load().subscribe();
   }
 
   ngOnDestroy() {
@@ -170,7 +189,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const activeTrips = response.data;
       this.peregrinacoes = activeTrips
         .filter(trip => trip.tripType === 'peregrinacao')
-        .map(trip => this.mapTripCard(trip, 'Guia Espiritual'));
+        .map(trip => this.mapTripCard(trip, 'Guia Espiritual Convidado'));
       this.regulares = activeTrips
         .filter(trip => trip.tripType === 'regular')
         .map(trip => this.mapTripCard(trip, 'Guia'));
@@ -239,21 +258,37 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private mapTripCard(trip: Trip, guideRole: string): HomeTripCard {
-    return {
+    const card: HomeTripCard = {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
       title: trip.title,
       country: trip.country || trip.destination || 'A definir',
       date: trip.period || this.formatTripPeriod(trip.startDate),
       duration: trip.duration ? `${trip.duration} dias` : 'A definir',
       image: this.normalizeImage(trip.mainImage),
+      imagePosition: trip.mainImagePosition || '50% 50%',
+      imageFit: trip.mainImageFit || 'cover',
+      imageRotation: Number(trip.mainImageRotation || 0),
       price: trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte',
-      foreignPrice: this.formatForeignPrice(trip.foreignPrice),
+      foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
       guide: trip.spiritualGuide || 'A definir',
       guideRole,
       coordinator: trip.coordinator || 'Equipe Unitur'
     };
+    this.attachForeignPrice(card, trip);
+    return card;
+  }
+
+  private attachForeignPrice(card: { foreignPrice?: string }, trip: Trip) {
+    const currency = trip.foreignCurrency as ForeignCurrencyCode | '' | undefined;
+    if (!currency || !trip.price || Number(trip.price) <= 0) return;
+    this.exchangeRateService.convertFromBRL(Number(trip.price), currency).subscribe(({ value }) => {
+      if (value && value > 0) {
+        card.foreignPrice = formatForeignAmount(value, currency);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private mapCuradoriaCard(trip: Trip): HomeCuradoriaCard {
@@ -328,9 +363,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     };
   }
 
-  private formatForeignPrice(value?: number | string): string {
-    return formatForeignCurrency(value);
-  }
 
   private normalizeImage(value?: string): string {
     const image = String(value || '').trim();

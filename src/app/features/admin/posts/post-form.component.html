@@ -114,6 +114,7 @@
               <app-image-upload
                 label="Imagem complementar do conteúdo"
                 helper="Aparece no início do texto. Você também pode inserir <img src=...> direto no conteúdo."
+                [cropRatio]="16/9"
                 formControlName="contentImageUpload">
               </app-image-upload>
             </div>
@@ -138,6 +139,7 @@
           <app-image-upload
             label=""
             helper="Recomendamos imagens em 1200×675 (16:9). Será enviada ao Firebase Storage ao salvar."
+            [cropRatio]="16/9"
             formControlName="featuredImage">
           </app-image-upload>
         </div>

@@ -6,49 +6,53 @@
         <p>Transformando sonhos em viagens inesquec&iacute;veis desde 2020.</p>
         <div class="social-links">
           <a routerLink="/blog" [queryParams]="{ origin: 'footer' }" aria-label="Blog" class="blog-social">Blog</a>
+          @if (contact.instagram) {
+            <a [href]="contact.instagram" target="_blank" rel="noopener" aria-label="Instagram" class="social-icon" title="Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+              </svg>
+            </a>
+          }
+          @if (contact.facebook) {
+            <a [href]="contact.facebook" target="_blank" rel="noopener" aria-label="Facebook" class="social-icon" title="Facebook">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.79c0-2.51 1.5-3.89 3.78-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12z"/>
+              </svg>
+            </a>
+          }
+          @if (whatsappUrl) {
+            <a [href]="whatsappUrl" target="_blank" rel="noopener" aria-label="WhatsApp" class="social-icon" title="WhatsApp">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.272-.099-.47-.149-.669.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.795.469 3.5 1.291 4.972L2 22l5.176-1.27A9.948 9.948 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+              </svg>
+            </a>
+          }
         </div>
-      </div>
-
-      <div class="footer-section">
-        <h4>Destinos</h4>
-        <ul>
-          <li><a href="#">Europa</a></li>
-          <li><a href="#">&Aacute;sia</a></li>
-          <li><a href="#">Am&eacute;rica do Sul</a></li>
-          <li><a href="#">Caribe</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-section">
-        <h4>Servi&ccedil;os</h4>
-        <ul>
-          <li><a href="#">Pacotes</a></li>
-          <li><a href="#">Cruzeiros</a></li>
-          <li><a href="#">Lua de Mel</a></li>
-          <li><a href="#">Corporativo</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-section">
-        <h4>Blog</h4>
-        <ul>
-          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">&Uacute;ltimas Not&iacute;cias</a></li>
-          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Dicas de Viagem</a></li>
-          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Destinos em Alta</a></li>
-          <li><a routerLink="/blog" [queryParams]="{ origin: 'footer' }">Peregrina&ccedil;&otilde;es</a></li>
-        </ul>
       </div>
 
       <div class="footer-section">
         <h4>Contato</h4>
         <ul class="contact-list">
-          <li>
-            <strong>Matriz Porto Alegre</strong>
-            <span>Pra&ccedil;a. Mal. Deodoro, 130 - Conj. 301.</span>
-            <span>CEP: 90.010-300. Porto Alegre - RS.</span>
-          </li>
-          <li><a href="tel:+555132723377">+55 (51) 3272.3377</a></li>
-          <li><a href="mailto:grupos@unitur.com.br">grupos&#64;unitur.com.br</a></li>
+          @if (contact.address || contact.cep || contact.city) {
+            <li>
+              <strong>Matriz Porto Alegre</strong>
+              @if (contact.address) { <span>{{ contact.address }}</span> }
+              @if (contact.cep || contact.city) {
+                <span>
+                  @if (contact.cep) { CEP: {{ contact.cep }}. }
+                  {{ contact.city }}
+                </span>
+              }
+            </li>
+          }
+          @if (contact.phone) {
+            <li><a [href]="phoneHref">{{ contact.phone }}</a></li>
+          }
+          @if (contact.email) {
+            <li><a [href]="'mailto:' + contact.email">{{ contact.email }}</a></li>
+          }
         </ul>
       </div>
 

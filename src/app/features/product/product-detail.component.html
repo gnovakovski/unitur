@@ -1,6 +1,11 @@
 @if (trip) {
   <section class="product-hero">
-    <img [src]="trip.image" [alt]="trip.title">
+    <img
+      [src]="trip.image"
+      [alt]="trip.title"
+      [style.object-fit]="trip.imageFit || 'cover'"
+      [style.object-position]="trip.imagePosition || '50% 50%'"
+      [style.transform]="'rotate(' + (trip.imageRotation || 0) + 'deg)'">
     <div class="hero-shade"></div>
     <div class="hero-content">
       <a routerLink="/viagens" class="back-link">Voltar para viagens</a>
@@ -140,7 +145,7 @@
           </div>
           <div class="team-cards">
             <article>
-              <span>Guia Espiritual</span>
+              <span>Guia Espiritual Convidado</span>
               <strong>{{ trip.guide }}</strong>
             </article>
             <article>

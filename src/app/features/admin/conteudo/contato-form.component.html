@@ -1,0 +1,103 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Contato</h1>
+      <p class="af-page-header__subtitle">Esses dados aparecem no rodapé e nos links de WhatsApp do site.</p>
+    </div>
+    <div class="af-page-header__actions">
+      <a class="af-btn af-btn--secondary" routerLink="/admin/conteudo">← Voltar</a>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (saved) {
+    <div class="af-alert af-alert--success">
+      <span class="af-alert__icon">✓</span>
+      <span>Contato atualizado com sucesso. As informações já aparecem no rodapé do site.</span>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando...</p>
+    </div>
+  } @else {
+    <form class="af-card" [formGroup]="form" (ngSubmit)="save()">
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">1</span>
+          <h2 class="af-section__title">Telefones e e-mail</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field">
+            <label class="af-label">Telefone fixo</label>
+            <input class="af-control" formControlName="phone" placeholder="+55 (51) 3272.3377">
+          </div>
+          <div class="af-field">
+            <label class="af-label">WhatsApp (apenas números, com DDI)</label>
+            <input class="af-control" formControlName="whatsapp" placeholder="5551999999999">
+          </div>
+          <div class="af-field af-field--span-2">
+            <label class="af-label">E-mail</label>
+            <input class="af-control" type="email" formControlName="email" placeholder="contato@unitur.com.br">
+          </div>
+        </div>
+      </div>
+
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">2</span>
+          <h2 class="af-section__title">Redes sociais</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field">
+            <label class="af-label">Instagram (URL completa)</label>
+            <input class="af-control" formControlName="instagram" placeholder="https://instagram.com/unitur">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Facebook (URL completa)</label>
+            <input class="af-control" formControlName="facebook" placeholder="https://facebook.com/unitur">
+          </div>
+        </div>
+      </div>
+
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">3</span>
+          <h2 class="af-section__title">Endereço</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Endereço</label>
+            <input class="af-control" formControlName="address" placeholder="Rua, número, complemento">
+          </div>
+          <div class="af-field">
+            <label class="af-label">CEP</label>
+            <input class="af-control" formControlName="cep" placeholder="90.010-300">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Cidade/UF</label>
+            <input class="af-control" formControlName="city" placeholder="Porto Alegre - RS">
+          </div>
+        </div>
+      </div>
+
+      <div class="af-form-actions">
+        <button type="button" class="af-btn af-btn--secondary" (click)="back()" [disabled]="saving">Cancelar</button>
+        <button type="submit" class="af-btn af-btn--primary" [disabled]="saving">
+          {{ saving ? 'Salvando...' : 'Salvar alterações' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

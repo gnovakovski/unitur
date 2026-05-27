@@ -61,6 +61,7 @@
           <select class="af-control" formControlName="status">
             <option value="active">Ativa</option>
             <option value="inactive">Inativa</option>
+            <option value="draft">Rascunho</option>
           </select>
         </div>
       </div>
@@ -118,7 +119,7 @@
         </div>
 
         <div class="af-field">
-          <label class="af-label">Guia espiritual <span class="af-label__optional">opcional</span></label>
+          <label class="af-label">Guia Espiritual Convidado <span class="af-label__optional">opcional</span></label>
           <input class="af-control" formControlName="spiritualGuide" placeholder="Ex: Pe. João Batista">
         </div>
 
@@ -158,6 +159,7 @@
         <app-image-upload
           label="Imagem principal da viagem"
           helper="Aparece no card, na home e no topo da página da viagem. Recomendado 1600×900."
+          [cropRatio]="16/9"
           formControlName="mainImage">
         </app-image-upload>
       </div>
@@ -174,6 +176,7 @@
         <app-multi-image-upload
           label="Galeria da experiência"
           helper="Adicione várias fotos da viagem. Elas viram um carrossel no site público. Você pode reordenar."
+          [cropRatio]="16/9"
           formControlName="experienceImages">
         </app-multi-image-upload>
       </div>
@@ -187,12 +190,43 @@
       </div>
 
       <div class="af-field">
-        <label class="af-label">Roteiro detalhado</label>
-        <textarea
-          class="af-control af-control--textarea"
-          rows="5"
-          formControlName="itinerary"
-          placeholder="Use uma linha por dia ou etapa do roteiro."></textarea>
+        <label class="af-label">Roteiro detalhado por dia</label>
+        <p class="af-hint">Cada item abaixo é um dia do roteiro exibido no site.</p>
+
+        @if (itineraryDays.length === 0) {
+          <div class="af-empty-card">
+            <p>Nenhum dia adicionado ainda.</p>
+          </div>
+        }
+
+        <div class="itinerary-list">
+          @for (day of itineraryDays; track $index; let i = $index) {
+            <div class="itinerary-row">
+              <div class="itinerary-row__index">Dia {{ i + 1 }}</div>
+              <div class="itinerary-row__fields">
+                <input
+                  class="af-control"
+                  type="text"
+                  [value]="day.title"
+                  (input)="updateItineraryTitle(i, $any($event.target).value)"
+                  placeholder="Título do dia (ex: Chegada em Roma)">
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="2"
+                  [value]="day.description"
+                  (input)="updateItineraryDescription(i, $any($event.target).value)"
+                  placeholder="Descrição do que acontece neste dia (opcional)"></textarea>
+              </div>
+              <div class="itinerary-row__actions">
+                <button type="button" class="af-btn af-btn--ghost af-btn--sm" (click)="moveItineraryDay(i, -1)" [disabled]="i === 0" aria-label="Mover para cima">↑</button>
+                <button type="button" class="af-btn af-btn--ghost af-btn--sm" (click)="moveItineraryDay(i, 1)" [disabled]="i === itineraryDays.length - 1" aria-label="Mover para baixo">↓</button>
+                <button type="button" class="af-btn af-btn--danger af-btn--sm" (click)="removeItineraryDay(i)" aria-label="Remover dia">×</button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <button type="button" class="af-btn af-btn--secondary" (click)="addItineraryDay()">+ Adicionar dia</button>
       </div>
     </div>
 
@@ -221,23 +255,47 @@
             formControlName="cancellationPolicy"
             placeholder="Política padrão de cancelamento."></textarea>
         </div>
+      </div>
 
-        <div class="af-field">
+      <div class="af-grid af-grid--2 inclusion-grid">
+        <div class="af-field inclusion-field">
           <label class="af-label">Incluso</label>
+          <p class="af-hint">Um item por linha. Cada item aparece com o marcador <strong>✓</strong> no site.</p>
           <textarea
             class="af-control af-control--textarea"
             rows="5"
             formControlName="includedText"
             placeholder="Um item por linha."></textarea>
+          @if (includedPreview.length > 0) {
+            <ul class="inclusion-preview">
+              @for (item of includedPreview; track $index) {
+                <li class="inclusion-preview__item is-included">
+                  <span class="inclusion-preview__mark">✓</span>
+                  <span>{{ item }}</span>
+                </li>
+              }
+            </ul>
+          }
         </div>
 
-        <div class="af-field">
+        <div class="af-field inclusion-field">
           <label class="af-label">Não incluso</label>
+          <p class="af-hint">Um item por linha. Cada item aparece com o marcador <strong>—</strong> no site.</p>
           <textarea
             class="af-control af-control--textarea"
             rows="5"
             formControlName="notIncludedText"
             placeholder="Um item por linha."></textarea>
+          @if (notIncludedPreview.length > 0) {
+            <ul class="inclusion-preview">
+              @for (item of notIncludedPreview; track $index) {
+                <li class="inclusion-preview__item is-excluded">
+                  <span class="inclusion-preview__mark">—</span>
+                  <span>{{ item }}</span>
+                </li>
+              }
+            </ul>
+          }
         </div>
       </div>
     </div>

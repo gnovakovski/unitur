@@ -105,7 +105,8 @@ $dark: #1a1a2e;
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   background: $white;
   border-radius: 28px;
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.18);
@@ -115,6 +116,10 @@ $dark: #1a1a2e;
 .summary-item {
   padding: 1.5rem;
   border-right: 1px solid #edf0f2;
+
+  &:last-child {
+    border-right: none;
+  }
 
   span {
     display: block;

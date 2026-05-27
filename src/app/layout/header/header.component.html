@@ -13,9 +13,9 @@
     </button>
     
     <nav class="nav" [class.active]="menuOpen">
-      <a routerLink="/viagens/peregrinacao" routerLinkActive="active" class="nav-link">Viagens de Peregrinação</a>
-      <a routerLink="/viagens/regulares" routerLinkActive="active" class="nav-link">Viagens Regulares</a>
-      <a routerLink="/viagens/curadoria" routerLinkActive="active" class="nav-link">Viagens de Curadoria</a>
+      @for (link of links; track link.id) {
+        <a [routerLink]="link.route" routerLinkActive="active" class="nav-link">{{ link.label }}</a>
+      }
     </nav>
   </div>
 </header>

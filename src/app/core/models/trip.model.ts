@@ -11,6 +11,9 @@ export interface Trip {
   categoryId: number;
   category?: any;
   mainImage: string;
+  mainImagePosition?: string; // ex.: "50% 30%" (object-position)
+  mainImageFit?: 'cover' | 'contain'; // object-fit
+  mainImageRotation?: number; // graus
   gallery: string[];
   startDate: Date;
   endDate: Date;
@@ -34,7 +37,7 @@ export interface Trip {
   included: string[];
   notIncluded: string[];
   itinerary?: string; // HTML ou Markdown
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'draft';
   featured: boolean;
   createdAt: Date;
   updatedAt: Date;

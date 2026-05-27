@@ -4,3 +4,128 @@
   display: block;
   width: 100%;
 }
+
+.itinerary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.itinerary-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.85rem;
+  border: 1px solid $af-border;
+  border-radius: $af-radius-sm;
+  background: $af-bg;
+
+  &__index {
+    align-self: center;
+    padding: 0.4rem 0.75rem;
+    background: $af-blue-soft;
+    color: $af-blue;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+
+    &__index {
+      align-self: flex-start;
+    }
+
+    &__actions {
+      justify-content: flex-end;
+    }
+  }
+}
+
+.af-empty-card {
+  padding: 1rem 1.25rem;
+  border: 1px dashed $af-border;
+  border-radius: $af-radius-sm;
+  background: $af-bg;
+  color: $af-muted;
+  text-align: center;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+
+  p {
+    margin: 0;
+  }
+}
+
+.inclusion-grid {
+  align-items: start;
+}
+
+.inclusion-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+
+  .af-label { margin: 0; }
+  .af-hint { margin: 0; }
+
+  .af-control--textarea {
+    min-height: 140px;
+    resize: vertical;
+  }
+}
+
+.inclusion-preview {
+  list-style: none;
+  padding: 0.75rem 0.85rem;
+  margin: 0.6rem 0 0;
+  background: $af-bg;
+  border: 1px solid $af-border;
+  border-radius: $af-radius-sm;
+  display: grid;
+  gap: 0.3rem;
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    color: $af-text;
+    line-height: 1.4;
+  }
+
+  &__mark {
+    flex: none;
+    width: 18px;
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .is-included &__mark,
+  &__item.is-included &__mark {
+    color: $af-orange;
+  }
+
+  &__item.is-excluded &__mark {
+    color: $af-muted;
+  }
+}
+

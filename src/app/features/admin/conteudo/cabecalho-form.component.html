@@ -1,0 +1,76 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Cabeçalho do site</h1>
+      <p class="af-page-header__subtitle">Renomeie, reordene e oculte os links do menu principal. As rotas são fixas.</p>
+    </div>
+    <div class="af-page-header__actions">
+      <a class="af-btn af-btn--secondary" routerLink="/admin/conteudo">← Voltar</a>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (saved) {
+    <div class="af-alert af-alert--success">
+      <span class="af-alert__icon">✓</span>
+      <span>Cabeçalho atualizado com sucesso. As alterações já estão valendo no site.</span>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando...</p>
+    </div>
+  } @else {
+    <div class="af-card">
+      <p class="af-hint">Arraste para reordenar. O nome é editável; a rota fica travada.</p>
+
+      <ul class="link-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+        @for (link of links; track link.id) {
+          <li class="link-item" cdkDrag>
+            <span class="link-item__handle" cdkDragHandle aria-label="Arrastar para reordenar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="5" r="1"/>
+                <circle cx="9" cy="12" r="1"/>
+                <circle cx="9" cy="19" r="1"/>
+                <circle cx="15" cy="5" r="1"/>
+                <circle cx="15" cy="12" r="1"/>
+                <circle cx="15" cy="19" r="1"/>
+              </svg>
+            </span>
+
+            <div class="link-item__fields">
+              <label class="link-item__field">
+                <span>Nome exibido</span>
+                <input class="af-control" type="text" [(ngModel)]="link.label">
+              </label>
+              <label class="link-item__field link-item__field--route">
+                <span>Rota (travada)</span>
+                <input class="af-control" type="text" [value]="link.route" readonly>
+              </label>
+            </div>
+
+            <label class="link-item__visibility">
+              <input type="checkbox" [checked]="link.visible" (change)="toggleVisible(link)">
+              <span>Visível</span>
+            </label>
+          </li>
+        }
+      </ul>
+
+      <div class="af-form-actions">
+        <button type="button" class="af-btn af-btn--secondary" (click)="back()" [disabled]="saving">Cancelar</button>
+        <button type="button" class="af-btn af-btn--primary" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Salvando...' : 'Salvar alterações' }}
+        </button>
+      </div>
+    </div>
+  }
+</section>

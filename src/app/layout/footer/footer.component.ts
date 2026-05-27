@@ -2,6 +2,8 @@ import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angula
 import { RouterLink } from '@angular/router';
 import { forkJoin, Subject, takeUntil, timer, switchMap } from 'rxjs';
 import { ExchangeRate, ExchangeRateService } from '../../core/services/exchange-rate.service';
+import { SiteContentService } from '../../core/services/site-content.service';
+import { DEFAULT_CONTACT_CONTENT, SiteContactContent } from '../../core/models/site-content.model';
 
 @Component({
   selector: 'app-footer',
@@ -14,16 +16,34 @@ export class FooterComponent implements OnInit, OnDestroy {
   currentYear = new Date().getFullYear();
   dollarRate: ExchangeRate = { value: null, updatedAt: null };
   euroRate: ExchangeRate = { value: null, updatedAt: null };
+  contact: SiteContactContent = DEFAULT_CONTACT_CONTENT;
 
   private readonly destroy$ = new Subject<void>();
 
   constructor(
     private exchangeRateService: ExchangeRateService,
+    private siteContentService: SiteContentService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) {}
 
+  get whatsappUrl(): string {
+    const digits = (this.contact.whatsapp || '').replace(/\D/g, '');
+    return digits ? `https://wa.me/${digits}` : '';
+  }
+
+  get phoneHref(): string {
+    const digits = (this.contact.phone || '').replace(/\D/g, '');
+    return digits ? `tel:+${digits}` : '';
+  }
+
   ngOnInit() {
+    this.siteContentService.contact$.pipe(takeUntil(this.destroy$)).subscribe(contact => {
+      this.contact = contact;
+      this.cdr.markForCheck();
+    });
+    this.siteContentService.loadContact().subscribe();
+
     timer(0, 30 * 60 * 1000).pipe(
       switchMap(() => forkJoin({
         dollar: this.exchangeRateService.getCurrencyRate('USD'),

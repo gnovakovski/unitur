@@ -205,10 +205,76 @@ table {
     background: $af-success-soft;
     color: #136734;
   }
+
+  &[data-status="draft"] {
+    background: #fff4d6;
+    color: #8a5a00;
+  }
 }
 
 .row-actions {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+  line-height: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover { transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+  &:focus-visible { outline: 2px solid #4f8df9; outline-offset: 2px; }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.icon-btn--edit {
+  color: #1d4ed8;
+  background: #eff4ff;
+  border-color: #d8e3ff;
+
+  &:hover { background: #dbe6ff; border-color: #b9cbff; }
+}
+
+.icon-btn--delete {
+  color: #b3261e;
+  background: #fdecec;
+  border-color: #f7c9c7;
+
+  &:hover:not(:disabled) { background: #fadad7; border-color: #f1a8a4; }
+}
+
+.icon-btn__spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: icon-btn-spin 0.7s linear infinite;
+}
+
+@keyframes icon-btn-spin {
+  to { transform: rotate(360deg); }
 }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, forwardRef, Input, OnDestroy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UploadService } from '../../../core/services/upload.service';
+import { ImageCropperModalComponent } from '../image-cropper-modal/image-cropper-modal.component';
 
 export interface HotelItem {
   name: string;
@@ -12,7 +13,7 @@ export interface HotelItem {
 @Component({
   selector: 'app-hotel-list-upload',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageCropperModalComponent],
   templateUrl: './hotel-list-upload.component.html',
   styleUrl: './hotel-list-upload.component.scss',
   providers: [
@@ -29,12 +30,18 @@ export class HotelListUploadComponent implements ControlValueAccessor, OnDestroy
   @Input() accept = 'image/jpeg,image/jpg,image/png,image/webp';
   @Input() maxSize = 5;
   @Input() maxItems = 15;
+  @Input() cropRatio?: number = 16 / 10;
+  @Input() enableCrop = true;
 
   items: HotelItem[] = [];
   previews: string[] = [];
   error: string | null = null;
   dragOver = false;
   inputId = `hotel-list-upload-${Math.random().toString(36).slice(2)}`;
+  cropQueue: File[] = [];
+  get currentCropFile(): File | null {
+    return this.cropQueue[0] || null;
+  }
 
   private onChange: (value: HotelItem[]) => void = () => {};
   private onTouched: () => void = () => {};
@@ -140,6 +147,7 @@ export class HotelListUploadComponent implements ControlValueAccessor, OnDestroy
       return;
     }
     const toAdd = files.slice(0, remaining);
+    const validFiles: File[] = [];
 
     for (const file of toAdd) {
       const validation = this.uploadService.validateImage(file);
@@ -147,18 +155,41 @@ export class HotelListUploadComponent implements ControlValueAccessor, OnDestroy
         this.error = `${file.name}: ${validation.error}`;
         continue;
       }
-      this.items.push({ name: '', image: file });
-      const url = URL.createObjectURL(file);
-      this.objectUrls.push(url);
-      this.previews.push(url);
+      validFiles.push(file);
     }
 
     if (files.length > remaining) {
       this.error = `Apenas ${remaining} hotel(éis) foram adicionados. Limite: ${this.maxItems}.`;
     }
 
+    if (this.enableCrop && validFiles.length) {
+      this.cropQueue = [...this.cropQueue, ...validFiles];
+      this.onTouched();
+      return;
+    }
+
+    for (const file of validFiles) {
+      this.addFile(file);
+    }
     this.emit();
     this.onTouched();
+  }
+
+  onCropConfirmed(file: File) {
+    this.addFile(file);
+    this.cropQueue = this.cropQueue.slice(1);
+    this.emit();
+  }
+
+  onCropCancelled() {
+    this.cropQueue = this.cropQueue.slice(1);
+  }
+
+  private addFile(file: File) {
+    this.items.push({ name: '', image: file });
+    const url = URL.createObjectURL(file);
+    this.objectUrls.push(url);
+    this.previews.push(url);
   }
 
   private emit(): void {

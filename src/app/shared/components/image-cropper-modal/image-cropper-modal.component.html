@@ -1,0 +1,53 @@
+<div class="cropper-modal__backdrop" (click)="cancel()"></div>
+<div class="cropper-modal" role="dialog" aria-modal="true" [attr.aria-label]="title">
+  <header class="cropper-modal__header">
+    <h3>{{ title }}</h3>
+    <button type="button" class="cropper-modal__close" (click)="cancel()" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </header>
+
+  <p class="cropper-modal__hint">Arraste as bordas da seleção para ajustar o enquadramento. Use o zoom para alcançar partes maiores ou menores da imagem.</p>
+
+  <div class="cropper-modal__canvas">
+    @if (loading) {
+      <div class="cropper-modal__loading">Carregando imagem...</div>
+    }
+    <image-cropper
+      [imageFile]="imageFile"
+      [maintainAspectRatio]="maintainAspectRatio"
+      [aspectRatio]="aspectRatio || 1"
+      [transform]="transform"
+      format="jpeg"
+      output="blob"
+      [containWithinAspectRatio]="false"
+      (imageCropped)="onImageCropped($event)"
+      (imageLoaded)="onImageLoaded($event)"
+      (loadImageFailed)="onLoadFailed()">
+    </image-cropper>
+  </div>
+
+  <div class="cropper-modal__controls">
+    <div class="cropper-modal__zoom">
+      <button type="button" (click)="zoomOut()" aria-label="Diminuir zoom">−</button>
+      <span>Zoom {{ (transform.scale || 1).toFixed(1) }}x</span>
+      <button type="button" (click)="zoomIn()" aria-label="Aumentar zoom">+</button>
+      <button type="button" class="reset" (click)="resetZoom()">Reset</button>
+    </div>
+
+    @if (aspectRatio) {
+      <label class="cropper-modal__ratio">
+        <input type="checkbox" [checked]="maintainAspectRatio" (change)="toggleRatio()">
+        Manter proporção sugerida
+      </label>
+    }
+  </div>
+
+  <footer class="cropper-modal__footer">
+    <button type="button" class="btn btn--ghost" (click)="cancel()">Cancelar</button>
+    <button type="button" class="btn btn--primary" (click)="confirm()" [disabled]="!cropped">Aplicar recorte</button>
+  </footer>
+</div>

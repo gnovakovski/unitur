@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, forwardRef, Input, OnDestroy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UploadService } from '../../../core/services/upload.service';
+import { ImageCropperModalComponent } from '../image-cropper-modal/image-cropper-modal.component';
 
 /**
  * Item da galeria: pode ser uma string (URL já no Storage) ou um File local
@@ -12,7 +13,7 @@ export type GalleryItem = string | File;
 @Component({
   selector: 'app-multi-image-upload',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageCropperModalComponent],
   templateUrl: './multi-image-upload.component.html',
   styleUrl: './multi-image-upload.component.scss',
   providers: [
@@ -29,12 +30,18 @@ export class MultiImageUploadComponent implements ControlValueAccessor, OnDestro
   @Input() accept = 'image/jpeg,image/jpg,image/png,image/webp';
   @Input() maxSize = 5; // MB
   @Input() maxItems = 20;
+  @Input() cropRatio?: number;
+  @Input() enableCrop = true;
 
   items: GalleryItem[] = [];
   previews: string[] = [];
   error: string | null = null;
   dragOver = false;
   inputId = `multi-image-upload-${Math.random().toString(36).slice(2)}`;
+  cropQueue: File[] = [];
+  get currentCropFile(): File | null {
+    return this.cropQueue[0] || null;
+  }
 
   private onChange: (value: GalleryItem[]) => void = () => {};
   private onTouched: () => void = () => {};
@@ -145,6 +152,7 @@ export class MultiImageUploadComponent implements ControlValueAccessor, OnDestro
       return;
     }
     const toAdd = files.slice(0, remaining);
+    const validFiles: File[] = [];
 
     for (const file of toAdd) {
       const validation = this.uploadService.validateImage(file);
@@ -152,18 +160,41 @@ export class MultiImageUploadComponent implements ControlValueAccessor, OnDestro
         this.error = `${file.name}: ${validation.error}`;
         continue;
       }
-      this.items.push(file);
-      const url = URL.createObjectURL(file);
-      this.objectUrls.push(url);
-      this.previews.push(url);
+      validFiles.push(file);
     }
 
     if (files.length > remaining) {
       this.error = `Apenas ${remaining} imagem(ns) foram adicionadas. Limite: ${this.maxItems}.`;
     }
 
+    if (this.enableCrop && validFiles.length) {
+      this.cropQueue = [...this.cropQueue, ...validFiles];
+      this.onTouched();
+      return;
+    }
+
+    for (const file of validFiles) {
+      this.addFile(file);
+    }
     this.emit();
     this.onTouched();
+  }
+
+  onCropConfirmed(file: File) {
+    this.addFile(file);
+    this.cropQueue = this.cropQueue.slice(1);
+    this.emit();
+  }
+
+  onCropCancelled() {
+    this.cropQueue = this.cropQueue.slice(1);
+  }
+
+  private addFile(file: File) {
+    this.items.push(file);
+    const url = URL.createObjectURL(file);
+    this.objectUrls.push(url);
+    this.previews.push(url);
   }
 
   private emit(): void {

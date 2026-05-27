@@ -1,0 +1,357 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Conteúdo Institucional</h1>
+      <p class="af-page-header__subtitle">Edite as seções "Sobre" da home e da página Sobre.</p>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (feedback) {
+    <div class="af-alert af-alert--success">
+      <span class="af-alert__icon">✓</span>
+      <span>{{ feedback }}</span>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando conteúdo...</p>
+    </div>
+  } @else {
+    <form class="af-card" (ngSubmit)="save()" #formRef="ngForm">
+
+      <!-- Sobre na Home -->
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">1</span>
+          <h2 class="af-section__title">Sobre na Home</h2>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Título</label>
+          <input class="af-control" type="text" [(ngModel)]="home.title" name="homeTitle" placeholder="Sobre a Unitur">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Parágrafos</label>
+          <p class="af-hint">Cada parágrafo aparece como um bloco de texto na home.</p>
+
+          <div class="paragraph-list">
+            @for (paragraph of home.paragraphs; track $index; let i = $index) {
+              <div class="paragraph-row">
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="3"
+                  [value]="paragraph"
+                  (input)="updateParagraph('home', i, $any($event.target).value)"
+                  placeholder="Parágrafo"></textarea>
+                <button type="button" class="af-btn af-btn--danger af-btn--sm" (click)="removeParagraph('home', i)" aria-label="Remover parágrafo">×</button>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addParagraph('home')">+ Adicionar parágrafo</button>
+        </div>
+
+        <div class="af-field">
+          <app-image-upload
+            label="Imagem da home"
+            helper="Aparece na seção 'Sobre a Unitur' da home. Recomendado 1200×900."
+            [cropRatio]="4/3"
+            [ngModel]="homeImageValue"
+            (ngModelChange)="onHomeImageChange($event)"
+            name="homeImageUpload">
+          </app-image-upload>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Indicadores (stats)</label>
+          <p class="af-hint">Números em destaque ao lado do texto.</p>
+
+          <div class="stats-list">
+            @for (stat of home.stats; track $index; let i = $index) {
+              <div class="stats-row">
+                <input
+                  class="af-control"
+                  type="text"
+                  [value]="stat.number"
+                  (input)="updateStat(i, 'number', $any($event.target).value)"
+                  placeholder="Ex: 5000+">
+                <input
+                  class="af-control"
+                  type="text"
+                  [value]="stat.label"
+                  (input)="updateStat(i, 'label', $any($event.target).value)"
+                  placeholder="Ex: Viajantes">
+                <button type="button" class="af-btn af-btn--danger af-btn--sm" (click)="removeStat(i)">×</button>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addStat()">+ Adicionar indicador</button>
+        </div>
+      </div>
+
+      <!-- Página Sobre -->
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">2</span>
+          <h2 class="af-section__title">Página Sobre</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field">
+            <label class="af-label">Título do hero</label>
+            <input class="af-control" type="text" [(ngModel)]="about.heroTitle" name="aboutHeroTitle">
+          </div>
+
+          <div class="af-field">
+            <label class="af-label">Subtítulo do hero</label>
+            <input class="af-control" type="text" [(ngModel)]="about.heroSubtitle" name="aboutHeroSubtitle">
+          </div>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Cards de Missão / Visão / Movimento</label>
+          <p class="af-hint">3 cards exibidos no topo da página Sobre.</p>
+
+          <div class="card-list">
+            @for (card of about.missionCards; track $index; let i = $index) {
+              <div class="card-row">
+                <div class="card-row__head">
+                  <input
+                    class="af-control"
+                    type="text"
+                    [value]="card.title"
+                    (input)="updateMissionCard(i, 'title', $any($event.target).value)"
+                    placeholder="Título do card">
+                  <button type="button" class="card-row__remove" (click)="removeMissionCard(i)" aria-label="Remover card" title="Remover">×</button>
+                </div>
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="3"
+                  [value]="card.description"
+                  (input)="updateMissionCard(i, 'description', $any($event.target).value)"
+                  placeholder="Descrição"></textarea>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addMissionCard()">+ Adicionar card</button>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Indicadores da página Sobre</label>
+          <p class="af-hint">Números em destaque entre os cards de missão e a história.</p>
+
+          <div class="stats-list">
+            @for (stat of about.stats; track $index; let i = $index) {
+              <div class="stats-row">
+                <input
+                  class="af-control"
+                  type="text"
+                  [value]="stat.number"
+                  (input)="updateStat(i, 'number', $any($event.target).value, 'about')"
+                  placeholder="Ex: 29+">
+                <input
+                  class="af-control"
+                  type="text"
+                  [value]="stat.label"
+                  (input)="updateStat(i, 'label', $any($event.target).value, 'about')"
+                  placeholder="Ex: Anos de Experiência">
+                <button type="button" class="af-btn af-btn--danger af-btn--sm" (click)="removeStat(i, 'about')">×</button>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addStat('about')">+ Adicionar indicador</button>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field">
+            <label class="af-label">Título da seção "História"</label>
+            <input class="af-control" type="text" [(ngModel)]="about.storyTitle" name="aboutStoryTitle">
+          </div>
+
+          <div class="af-field">
+            <label class="af-label">Subtítulo da seção "História"</label>
+            <input class="af-control" type="text" [(ngModel)]="about.storySubtitle" name="aboutStorySubtitle">
+          </div>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Parágrafos da história</label>
+          <div class="paragraph-list">
+            @for (paragraph of about.storyParagraphs; track $index; let i = $index) {
+              <div class="paragraph-row">
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="4"
+                  [value]="paragraph"
+                  (input)="updateParagraph('about', i, $any($event.target).value)"
+                  placeholder="Parágrafo"></textarea>
+                <button type="button" class="af-btn af-btn--danger af-btn--sm" (click)="removeParagraph('about', i)">×</button>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addParagraph('about')">+ Adicionar parágrafo</button>
+        </div>
+
+        <div class="af-field">
+          <app-image-upload
+            label="Imagem da história"
+            helper="Aparece ao lado dos parágrafos da história. Recomendado 1200×900."
+            [cropRatio]="4/3"
+            [ngModel]="aboutImageValue"
+            (ngModelChange)="onAboutImageChange($event)"
+            name="aboutStoryImageUpload">
+          </app-image-upload>
+        </div>
+      </div>
+
+      <!-- Trajetória -->
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">3</span>
+          <h2 class="af-section__title">Nossa Trajetória</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field">
+            <label class="af-label">Título da seção</label>
+            <input class="af-control" type="text" [(ngModel)]="about.timelineTitle" name="timelineTitle">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Subtítulo da seção</label>
+            <input class="af-control" type="text" [(ngModel)]="about.timelineSubtitle" name="timelineSubtitle">
+          </div>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Marcos da trajetória</label>
+          <p class="af-hint">Adicione marcos importantes em ordem cronológica.</p>
+
+          <div class="card-list">
+            @for (item of about.timeline; track $index; let i = $index) {
+              <div class="card-row">
+                <div class="card-row__head card-row__head--timeline">
+                  <input
+                    class="af-control card-row__year"
+                    type="text"
+                    [value]="item.year"
+                    (input)="updateTimelineItem(i, 'year', $any($event.target).value)"
+                    placeholder="Ano">
+                  <input
+                    class="af-control"
+                    type="text"
+                    [value]="item.event"
+                    (input)="updateTimelineItem(i, 'event', $any($event.target).value)"
+                    placeholder="Título do marco">
+                  <button type="button" class="card-row__remove" (click)="removeTimelineItem(i)" aria-label="Remover marco" title="Remover">×</button>
+                </div>
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="3"
+                  [value]="item.description"
+                  (input)="updateTimelineItem(i, 'description', $any($event.target).value)"
+                  placeholder="Descrição"></textarea>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addTimelineItem()">+ Adicionar marco</button>
+        </div>
+      </div>
+
+      <!-- Valores -->
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">4</span>
+          <h2 class="af-section__title">Nossos Valores</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field">
+            <label class="af-label">Título da seção</label>
+            <input class="af-control" type="text" [(ngModel)]="about.valuesTitle" name="valuesTitle">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Subtítulo da seção</label>
+            <input class="af-control" type="text" [(ngModel)]="about.valuesSubtitle" name="valuesSubtitle">
+          </div>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Cards de valores</label>
+          <p class="af-hint">Pilares que sustentam o trabalho.</p>
+
+          <div class="card-list">
+            @for (value of about.values; track $index; let i = $index) {
+              <div class="card-row">
+                <div class="card-row__head">
+                  <input
+                    class="af-control"
+                    type="text"
+                    [value]="value.title"
+                    (input)="updateValue(i, 'title', $any($event.target).value)"
+                    placeholder="Título do valor">
+                  <button type="button" class="card-row__remove" (click)="removeValue(i)" aria-label="Remover valor" title="Remover">×</button>
+                </div>
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="3"
+                  [value]="value.description"
+                  (input)="updateValue(i, 'description', $any($event.target).value)"
+                  placeholder="Descrição"></textarea>
+              </div>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary" (click)="addValue()">+ Adicionar valor</button>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">5</span>
+          <h2 class="af-section__title">Chamada final (CTA)</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Título</label>
+            <input class="af-control" type="text" [(ngModel)]="about.ctaTitle" name="ctaTitle">
+          </div>
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Subtítulo</label>
+            <input class="af-control" type="text" [(ngModel)]="about.ctaSubtitle" name="ctaSubtitle">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Texto do botão primário</label>
+            <input class="af-control" type="text" [(ngModel)]="about.ctaPrimaryLabel" name="ctaPrimaryLabel">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Texto do botão secundário</label>
+            <input class="af-control" type="text" [(ngModel)]="about.ctaSecondaryLabel" name="ctaSecondaryLabel">
+          </div>
+        </div>
+      </div>
+
+      @if (saving && savingStep) {
+        <div class="af-alert af-alert--info">
+          <span class="af-alert__icon">i</span>
+          <span>{{ savingStep }}</span>
+        </div>
+      }
+
+      <div class="af-actions">
+        <button type="submit" class="af-btn af-btn--primary af-btn--lg" [disabled]="saving">
+          {{ saving ? 'Salvando...' : 'Salvar conteúdo' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

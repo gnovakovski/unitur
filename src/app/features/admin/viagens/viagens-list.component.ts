@@ -128,6 +128,16 @@ export class ViagensListComponent implements OnInit {
     return labels[type || 'regular'];
   }
 
+  getStatusLabel(status?: Trip['status']) {
+    const labels: Record<string, string> = {
+      active: 'Ativa',
+      inactive: 'Inativa',
+      draft: 'Rascunho'
+    };
+
+    return labels[status || 'active'];
+  }
+
   formatPrice(value: number | string | undefined): string {
     const n = Number(value);
     if (!n || Number.isNaN(n)) return '—';

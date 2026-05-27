@@ -12,6 +12,22 @@ const currencyPatterns: Array<{ patterns: RegExp[]; code: ForeignCurrencyCode }>
   { patterns: [/usd/i, /us\$/i, /u\$/i, /\$/], code: 'USD' }
 ];
 
+export function formatForeignAmount(amount: number, currency: ForeignCurrencyCode): string {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return '';
+  }
+  return `${currencySymbols[currency]} ${amount.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+export function parseForeignAmount(value: number | string | undefined): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : null;
+  return parseCurrencyAmount(String(value));
+}
+
 export function formatForeignCurrency(value?: number | string, currency?: ForeignCurrencyCode | ''): string {
   if (value === undefined || value === null || value === '') {
     return '';
