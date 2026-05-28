@@ -1,0 +1,172 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Conteúdo da Home</h1>
+      <p class="af-page-header__subtitle">Edite os textos diretamente no preview da página inicial — clique em qualquer título para alterar.</p>
+    </div>
+    <div class="af-page-header__actions">
+      <a class="af-btn af-btn--secondary" routerLink="/admin/conteudo">← Voltar</a>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (saved) {
+    <div class="af-alert af-alert--success">
+      <span class="af-alert__icon">✓</span>
+      <span>Conteúdo da home atualizado com sucesso.</span>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando preview da home...</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="requestSave()">
+      <div class="hf-toolbar">
+        <div class="hf-toolbar__hint">
+          <strong>Modo edição</strong> · Os campos com borda tracejada são editáveis. Estilo mostrado é o mesmo da home.
+        </div>
+        <div class="hf-toolbar__actions">
+          <a class="af-btn af-btn--ghost af-btn--sm" routerLink="/" target="_blank" rel="noopener">Ver site ↗</a>
+        </div>
+      </div>
+
+      <div class="hf-preview">
+
+        <!-- 1. BUSCADOR -->
+        <section class="hf-section">
+          <span class="hf-section__tag">1 · Buscador</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="searchTitle"
+                     placeholder="Frase do buscador">
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. PEREGRINAÇÕES -->
+        <section class="hf-section">
+          <span class="hf-section__tag">2 · Peregrinações</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="peregrinacoesTitle"
+                     placeholder="Título da seção">
+              <input class="hf-input hf-input--subtitle"
+                     formControlName="peregrinacoesSubtitle"
+                     placeholder="Subtítulo descritivo">
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. REGULARES -->
+        <section class="hf-section">
+          <span class="hf-section__tag">3 · Viagens Regulares</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="regularesTitle"
+                     placeholder="Título da seção">
+              <input class="hf-input hf-input--subtitle"
+                     formControlName="regularesSubtitle"
+                     placeholder="Subtítulo descritivo">
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. CONHEÇA O MUNDO -->
+        <section class="hf-section">
+          <span class="hf-section__tag">4 · Conheça o Mundo</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="worldTitle"
+                     placeholder="Título da seção">
+              <input class="hf-input hf-input--subtitle"
+                     formControlName="worldSubtitle"
+                     placeholder="Subtítulo descritivo">
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. CURADORIA -->
+        <section class="hf-section">
+          <span class="hf-section__tag">5 · Curadoria Unitur</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="curadoriaTitle"
+                     placeholder="Título da seção">
+              <input class="hf-input hf-input--subtitle"
+                     formControlName="curadoriaSubtitle"
+                     placeholder="Subtítulo descritivo">
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. BLOG -->
+        <section class="hf-section">
+          <span class="hf-section__tag">6 · Blog Unitur</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="blogTitle"
+                     placeholder="Título da seção">
+              <input class="hf-input hf-input--subtitle"
+                     formControlName="blogSubtitle"
+                     placeholder="Subtítulo descritivo">
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. DEPOIMENTOS -->
+        <section class="hf-section">
+          <span class="hf-section__tag">7 · Depoimentos</span>
+          <div class="hf-section__inner">
+            <div class="hf-section-header">
+              <input class="hf-input hf-input--title"
+                     formControlName="testimonialsTitle"
+                     placeholder="Título da seção">
+              <input class="hf-input hf-input--subtitle"
+                     formControlName="testimonialsSubtitle"
+                     placeholder="Subtítulo descritivo">
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <div class="hf-savebar">
+        <span class="hint">As alterações são aplicadas à home pública após salvar.</span>
+        <button type="button" class="af-btn af-btn--secondary" (click)="back()" [disabled]="saving">Cancelar</button>
+        <button type="submit" class="af-btn af-btn--primary" [disabled]="saving">
+          {{ saving ? 'Salvando...' : 'Salvar alterações' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>
+
+<app-confirm-save-modal
+  [show]="confirmSaveOpen"
+  [changes]="pendingChanges"
+  [saving]="saving"
+  (confirm)="onConfirmSaveConfirm()"
+  (cancel)="onConfirmSaveCancel()">
+</app-confirm-save-modal>
+
+<app-unsaved-changes-modal
+  [show]="unsavedModalOpen"
+  [changedFields]="changedFields"
+  [canSave]="canSubmit()"
+  (resolved)="onUnsavedResolved($event)">
+</app-unsaved-changes-modal>

@@ -19,8 +19,9 @@ export interface Trip {
   endDate: Date;
   duration: number; // em dias
   price: number;
+  priceTagline?: string;
   foreignPrice?: number | string;
-  foreignCurrency?: 'USD' | 'EUR' | 'GBP' | '';
+  foreignCurrency?: string;
   foreignExchangeRate?: number;
   availableSpots: number;
   showAvailableSpots?: boolean;
@@ -32,7 +33,12 @@ export interface Trip {
     name: string;
     image: string;
   }>;
-  paymentMethods?: string[];
+  /**
+   * Formas de pagamento exibidas como blocos no detalhe da viagem.
+   * Formato legado (string[]) ainda é aceito ao carregar — convertido para
+   * blocos só com `title` em `mapFirestoreTrip` / form admin.
+   */
+  paymentMethods?: Array<{ title: string; description?: string }>;
   cancellationPolicy?: string;
   included: string[];
   notIncluded: string[];

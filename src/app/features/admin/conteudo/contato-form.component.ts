@@ -33,6 +33,7 @@ export class ContatoFormComponent implements OnInit {
       email: [''],
       instagram: [''],
       facebook: [''],
+      linkedin: [''],
       address: [''],
       cep: [''],
       city: ['']

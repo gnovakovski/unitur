@@ -26,7 +26,8 @@ export class AdminLayoutComponent implements OnInit {
     { label: 'Posts',    route: '/admin/posts',    icon: 'post' },
     { label: 'Categorias', route: '/admin/categorias', icon: 'tag' },
     { label: 'Depoimentos', route: '/admin/depoimentos', icon: 'quote' },
-    { label: 'Conteúdo do site', route: '/admin/conteudo', icon: 'content' }
+    { label: 'Conteúdo do site', route: '/admin/conteudo', icon: 'content' },
+    { label: 'Usuários', route: '/admin/usuarios', icon: 'user' }
   ];
 
   constructor(

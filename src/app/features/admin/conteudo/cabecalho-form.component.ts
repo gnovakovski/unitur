@@ -61,6 +61,42 @@ export class CabecalhoFormComponent implements OnInit {
     link.visible = !link.visible;
   }
 
+  /** Atualiza o label e, simultaneamente, recalcula a rota a partir do novo nome. */
+  onLabelChange(link: HeaderLink, value: string) {
+    link.label = value;
+    link.route = this.buildRoute(value, link.route);
+  }
+
+  /** Permite ao usuário sobrescrever a rota manualmente. */
+  onRouteChange(link: HeaderLink, value: string) {
+    link.route = this.sanitizeRoute(value);
+  }
+
+  /** Gera rota canonical mantendo o prefixo existente quando possível. */
+  private buildRoute(label: string, currentRoute: string): string {
+    const slug = this.slugify(label);
+    if (!slug) return currentRoute;
+
+    const trimmed = (currentRoute || '').replace(/^\/+/, '').replace(/\/+$/, '');
+    const parts = trimmed ? trimmed.split('/') : [];
+
+    if (parts.length > 1) {
+      // Substitui apenas o último segmento, preservando o prefixo (ex: /viagens/...)
+      parts[parts.length - 1] = slug;
+      return '/' + parts.join('/');
+    }
+
+    return '/' + slug;
+  }
+
+  private sanitizeRoute(value: string): string {
+    return this.siteContentService.sanitizeRoute(value || '');
+  }
+
+  private slugify(value: string): string {
+    return this.siteContentService.sanitizeRoute(value).replace(/^\//, '');
+  }
+
   async save() {
     if (this.saving) return;
     this.saving = true;

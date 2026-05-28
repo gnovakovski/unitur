@@ -47,7 +47,7 @@
         </div>
 
         <div class="af-field">
-          <label class="af-label">Período <span class="af-label__required">*</span></label>
+          <label class="af-label">Embarque <span class="af-label__required">*</span></label>
           <input class="af-control" formControlName="period" placeholder="Ex: Junho 2026">
         </div>
 
@@ -93,6 +93,13 @@
           </select>
         </div>
 
+        <div class="af-field af-field--span-2">
+          <label class="af-label">Frase acima do preço <span class="af-label__optional">opcional</span></label>
+          <input class="af-control" formControlName="priceTagline" maxlength="120"
+                 placeholder="Ex: Aéreo e apartamento duplo, a partir de:">
+          <span class="af-hint">Aparece em letras pequenas no card de preço, acima do valor. Deixe em branco para ocultar.</span>
+        </div>
+
         <div class="af-field">
           <label class="af-label">Preço base <span class="af-label__required">*</span></label>
           <div class="af-input-group">
@@ -105,9 +112,13 @@
           <label class="af-label">Moeda estrangeira <span class="af-label__optional">opcional</span></label>
           <select class="af-control" formControlName="foreignCurrency">
             <option value="">Sem valor estrangeiro</option>
-            <option value="USD">Dólar turismo (USD)</option>
-            <option value="EUR">Euro turismo (EUR)</option>
+            @for (currency of availableCurrencies; track currency.code) {
+              <option [value]="currency.code">{{ currency.name || currency.code }} ({{ currency.code }})</option>
+            }
           </select>
+          @if (availableCurrencies.length === 0) {
+            <span class="af-hint">Cadastre moedas em "Cotações de câmbio" na lista de viagens.</span>
+          }
         </div>
 
         <div class="af-field">
@@ -237,24 +248,53 @@
         <h2 class="af-section__title">Comercial</h2>
       </div>
 
-      <div class="af-grid af-grid--2">
-        <div class="af-field">
-          <label class="af-label">Formas de pagamento</label>
-          <textarea
-            class="af-control af-control--textarea"
-            rows="4"
-            formControlName="paymentMethodsText"
-            placeholder="Uma forma de pagamento por linha."></textarea>
+      <div class="af-field">
+        <label class="af-label">Formas de pagamento</label>
+        <p class="af-hint">Cada bloco vira um item com título e descrição na página da viagem.</p>
+
+        @if (paymentBlocks.length === 0) {
+          <div class="af-empty-card">
+            <p>Nenhuma forma de pagamento adicionada ainda.</p>
+          </div>
+        }
+
+        <div class="itinerary-list">
+          @for (block of paymentBlocks; track $index; let i = $index) {
+            <div class="itinerary-row">
+              <div class="itinerary-row__index">#{{ i + 1 }}</div>
+              <div class="itinerary-row__fields">
+                <input
+                  class="af-control"
+                  type="text"
+                  [value]="block.title"
+                  (input)="updatePaymentTitle(i, $any($event.target).value)"
+                  placeholder="Título (ex: Cartão de crédito)">
+                <textarea
+                  class="af-control af-control--textarea"
+                  rows="2"
+                  [value]="block.description"
+                  (input)="updatePaymentDescription(i, $any($event.target).value)"
+                  placeholder="Descrição (ex: Em até 12x sem juros)"></textarea>
+              </div>
+              <div class="itinerary-row__actions">
+                <button type="button" class="af-btn af-btn--ghost af-btn--sm" (click)="movePaymentBlock(i, -1)" [disabled]="i === 0" aria-label="Mover para cima">↑</button>
+                <button type="button" class="af-btn af-btn--ghost af-btn--sm" (click)="movePaymentBlock(i, 1)" [disabled]="i === paymentBlocks.length - 1" aria-label="Mover para baixo">↓</button>
+                <button type="button" class="af-btn af-btn--danger af-btn--sm" (click)="removePaymentBlock(i)" aria-label="Remover forma de pagamento">×</button>
+              </div>
+            </div>
+          }
         </div>
 
-        <div class="af-field">
-          <label class="af-label">Política de cancelamento</label>
-          <textarea
-            class="af-control af-control--textarea"
-            rows="4"
-            formControlName="cancellationPolicy"
-            placeholder="Política padrão de cancelamento."></textarea>
-        </div>
+        <button type="button" class="af-btn af-btn--secondary" (click)="addPaymentBlock()">+ Adicionar forma de pagamento</button>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Política de cancelamento</label>
+        <textarea
+          class="af-control af-control--textarea"
+          rows="4"
+          formControlName="cancellationPolicy"
+          placeholder="Política padrão de cancelamento."></textarea>
       </div>
 
       <div class="af-grid af-grid--2 inclusion-grid">

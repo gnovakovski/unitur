@@ -6,6 +6,7 @@ import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
 import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
+import { SiteContentService } from '../../core/services/site-content.service';
 
 interface ViagemCard {
   slug: string;
@@ -53,10 +54,17 @@ export class ViagensComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
+    private siteContentService: SiteContentService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
+    // Garante que o header esteja carregado para o mapeamento de slug → categoria
+    this.siteContentService.loadHeader().subscribe(() => {
+      this.updateSelectedCategory();
+      this.cdr.detectChanges();
+    });
+
     this.routeSub = this.route.url.subscribe(() => {
       this.updateSelectedCategory();
       this.cdr.detectChanges();
@@ -77,14 +85,24 @@ export class ViagensComponent implements OnInit, OnDestroy {
   }
 
   private updateSelectedCategory() {
-    const path = this.route.snapshot.routeConfig?.path || '';
-    const categoryByPath: Record<string, string> = {
-      'viagens/peregrinacao': 'Viagens de Peregrinação',
-      'viagens/regulares': 'Viagens Regulares',
-      'viagens/curadoria': 'Viagens de Curadoria'
+    const slug = this.route.snapshot.url.map(s => s.path).join('/');
+    if (!slug || slug === 'viagens') {
+      this.selectedCategory = 'Todas';
+      return;
+    }
+
+    // Casa o slug atual com o link do header e mapeia para a categoria pelo id estável
+    const categoryById: Record<string, string> = {
+      peregrinacao: 'Viagens de Peregrinação',
+      regulares: 'Viagens Regulares',
+      curadoria: 'Viagens de Curadoria'
     };
 
-    this.selectedCategory = categoryByPath[path] || 'Todas';
+    const lastSegment = this.route.snapshot.url[this.route.snapshot.url.length - 1]?.path || '';
+    const links = this.siteContentService.getCurrentHeaderLinks();
+    const link = links.find(l => (l.route || '').replace(/^\/+/, '').split('/').pop() === lastSegment);
+
+    this.selectedCategory = (link && categoryById[link.id]) || 'Todas';
   }
 
   get filtered() {
@@ -149,8 +167,8 @@ export class ViagensComponent implements OnInit, OnDestroy {
       foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
-      guide: trip.spiritualGuide || 'A definir',
-      coordinator: trip.coordinator || 'Equipe Unitur',
+      guide: (trip.spiritualGuide || '').trim(),
+      coordinator: (trip.coordinator || '').trim(),
       category: this.getCategoryLabel(trip.tripType),
       startDate: trip.startDate
     };

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
+import { viagensCategoryMatcher } from './core/routing/viagens-category.matcher';
 
 export const routes: Routes = [
   // Public routes
@@ -17,15 +18,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
   {
-    path: 'viagens/peregrinacao',
-    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
-  },
-  {
-    path: 'viagens/regulares',
-    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
-  },
-  {
-    path: 'viagens/curadoria',
+    matcher: viagensCategoryMatcher,
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
   {
@@ -114,8 +107,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/conteudo/contato-form.component').then(m => m.ContatoFormComponent)
       },
       {
+        path: 'conteudo/home',
+        loadComponent: () => import('./features/admin/conteudo/home-form.component').then(m => m.HomeFormComponent),
+        canDeactivate: [unsavedChangesGuard]
+      },
+      {
+        path: 'conteudo/rodape',
+        loadComponent: () => import('./features/admin/conteudo/footer-form.component').then(m => m.FooterFormComponent)
+      },
+      {
         path: 'conteudo/sobre',
         loadComponent: () => import('./features/admin/sobre/sobre-form.component').then(m => m.SobreFormComponent)
+      },
+      {
+        path: 'usuarios',
+        loadComponent: () => import('./features/admin/usuarios/usuarios-list.component').then(m => m.UsuariosListComponent)
       },
       {
         path: 'sobre',

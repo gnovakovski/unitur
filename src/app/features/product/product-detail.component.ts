@@ -15,6 +15,7 @@ interface ProductTrip {
   date: string;
   duration: string;
   price: string;
+  priceTagline?: string;
   foreignPrice?: string;
   spots: string;
   showSpots?: boolean;
@@ -31,7 +32,7 @@ interface ProductTrip {
   highlights: string[];
   itinerary: Array<{ day: string; title: string; description: string }>;
   hotels?: Array<{ name: string; image: string }>;
-  paymentMethods?: string[];
+  paymentMethods?: Array<{ title: string; description?: string }>;
   cancellationPolicy?: string;
   included: string[];
   notIncluded: string[];
@@ -166,6 +167,16 @@ export class ProductDetailComponent implements OnInit {
     return this.itineraryExpanded ? this.trip.itinerary : this.trip.itinerary.slice(0, 3);
   }
 
+  /** Quebra a política de cancelamento em itens — aceita \n ou marcadores como "- ", "• ", "* ". */
+  get cancellationLines(): string[] {
+    const raw = (this.trip?.cancellationPolicy || '').trim();
+    if (!raw) return [];
+    return raw
+      .split(/\r?\n+/)
+      .map(line => line.replace(/^\s*[-•*]\s*/, '').trim())
+      .filter(Boolean);
+  }
+
   toggleItinerary() {
     this.itineraryExpanded = !this.itineraryExpanded;
   }
@@ -231,11 +242,12 @@ export class ProductDetailComponent implements OnInit {
       date: trip.period || this.formatPeriod(trip.startDate),
       duration,
       price,
+      priceTagline: trip.priceTagline !== undefined ? trip.priceTagline : 'Aéreo e apartamento duplo, a partir de:',
       foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
-      guide: trip.spiritualGuide || 'A definir',
-      coordinator: trip.coordinator || 'Equipe Unitur',
+      guide: (trip.spiritualGuide || '').trim(),
+      coordinator: (trip.coordinator || '').trim(),
       operator: trip.operator || 'Unitur',
       image: trip.mainImage || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&h=900&fit=crop',
       imagePosition: trip.mainImagePosition || '50% 50%',
@@ -251,7 +263,7 @@ export class ProductDetailComponent implements OnInit {
       included: trip.included?.length ? trip.included : [],
       notIncluded: trip.notIncluded?.length ? trip.notIncluded : [],
       hotels: trip.hotels || [],
-      paymentMethods: trip.paymentMethods?.length ? trip.paymentMethods : this.defaultPaymentMethods(),
+      paymentMethods: this.normalizePaymentMethods(trip.paymentMethods),
       cancellationPolicy: trip.cancellationPolicy || this.defaultCancellationPolicy()
     };
     this.attachForeignPrice(mapped, trip);
@@ -279,8 +291,37 @@ export class ProductDetailComponent implements OnInit {
       .filter(item => item.title);
   }
 
-  private defaultPaymentMethods(): string[] {
-    return ['Entrada + parcelas no boleto', 'Cartão de crédito', 'Pix ou transferência'];
+  private defaultPaymentMethods(): Array<{ title: string; description?: string }> {
+    return [
+      { title: 'Entrada + parcelas no boleto' },
+      { title: 'Cartão de crédito' },
+      { title: 'Pix ou transferência' }
+    ];
+  }
+
+  /**
+   * Aceita tanto o formato novo (array de blocos) quanto o legado (string[]).
+   * Se vier vazio, devolve as formas padrão.
+   */
+  private normalizePaymentMethods(value: unknown): Array<{ title: string; description?: string }> {
+    if (!Array.isArray(value) || value.length === 0) return this.defaultPaymentMethods();
+    const normalized = value
+      .map(item => {
+        if (typeof item === 'string') {
+          const title = item.trim();
+          return title ? { title } : null;
+        }
+        if (item && typeof item === 'object') {
+          const obj = item as { title?: string; description?: string };
+          const title = (obj.title || '').trim();
+          const description = (obj.description || '').trim();
+          if (!title && !description) return null;
+          return description ? { title, description } : { title };
+        }
+        return null;
+      })
+      .filter((b): b is { title: string; description?: string } => !!b);
+    return normalized.length > 0 ? normalized : this.defaultPaymentMethods();
   }
 
   private defaultCancellationPolicy(): string {

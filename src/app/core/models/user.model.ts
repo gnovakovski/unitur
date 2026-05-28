@@ -1,6 +1,9 @@
 export interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  role?: string;
+  role: 'admin' | 'editor' | 'viewer';
+  status: 'active' | 'inactive';
+  createdAt?: Date;
+  updatedAt?: Date;
 }

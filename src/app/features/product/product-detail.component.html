@@ -12,31 +12,16 @@
       <span class="eyebrow">{{ trip.eyebrow }}</span>
       <h1>{{ trip.title }}</h1>
       <p>{{ trip.summary }}</p>
-      <div class="hero-meta">
-        <span>{{ trip.destination }}</span>
-        <span>{{ trip.date }}</span>
-        <span>{{ trip.duration }}</span>
-        @if (trip.showSpots !== false) {
+      @if (trip.showSpots !== false) {
+        <div class="hero-meta">
           <span>{{ trip.spots }}</span>
-        }
-      </div>
+        </div>
+      }
     </div>
   </section>
 
   <main class="product-page">
     <section class="summary-band">
-      <div class="summary-item">
-        <span>Destino</span>
-        <strong>{{ trip.destination }}</strong>
-      </div>
-      <div class="summary-item">
-        <span>Data</span>
-        <strong>{{ trip.date }}</strong>
-      </div>
-      <div class="summary-item">
-        <span>Duração</span>
-        <strong>{{ trip.duration }}</strong>
-      </div>
       <div class="summary-item price">
         <span>A partir de</span>
         <strong class="price-line">
@@ -62,11 +47,6 @@
             <h2>Experiência</h2>
           </div>
           <p class="lead">{{ trip.summary }}</p>
-          <div class="highlights">
-            @for (highlight of trip.highlights; track highlight) {
-              <span>{{ highlight }}</span>
-            }
-          </div>
           @if (galleryImages.length > 0) {
             <div class="gallery-carousel">
               <div class="gallery-stage">
@@ -138,22 +118,28 @@
           }
         </section>
 
-        <section class="section-block">
-          <div class="section-heading">
-            <span>02</span>
-            <h2>Equipe da viagem</h2>
-          </div>
-          <div class="team-cards">
-            <article>
-              <span>Guia Espiritual Convidado</span>
-              <strong>{{ trip.guide }}</strong>
-            </article>
-            <article>
-              <span>Coordenador</span>
-              <strong>{{ trip.coordinator }}</strong>
-            </article>
-          </div>
-        </section>
+        @if (trip.guide || trip.coordinator) {
+          <section class="section-block">
+            <div class="section-heading">
+              <span>02</span>
+              <h2>Equipe da viagem</h2>
+            </div>
+            <div class="team-cards">
+              @if (trip.guide) {
+                <article>
+                  <span>Guia Espiritual Convidado</span>
+                  <strong>{{ trip.guide }}</strong>
+                </article>
+              }
+              @if (trip.coordinator) {
+                <article>
+                  <span>Coordenador</span>
+                  <strong>{{ trip.coordinator }}</strong>
+                </article>
+              }
+            </div>
+          </section>
+        }
 
         <section class="section-block">
           <div class="section-heading">
@@ -255,7 +241,7 @@
               }
             </div>
           } @else {
-            <p class="lead">Hotéis do grupo a confirmar.</p>
+            <p class="lead hotel-pending">* A confirmar</p>
           }
         </section>
 
@@ -271,8 +257,7 @@
             </ul>
           </div>
           <div>
-            <div class="section-heading compact muted">
-              <span>05</span>
+            <div class="section-heading compact">
               <h2>Não incluso</h2>
             </div>
             <ul class="plain-list">
@@ -288,25 +273,44 @@
             <span>06</span>
             <h2>Formas de pagamento</h2>
           </div>
-          <ul class="check-list">
-            @for (item of trip.paymentMethods; track item) {
-              <li>{{ item }}</li>
+          <div class="timeline">
+            @for (block of trip.paymentMethods; track $index) {
+              <article class="timeline-item">
+                <div class="timeline-marker">{{ $index + 1 }}</div>
+                <div>
+                  <h3>{{ block.title }}</h3>
+                  @if (block.description) {
+                    <p>{{ block.description }}</p>
+                  }
+                </div>
+              </article>
             }
-          </ul>
+          </div>
         </section>
 
         <section class="section-block">
-          <div class="section-heading muted">
+          <div class="section-heading">
             <span>07</span>
-            <h2>Politica de cancelamento</h2>
+            <h2>Política de cancelamento</h2>
           </div>
-          <p class="lead">{{ trip.cancellationPolicy }}</p>
+          @if (cancellationLines.length > 1) {
+            <ul class="check-list">
+              @for (line of cancellationLines; track line) {
+                <li>{{ line }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="lead">{{ trip.cancellationPolicy }}</p>
+          }
         </section>
       </div>
 
       <aside class="booking-panel">
         @if (trip.showSpots !== false) {
           <span class="spots">{{ trip.spots }}</span>
+        }
+        @if (trip.priceTagline) {
+          <span class="booking-price-tagline">{{ trip.priceTagline }}</span>
         }
         <h2 class="booking-price">
           @if (trip.foreignPrice) {

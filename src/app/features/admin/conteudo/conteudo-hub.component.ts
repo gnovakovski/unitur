@@ -19,10 +19,22 @@ interface HubCard {
 export class ConteudoHubComponent {
   cards: HubCard[] = [
     {
+      title: 'Home',
+      description: 'Edite títulos e subtítulos das seções e a frase do buscador.',
+      route: 'home',
+      icon: 'home'
+    },
+    {
       title: 'Cabeçalho',
       description: 'Edite os nomes, ordem e visibilidade dos links do menu principal.',
       route: 'cabecalho',
       icon: 'header'
+    },
+    {
+      title: 'Rodapé',
+      description: 'Edite a marca, a frase de apresentação e o copyright do rodapé.',
+      route: 'rodape',
+      icon: 'footer'
     },
     {
       title: 'Sobre',

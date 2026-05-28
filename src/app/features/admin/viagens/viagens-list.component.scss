@@ -278,3 +278,55 @@ table {
 @keyframes icon-btn-spin {
   to { transform: rotate(360deg); }
 }
+
+.af-modal--wide {
+  max-width: 880px;
+  width: 95vw;
+}
+
+.currency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.currency-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 110px 180px auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+  background: #fafbfd;
+  border: 1px solid #e6e9ef;
+  border-radius: 10px;
+
+  .af-field { margin: 0; }
+  .af-label { font-size: 0.78rem; }
+
+  &__remove {
+    align-self: end;
+    margin-bottom: 1px;
+  }
+}
+
+.currency-add {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 720px) {
+  .currency-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "code   symbol"
+      "name   name"
+      "rate   rate"
+      "remove remove";
+
+    .currency-row__code   { grid-area: code; }
+    .currency-row__name   { grid-area: name; }
+    .currency-row__symbol { grid-area: symbol; }
+    .currency-row__rate   { grid-area: rate; }
+    .currency-row__remove { grid-area: remove; justify-self: end; }
+  }
+}

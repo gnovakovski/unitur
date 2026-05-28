@@ -121,6 +121,7 @@ export class TripService {
       endDate: trip.endDate || now,
       duration: Number(trip.duration || 0),
       price: Number(trip.price || 0),
+      priceTagline: trip.priceTagline || '',
       foreignPrice: trip.foreignPrice,
       foreignCurrency: trip.foreignCurrency || '',
       foreignExchangeRate: trip.foreignExchangeRate,

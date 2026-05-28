@@ -49,13 +49,19 @@
               <span class="location">Pa&iacute;s principal: {{ viagem.location }}</span>
             </div>
             <div class="card-info">
-              <span><strong>Per&iacute;odo</strong>{{ viagem.date }}</span>
+              <span><strong>Embarque</strong>{{ viagem.date }}</span>
               <span><strong>Dias</strong>{{ viagem.duration }}</span>
             </div>
-            <div class="card-team">
-              <span><strong>Guia Espiritual Convidado</strong>{{ viagem.guide }}</span>
-              <span><strong>Coordenador</strong>{{ viagem.coordinator }}</span>
-            </div>
+            @if (viagem.guide || viagem.coordinator) {
+              <div class="card-team">
+                @if (viagem.guide) {
+                  <span><strong>Guia Espiritual Convidado</strong>{{ viagem.guide }}</span>
+                }
+                @if (viagem.coordinator) {
+                  <span><strong>Coordenador</strong>{{ viagem.coordinator }}</span>
+                }
+              </div>
+            }
             <div class="card-footer">
               <span class="price">
                 @if (viagem.foreignPrice) {

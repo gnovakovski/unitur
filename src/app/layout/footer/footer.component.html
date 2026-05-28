@@ -2,30 +2,29 @@
   <div class="container">
     <div class="footer-content">
       <div class="footer-section">
-        <h3>Unitur</h3>
-        <p>Transformando sonhos em viagens inesquec&iacute;veis desde 2020.</p>
+        <img class="footer-logo" src="assets/logo.jpeg" [alt]="footerContent.brandName">
+        <p>{{ footerContent.tagline }}</p>
         <div class="social-links">
-          <a routerLink="/blog" [queryParams]="{ origin: 'footer' }" aria-label="Blog" class="blog-social">Blog</a>
           @if (contact.instagram) {
-            <a [href]="contact.instagram" target="_blank" rel="noopener" aria-label="Instagram" class="social-icon" title="Instagram">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            <a [href]="contact.instagram" target="_blank" rel="noopener" aria-label="Instagram" class="social-icon social-icon--instagram" title="Instagram">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2.16c3.2 0 3.58.012 4.85.07 1.17.054 1.8.249 2.22.415.56.217.96.477 1.38.896.42.42.68.82.9 1.38.16.42.36 1.05.41 2.22.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.22a3.72 3.72 0 0 1-.9 1.38c-.42.42-.82.68-1.38.9-.42.16-1.05.36-2.22.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.22-.41a3.72 3.72 0 0 1-1.38-.9 3.72 3.72 0 0 1-.9-1.38c-.16-.42-.36-1.05-.41-2.22-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.22.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.05-.36 2.22-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.77.13 4.9.34 4.14.63c-.79.31-1.46.72-2.13 1.39A5.9 5.9 0 0 0 .62 4.14C.33 4.9.13 5.77.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.28.27 2.15.56 2.91.31.79.72 1.46 1.39 2.13.67.67 1.34 1.08 2.13 1.39.76.29 1.63.49 2.91.55C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.28-.06 2.15-.27 2.91-.56.79-.31 1.46-.72 2.13-1.39a5.9 5.9 0 0 0 1.39-2.13c.29-.76.49-1.63.55-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.28-.27-2.15-.56-2.91-.31-.79-.72-1.46-1.39-2.13A5.9 5.9 0 0 0 19.86.63C19.1.34 18.23.13 16.95.07 15.67.01 15.26 0 12 0z"/>
+                <path d="M12 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+                <circle cx="18.41" cy="5.59" r="1.44"/>
               </svg>
             </a>
           }
           @if (contact.facebook) {
-            <a [href]="contact.facebook" target="_blank" rel="noopener" aria-label="Facebook" class="social-icon" title="Facebook">
+            <a [href]="contact.facebook" target="_blank" rel="noopener" aria-label="Facebook" class="social-icon social-icon--facebook" title="Facebook">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.79c0-2.51 1.5-3.89 3.78-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12z"/>
+                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.019 4.388 11.005 10.125 11.927v-8.437H7.078v-3.49h3.047V9.413c0-3.017 1.79-4.683 4.533-4.683 1.313 0 2.686.235 2.686.235v2.97h-1.513c-1.49 0-1.955.93-1.955 1.886v2.262h3.328l-.532 3.49h-2.796V24C19.612 23.078 24 18.092 24 12.073z"/>
               </svg>
             </a>
           }
-          @if (whatsappUrl) {
-            <a [href]="whatsappUrl" target="_blank" rel="noopener" aria-label="WhatsApp" class="social-icon" title="WhatsApp">
+          @if (contact.linkedin) {
+            <a [href]="contact.linkedin" target="_blank" rel="noopener" aria-label="LinkedIn" class="social-icon social-icon--linkedin" title="LinkedIn">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.272-.099-.47-.149-.669.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.795.469 3.5 1.291 4.972L2 22l5.176-1.27A9.948 9.948 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+                <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/>
               </svg>
             </a>
           }
@@ -56,17 +55,24 @@
         </ul>
       </div>
 
-      <div class="footer-section exchange-section">
-        <h4>C&acirc;mbio</h4>
-        <div class="exchange-rate">
-          <strong>Euro: {{ formatExchangeRate(euroRate) }}</strong>
-          <strong>D&oacute;lar: {{ formatExchangeRate(dollarRate) }}</strong>
+      @if (exchangeRates.length > 0) {
+        <div class="footer-section exchange-section">
+          <h4>C&acirc;mbio</h4>
+          <div class="exchange-rate">
+            @for (rate of exchangeRates; track rate.code) {
+              <strong>{{ rate.label }}: {{ rate.formatted }}</strong>
+            }
+          </div>
+          <div class="certifications">
+            <img src="assets/edc.png" alt="EDC" class="certifications__logo" (error)="onLogoError($event)">
+            <img src="assets/iata.png" alt="IATA" class="certifications__logo" (error)="onLogoError($event)">
+          </div>
         </div>
-      </div>
+      }
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; {{ currentYear }} Unitur. Todos os direitos reservados.</p>
+      <p>&copy; {{ currentYear }} {{ footerContent.copyright }}</p>
     </div>
   </div>
 </footer>

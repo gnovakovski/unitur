@@ -2,7 +2,7 @@
   <header class="af-page-header">
     <div>
       <h1 class="af-page-header__title">Cabeçalho do site</h1>
-      <p class="af-page-header__subtitle">Renomeie, reordene e oculte os links do menu principal. As rotas são fixas.</p>
+      <p class="af-page-header__subtitle">Renomeie, reordene e oculte os links do menu principal. A rota é gerada automaticamente a partir do nome.</p>
     </div>
     <div class="af-page-header__actions">
       <a class="af-btn af-btn--secondary" routerLink="/admin/conteudo">← Voltar</a>
@@ -30,7 +30,7 @@
     </div>
   } @else {
     <div class="af-card">
-      <p class="af-hint">Arraste para reordenar. O nome é editável; a rota fica travada.</p>
+      <p class="af-hint">Arraste para reordenar. A rota acompanha o nome — você pode editá-la manualmente se preferir.</p>
 
       <ul class="link-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
         @for (link of links; track link.id) {
@@ -49,11 +49,13 @@
             <div class="link-item__fields">
               <label class="link-item__field">
                 <span>Nome exibido</span>
-                <input class="af-control" type="text" [(ngModel)]="link.label">
+                <input class="af-control" type="text" [ngModel]="link.label"
+                       (ngModelChange)="onLabelChange(link, $event)">
               </label>
               <label class="link-item__field link-item__field--route">
-                <span>Rota (travada)</span>
-                <input class="af-control" type="text" [value]="link.route" readonly>
+                <span>Rota (gerada automaticamente — você pode editar)</span>
+                <input class="af-control" type="text" [ngModel]="link.route"
+                       (ngModelChange)="onRouteChange(link, $event)">
               </label>
             </div>
 

@@ -6,7 +6,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { Trip } from '../../../core/models/trip.model';
 import { TripService } from '../../../core/services/trip.service';
 import { UploadService } from '../../../core/services/upload.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { CurrencyEntry, ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode, parseForeignAmount } from '../../../core/utils/currency-format';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 import { MultiImageUploadComponent, GalleryItem } from '../../../shared/components/multi-image-upload/multi-image-upload.component';
@@ -39,17 +39,20 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   error = '';
   exchangeRateText = '';
   itineraryDays: Array<{ title: string; description: string }> = [];
+  paymentBlocks: Array<{ title: string; description: string }> = [];
+  availableCurrencies: CurrencyEntry[] = [];
   private lastExchangeRate: number | undefined;
 
   protected fieldLabels: Record<string, string> = {
     title: 'Nome da viagem',
     tripType: 'Tipo',
     country: 'País',
-    period: 'Período',
+    period: 'Embarque',
     startDate: 'Data de embarque',
     duration: 'Duração',
     availableSpots: 'Vagas',
     price: 'Preço',
+    priceTagline: 'Frase acima do preço',
     foreignCurrency: 'Moeda estrangeira',
     foreignPrice: 'Valor convertido',
     status: 'Status',
@@ -62,7 +65,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     experienceImages: 'Galeria da experiência',
     hotels: 'Hotéis',
     itinerary: 'Roteiro',
-    paymentMethodsText: 'Formas de pagamento',
+    paymentMethods: 'Formas de pagamento',
     includedText: 'Incluso',
     notIncludedText: 'Não incluso',
     cancellationPolicy: 'Política de cancelamento'
@@ -89,6 +92,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       duration: [1, [Validators.required, Validators.min(1)]],
       availableSpots: [0, [Validators.required, Validators.min(0)]],
       price: ['', [Validators.required, Validators.min(1)]],
+      priceTagline: ['Aéreo e apartamento duplo, a partir de:'],
       foreignCurrency: [''],
       foreignPrice: [''],
       status: ['active', [Validators.required]],
@@ -101,7 +105,6 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       experienceImages: [[] as GalleryItem[]],
       hotels: [[] as HotelItem[]],
       itinerary: [''],
-      paymentMethodsText: [''],
       includedText: [''],
       notIncludedText: [''],
       cancellationPolicy: ['']
@@ -121,6 +124,11 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   ngOnInit() {
+    this.exchangeRateService.rates$.subscribe(content => {
+      this.availableCurrencies = content.currencies;
+    });
+    this.exchangeRateService.loadRates().subscribe();
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode = true;
@@ -144,6 +152,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           duration: trip.duration,
           availableSpots: trip.availableSpots,
           price: trip.price,
+          priceTagline: trip.priceTagline ?? 'Aéreo e apartamento duplo, a partir de:',
           foreignCurrency: trip.foreignCurrency || this.detectCurrency(trip.foreignPrice),
           foreignPrice: trip.foreignPrice ? formatForeignCurrency(trip.foreignPrice, trip.foreignCurrency || this.detectCurrency(trip.foreignPrice)) : '',
           status: trip.status,
@@ -156,12 +165,12 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           experienceImages: (trip.experienceImages || trip.gallery || []) as GalleryItem[],
           hotels: (trip.hotels || []).map(h => ({ name: h.name, image: h.image })) as HotelItem[],
           itinerary: trip.itinerary || '',
-          paymentMethodsText: (trip.paymentMethods || []).join('\n'),
           includedText: (trip.included || []).join('\n'),
           notIncludedText: (trip.notIncluded || []).join('\n'),
           cancellationPolicy: trip.cancellationPolicy || ''
         });
         this.itineraryDays = this.parseItineraryDays(trip.itinerary || '');
+        this.paymentBlocks = this.parsePaymentBlocks(trip.paymentMethods);
         this.tripForm.markAsPristine();
         this.lastExchangeRate = trip.foreignExchangeRate;
         this.updateConvertedPrice();
@@ -191,7 +200,6 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       }
       const value = this.tripForm.getRawValue();
       const {
-        paymentMethodsText,
         includedText,
         notIncludedText,
         mainImage,
@@ -229,7 +237,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         gallery: existingExperienceUrls,
         hotels: existingHotelsResolved,
         itinerary: this.serializeItineraryDays(this.itineraryDays),
-        paymentMethods: this.parseLines(paymentMethodsText),
+        paymentMethods: this.serializePaymentBlocks(this.paymentBlocks),
         included: this.parseLines(includedText),
         notIncluded: this.parseLines(notIncludedText)
       };
@@ -373,6 +381,66 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     this.tripForm.markAsDirty();
   }
 
+  // ---------- Formas de pagamento (blocos) ----------
+  addPaymentBlock() {
+    this.paymentBlocks = [...this.paymentBlocks, { title: '', description: '' }];
+    this.tripForm.markAsDirty();
+  }
+
+  removePaymentBlock(index: number) {
+    this.paymentBlocks = this.paymentBlocks.filter((_, i) => i !== index);
+    this.tripForm.markAsDirty();
+  }
+
+  updatePaymentTitle(index: number, value: string) {
+    const next = [...this.paymentBlocks];
+    if (!next[index]) return;
+    next[index] = { ...next[index], title: value };
+    this.paymentBlocks = next;
+    this.tripForm.markAsDirty();
+  }
+
+  updatePaymentDescription(index: number, value: string) {
+    const next = [...this.paymentBlocks];
+    if (!next[index]) return;
+    next[index] = { ...next[index], description: value };
+    this.paymentBlocks = next;
+    this.tripForm.markAsDirty();
+  }
+
+  movePaymentBlock(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= this.paymentBlocks.length) return;
+    const next = [...this.paymentBlocks];
+    [next[index], next[target]] = [next[target], next[index]];
+    this.paymentBlocks = next;
+    this.tripForm.markAsDirty();
+  }
+
+  /** Aceita tanto o formato novo (array de blocos) quanto o legado (string[]). */
+  private parsePaymentBlocks(value: unknown): Array<{ title: string; description: string }> {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map(item => {
+        if (typeof item === 'string') {
+          return { title: item.trim(), description: '' };
+        }
+        if (item && typeof item === 'object') {
+          const obj = item as { title?: string; description?: string };
+          return { title: (obj.title || '').trim(), description: (obj.description || '').trim() };
+        }
+        return { title: '', description: '' };
+      })
+      .filter(b => b.title || b.description);
+  }
+
+  private serializePaymentBlocks(blocks: Array<{ title: string; description: string }>): Array<{ title: string; description?: string }> {
+    return blocks
+      .map(b => ({ title: (b.title || '').trim(), description: (b.description || '').trim() }))
+      .filter(b => b.title || b.description)
+      .map(b => b.description ? { title: b.title, description: b.description } : { title: b.title });
+  }
+
   private parseItineraryDays(value: string): Array<{ title: string; description: string }> {
     return String(value || '')
       .split('\n')
@@ -427,7 +495,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     const applyRate = (rate: number | null) => {
       if (!rate || rate <= 0) {
         foreignPriceControl?.setValue('', { emitEvent: false });
-        this.exchangeRateText = 'Não foi possível carregar o câmbio.';
+        this.exchangeRateText = `Cadastre a cotação do ${currency} em "Cotações de câmbio" na lista de viagens.`;
         this.lastExchangeRate = undefined;
         return;
       }

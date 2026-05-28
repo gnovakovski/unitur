@@ -1,0 +1,73 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Rodapé</h1>
+      <p class="af-page-header__subtitle">Edite a marca, a frase de apresentação e o aviso de direitos exibidos no rodapé.</p>
+    </div>
+    <div class="af-page-header__actions">
+      <a class="af-btn af-btn--secondary" routerLink="/admin/conteudo">← Voltar</a>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (saved) {
+    <div class="af-alert af-alert--success">
+      <span class="af-alert__icon">✓</span>
+      <span>Rodapé atualizado com sucesso.</span>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando...</p>
+    </div>
+  } @else {
+    <form class="af-card" [formGroup]="form" (ngSubmit)="save()">
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">1</span>
+          <h2 class="af-section__title">Marca e apresentação</h2>
+        </div>
+
+        <div class="af-grid af-grid--2">
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Nome da marca</label>
+            <input class="af-control" formControlName="brandName" placeholder="Unitur">
+          </div>
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Frase abaixo da marca</label>
+            <textarea class="af-control af-control--textarea" rows="3" formControlName="tagline"
+              placeholder="Transformando sonhos em viagens inesquecíveis desde 2020."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="af-section">
+        <div class="af-section__header">
+          <span class="af-section__step">2</span>
+          <h2 class="af-section__title">Rodapé inferior</h2>
+        </div>
+        <div class="af-grid af-grid--2">
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Texto de copyright (sem o ano — ele é adicionado automaticamente)</label>
+            <input class="af-control" formControlName="copyright" placeholder="Unitur. Todos os direitos reservados.">
+          </div>
+        </div>
+      </div>
+
+      <div class="af-form-actions">
+        <button type="button" class="af-btn af-btn--secondary" (click)="back()" [disabled]="saving">Cancelar</button>
+        <button type="submit" class="af-btn af-btn--primary" [disabled]="saving">
+          {{ saving ? 'Salvando...' : 'Salvar alterações' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

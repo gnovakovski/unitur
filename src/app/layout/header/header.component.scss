@@ -33,11 +33,16 @@ $shadow: rgba(0, 0, 0, 0.1);
   a {
     display: flex;
     align-items: center;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    
-    &:hover {
-      transform: scale(1.05);
-      filter: drop-shadow(0 4px 8px rgba($white, 0.3));
+    text-decoration: none;
+    outline: none;
+
+    &:hover, &:focus, &:active {
+      text-decoration: none;
+      filter: none;
+      opacity: 1;
+      transform: none;
+      box-shadow: none;
+      background: transparent;
     }
   }
 }
@@ -46,7 +51,14 @@ $shadow: rgba(0, 0, 0, 0.1);
   height: 50px;
   width: auto;
   object-fit: contain;
-  transition: all 0.4s ease;
+  transition: none;
+
+  &:hover, &:focus, &:active {
+    transform: none;
+    filter: none;
+    opacity: 1;
+    box-shadow: none;
+  }
 }
 
 .nav {

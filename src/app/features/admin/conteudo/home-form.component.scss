@@ -1,0 +1,139 @@
+@import '../shared/admin-forms.scss';
+
+$orange: #ff812c;
+$blue: #3a75c3;
+$dark: #1a1a2e;
+$gray: #6c757d;
+$gray-light: #f8f9fa;
+
+.hf-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+
+  &__hint {
+    font-size: 0.85rem;
+    color: $gray;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    strong { color: $dark; font-weight: 600; }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.6rem;
+  }
+}
+
+.hf-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 4rem;
+}
+
+.hf-section {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba($blue, 0.12);
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.05);
+
+  &__tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(135deg, $blue, $orange);
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba($blue, 0.35);
+  }
+
+  &__inner {
+    padding: 3.5rem 2.5rem 3rem;
+
+    @media (max-width: 768px) {
+      padding: 2.5rem 1.25rem 2rem;
+    }
+  }
+}
+
+.hf-section-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hf-input {
+  width: 100%;
+  text-align: center;
+  border: none;
+  border-radius: 12px;
+  padding: 0.55rem 0.9rem;
+  background: transparent;
+  font-family: inherit;
+  outline: none;
+
+  &--title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, $blue, $orange);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    @media (max-width: 768px) { font-size: 1.75rem; }
+  }
+
+  &--subtitle {
+    font-size: 1.1rem;
+    color: $gray;
+    font-weight: 300;
+  }
+}
+
+.hf-savebar {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 25;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(26, 26, 46, 0.96);
+  border-radius: 16px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+  margin-top: 1rem;
+
+  .hint {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    align-self: center;
+    margin-right: auto;
+  }
+}

@@ -5,6 +5,9 @@
       <p class="af-page-header__subtitle">Cadastre viagens que aparecem na home por tipo.</p>
     </div>
     <div class="af-page-header__actions">
+      <button class="af-btn af-btn--secondary" type="button" (click)="openExchangeModal()">
+        Cotações de câmbio
+      </button>
       <a class="af-btn af-btn--primary" routerLink="/admin/viagens/nova">+ Nova viagem</a>
     </div>
   </header>
@@ -152,3 +155,78 @@
     </div>
   }
 </section>
+
+@if (exchangeModalOpen) {
+  <div class="af-modal-overlay" (click)="closeExchangeModal()">
+    <form class="af-modal af-modal--wide" [formGroup]="exchangeForm" (ngSubmit)="saveExchangeRates()" (click)="$event.stopPropagation()">
+      <div class="af-modal__header">
+        <div>
+          <h2 class="af-modal__title">Cotações de câmbio</h2>
+          <p class="af-modal__subtitle">
+            Cadastre as moedas disponíveis e o quanto vale 1 unidade de cada uma em Reais (R$). Você pode adicionar ou excluir quantas moedas precisar.
+          </p>
+        </div>
+        <button class="af-modal__close" type="button" (click)="closeExchangeModal()" aria-label="Fechar">✕</button>
+      </div>
+
+      @if (exchangeError) {
+        <div class="af-alert af-alert--error">
+          <span class="af-alert__icon">!</span>
+          <span>{{ exchangeError }}</span>
+        </div>
+      }
+
+      @if (exchangeSaved) {
+        <div class="af-alert af-alert--success">
+          <span class="af-alert__icon">✓</span>
+          <span>Cotações atualizadas com sucesso.</span>
+        </div>
+      }
+
+      <div class="currency-list" formArrayName="currencies">
+        @for (group of currencyControls.controls; track $index; let i = $index) {
+          <div class="currency-row" [formGroupName]="i">
+            <div class="af-field currency-row__code">
+              <label class="af-label">Código <span class="af-label__required">*</span></label>
+              <input class="af-control" type="text" formControlName="code" maxlength="6" placeholder="USD">
+            </div>
+            <div class="af-field currency-row__name">
+              <label class="af-label">Nome da moeda <span class="af-label__required">*</span></label>
+              <input class="af-control" type="text" formControlName="name" placeholder="Dólar Americano">
+            </div>
+            <div class="af-field currency-row__symbol">
+              <label class="af-label">Símbolo <span class="af-label__optional">opcional</span></label>
+              <input class="af-control" type="text" formControlName="symbol" maxlength="6" placeholder="US$">
+            </div>
+            <div class="af-field currency-row__rate">
+              <label class="af-label">Valor em R$</label>
+              <div class="af-input-group">
+                <span class="af-input-group__addon">R$</span>
+                <input class="af-control" type="number" step="0.01" min="0" formControlName="rate" placeholder="Ex: 5,40">
+              </div>
+            </div>
+            <button class="af-btn af-btn--danger af-btn--sm currency-row__remove" type="button"
+                    (click)="removeCurrency(i)" aria-label="Excluir moeda">
+              Excluir
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="currency-add">
+        <button class="af-btn af-btn--secondary" type="button" (click)="addCurrency()">+ Adicionar moeda</button>
+      </div>
+
+      @if (exchangeUpdatedAt) {
+        <p class="af-hint">Última atualização: {{ exchangeUpdatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+      }
+
+      <div class="af-actions">
+        <button class="af-btn af-btn--secondary" type="button" (click)="closeExchangeModal()" [disabled]="exchangeSaving">Cancelar</button>
+        <button class="af-btn af-btn--primary" type="submit" [disabled]="exchangeSaving">
+          {{ exchangeSaving ? 'Salvando...' : 'Salvar cotações' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

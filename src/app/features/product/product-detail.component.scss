@@ -370,6 +370,16 @@ $dark: #1a1a2e;
     font-weight: 800;
   }
 
+  .booking-price-tagline {
+    display: block;
+    color: $gray;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin-top: 0.85rem;
+    margin-bottom: -0.15rem;
+  }
+
   h2,
   .booking-price {
     display: flex;
@@ -379,7 +389,7 @@ $dark: #1a1a2e;
     color: $orange;
     font-size: clamp(1.9rem, 3.4vw, 2.35rem);
     line-height: 1.08;
-    margin: 0.7rem 0 1rem;
+    margin: 0.3rem 0 1rem;
 
     small {
       color: $gray;

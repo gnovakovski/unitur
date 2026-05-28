@@ -1,0 +1,150 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Usuários</h1>
+      <p class="af-page-header__subtitle">Gerencie quem tem acesso ao painel administrativo.</p>
+    </div>
+    <div class="af-page-header__actions">
+      <button class="af-btn af-btn--primary" type="button" (click)="openForm()">
+        + Novo usuário
+      </button>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="af-alert af-alert--error">
+      <span class="af-alert__icon">!</span>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (feedback) {
+    <div class="af-alert af-alert--success">
+      <span class="af-alert__icon">✓</span>
+      <span>{{ feedback }}</span>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="af-loading">
+      <div class="af-spinner"></div>
+      <p>Carregando usuários...</p>
+    </div>
+  } @else if (users.length === 0) {
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+      </div>
+      <h3>Nenhum usuário cadastrado</h3>
+      <p>Cadastre o primeiro usuário para acessar o painel.</p>
+      <button class="af-btn af-btn--primary" type="button" (click)="openForm()">
+        + Adicionar primeiro usuário
+      </button>
+    </div>
+  } @else {
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.id) {
+            <tr>
+              <td><strong>{{ user.name }}</strong></td>
+              <td>{{ user.email }}</td>
+              <td>{{ roleLabels[user.role] || user.role }}</td>
+              <td>
+                <span class="status-pill" [attr.data-status]="user.status === 'active' ? 'approved' : 'rejected'">
+                  {{ user.status === 'active' ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="af-btn af-btn--ghost af-btn--sm" type="button" (click)="openForm(user)">Editar</button>
+                  <button class="af-btn af-btn--danger af-btn--sm" type="button"
+                          (click)="deleteUser(user)" [disabled]="deletingId === user.id">
+                    {{ deletingId === user.id ? 'Excluindo...' : 'Excluir' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+@if (formOpen) {
+  <div class="af-modal-overlay" (click)="closeForm()">
+    <form class="af-modal" [formGroup]="userForm" (ngSubmit)="saveUser()" (click)="$event.stopPropagation()">
+      <div class="af-modal__header">
+        <div>
+          <h2 class="af-modal__title">{{ editingUser ? 'Editar usuário' : 'Novo usuário' }}</h2>
+          <p class="af-modal__subtitle">
+            {{ editingUser ? 'O e-mail e a senha não podem ser alterados por aqui.' : 'O usuário poderá acessar o painel com este e-mail e senha.' }}
+          </p>
+        </div>
+        <button class="af-modal__close" type="button" (click)="closeForm()" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="af-grid af-grid--2">
+        <div class="af-field af-field--span-2">
+          <label class="af-label">Nome completo <span class="af-label__required">*</span></label>
+          <input class="af-control" formControlName="name"
+                 [class.is-invalid]="isFieldInvalid('name')"
+                 placeholder="Ex: Maria Silva">
+        </div>
+
+        <div class="af-field af-field--span-2">
+          <label class="af-label">E-mail <span class="af-label__required">*</span></label>
+          <input class="af-control" type="email" formControlName="email"
+                 [class.is-invalid]="isFieldInvalid('email')"
+                 placeholder="usuario@unitur.com.br">
+        </div>
+
+        @if (!editingUser) {
+          <div class="af-field af-field--span-2">
+            <label class="af-label">Senha <span class="af-label__required">*</span></label>
+            <input class="af-control" type="password" formControlName="password"
+                   [class.is-invalid]="isFieldInvalid('password')"
+                   placeholder="Mínimo 6 caracteres">
+          </div>
+        }
+
+        <div class="af-field">
+          <label class="af-label">Perfil</label>
+          <select class="af-control" formControlName="role">
+            <option value="admin">Administrador</option>
+            <option value="editor">Editor</option>
+            <option value="viewer">Visualizador</option>
+          </select>
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Status</label>
+          <select class="af-control" formControlName="status">
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="af-actions">
+        <button class="af-btn af-btn--secondary" type="button" (click)="closeForm()" [disabled]="saving">Cancelar</button>
+        <button class="af-btn af-btn--primary" type="submit" [disabled]="userForm.invalid || saving">
+          {{ saving ? 'Salvando...' : (editingUser ? 'Salvar alterações' : 'Criar usuário') }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

@@ -1,22 +1,47 @@
-export type ForeignCurrencyCode = 'USD' | 'EUR' | 'GBP';
+/**
+ * Código de moeda estrangeira (ex.: USD, EUR, GBP, ARS...).
+ * Aberto para qualquer string porque a lista de moedas é configurada
+ * dinamicamente pelo admin em "Cotações de câmbio".
+ */
+export type ForeignCurrencyCode = string;
 
-const currencySymbols: Record<ForeignCurrencyCode, string> = {
+const defaultSymbols: Record<string, string> = {
   USD: 'US$',
-  EUR: '\u20ac',
-  GBP: '\u00a3'
+  EUR: '€',
+  GBP: '£',
+  BRL: 'R$',
+  ARS: 'AR$',
+  CAD: 'CA$',
+  AUD: 'AU$',
+  JPY: '¥',
+  CHF: 'CHF'
 };
 
-const currencyPatterns: Array<{ patterns: RegExp[]; code: ForeignCurrencyCode }> = [
-  { patterns: [/eur/i, /\u20ac/], code: 'EUR' },
-  { patterns: [/gbp/i, /\u00a3/], code: 'GBP' },
+const currencyPatterns: Array<{ patterns: RegExp[]; code: string }> = [
+  { patterns: [/eur/i, /€/], code: 'EUR' },
+  { patterns: [/gbp/i, /£/], code: 'GBP' },
   { patterns: [/usd/i, /us\$/i, /u\$/i, /\$/], code: 'USD' }
 ];
+
+/** Permite que o app registre símbolos personalizados em runtime. */
+const runtimeSymbols: Record<string, string> = {};
+
+export function registerCurrencySymbol(code: string, symbol: string): void {
+  if (!code || !symbol) return;
+  runtimeSymbols[code.toUpperCase()] = symbol;
+}
+
+export function getCurrencySymbol(code: ForeignCurrencyCode | ''): string {
+  if (!code) return '';
+  const upper = code.toUpperCase();
+  return runtimeSymbols[upper] || defaultSymbols[upper] || upper;
+}
 
 export function formatForeignAmount(amount: number, currency: ForeignCurrencyCode): string {
   if (!Number.isFinite(amount) || amount <= 0) {
     return '';
   }
-  return `${currencySymbols[currency]} ${amount.toLocaleString('pt-BR', {
+  return `${getCurrencySymbol(currency)} ${amount.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
@@ -34,7 +59,7 @@ export function formatForeignCurrency(value?: number | string, currency?: Foreig
   }
 
   const code = currency || getCurrencyCode(value);
-  const symbol = currencySymbols[code];
+  const symbol = getCurrencySymbol(code);
   const amount = typeof value === 'number' ? value : parseCurrencyAmount(value);
 
   if (amount === null) {
@@ -77,7 +102,7 @@ function parseCurrencyAmount(value: string): number | null {
 
 function normalizeCurrencyPrefix(value: string, symbol: string): string {
   const cleaned = value
-    .replace(/^(usd|eur|gbp|us\$|u\$|\$|\u20ac|\u00a3)\s*/i, '')
+    .replace(/^(usd|eur|gbp|us\$|u\$|\$|€|£)\s*/i, '')
     .trim();
 
   return `${symbol} ${cleaned}`.trim();

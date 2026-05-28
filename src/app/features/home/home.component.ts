@@ -14,6 +14,9 @@ import { ForeignCurrencyCode, formatForeignAmount, parseForeignAmount } from '..
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AboutContentService } from '../../core/services/about-content.service';
 import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about-content.model';
+import { SiteContentService } from '../../core/services/site-content.service';
+import { DEFAULT_HOME_CONTENT, SiteHomeContent } from '../../core/models/site-content.model';
+import { Banner } from '../../core/models/banner.model';
 
 interface HomeTripCard {
   slug: string;
@@ -32,6 +35,13 @@ interface HomeTripCard {
   guide: string;
   guideRole: string;
   coordinator: string;
+}
+
+interface HomeBannerSlide {
+  id: string;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
 }
 
 interface HomeCuradoriaCard {
@@ -89,14 +99,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     private bannerService: BannerService,
     private postService: PostService,
     private aboutContentService: AboutContentService,
+    private siteContentService: SiteContentService,
     private exchangeRateService: ExchangeRateService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
   homeAbout: HomeAboutContent = JSON.parse(JSON.stringify(DEFAULT_ABOUT_CONTENT.home));
+  homeContent: SiteHomeContent = { ...DEFAULT_HOME_CONTENT };
 
-  bannerImages: string[] = [];
+  bannerSlides: HomeBannerSlide[] = [];
 
   peregrinacoes: HomeTripCard[] = [];
 
@@ -116,6 +128,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadTestimonials();
     this.loadPosts();
     this.loadAboutContent();
+    this.loadHomeContent();
   }
 
   private loadAboutContent() {
@@ -124,6 +137,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
     this.aboutContentService.load().subscribe();
+  }
+
+  private loadHomeContent() {
+    this.siteContentService.home$.subscribe(content => {
+      this.homeContent = content;
+      this.cdr.detectChanges();
+    });
+    this.siteContentService.loadHome().subscribe();
   }
 
   ngOnDestroy() {
@@ -139,19 +160,19 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   nextSlide() {
-    if (this.bannerImages.length === 0) {
+    if (this.bannerSlides.length === 0) {
       return;
     }
 
-    this.currentSlide = (this.currentSlide + 1) % this.bannerImages.length;
+    this.currentSlide = (this.currentSlide + 1) % this.bannerSlides.length;
   }
 
   prevSlide() {
-    if (this.bannerImages.length === 0) {
+    if (this.bannerSlides.length === 0) {
       return;
     }
 
-    this.currentSlide = this.currentSlide === 0 ? this.bannerImages.length - 1 : this.currentSlide - 1;
+    this.currentSlide = this.currentSlide === 0 ? this.bannerSlides.length - 1 : this.currentSlide - 1;
   }
 
   goToSlide(index: number) {
@@ -205,13 +226,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   private loadBanners() {
     this.bannerService.getActiveBanners().pipe(
       timeout(12000),
-      catchError(() => of([]))
+      catchError(() => of([] as Banner[]))
     ).subscribe(banners => {
-      this.bannerImages = banners
+      this.bannerSlides = banners
         .filter(banner => banner.imageUrl)
-        .map(banner => this.normalizeImage(banner.imageUrl));
+        .map(banner => ({
+          id: String(banner.id),
+          imageUrl: this.normalizeImage(banner.imageUrl),
+          title: banner.title || '',
+          subtitle: banner.subtitle || ''
+        }));
       this.currentSlide = 0;
-      if (this.bannerImages.length > 0) {
+      if (this.bannerSlides.length > 0) {
         this.startSlideShow();
       }
       this.cdr.detectChanges();
@@ -272,9 +298,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
-      guide: trip.spiritualGuide || 'A definir',
+      guide: (trip.spiritualGuide || '').trim(),
       guideRole,
-      coordinator: trip.coordinator || 'Equipe Unitur'
+      coordinator: (trip.coordinator || '').trim()
     };
     this.attachForeignPrice(card, trip);
     return card;
