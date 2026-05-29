@@ -61,6 +61,25 @@ $shadow: rgba(0, 0, 0, 0.1);
   }
 }
 
+.partner-logos {
+  position: absolute;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.partner-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  transition: opacity 0.3s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
 .nav {
   display: flex;
   align-items: center;
@@ -150,6 +169,10 @@ $shadow: rgba(0, 0, 0, 0.1);
 @media (max-width: 768px) {
   .menu-toggle {
     display: flex;
+  }
+  
+  .partner-logos {
+    display: none;
   }
   
   .nav {
