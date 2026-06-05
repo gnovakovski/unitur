@@ -115,6 +115,15 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     return this.tripForm.valid;
   }
 
+  /** Preço base em reais formatado (ex.: R$ 28.354,40) para exibição readonly. */
+  get formattedPrice(): string {
+    const value = Number(this.tripForm.get('price')?.value);
+    if (!value || Number.isNaN(value) || value <= 0) {
+      return '';
+    }
+    return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   get includedPreview(): string[] {
     return this.parseLines(this.tripForm.get('includedText')?.value || '');
   }
@@ -136,7 +145,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       this.loadTrip(this.tripId);
     }
 
-    this.tripForm.get('price')?.valueChanges.subscribe(() => this.updateConvertedPrice());
+    this.tripForm.get('foreignPrice')?.valueChanges.subscribe(() => this.updateConvertedPrice());
     this.tripForm.get('foreignCurrency')?.valueChanges.subscribe(() => this.updateConvertedPrice());
   }
 
@@ -473,36 +482,36 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   private async updateConvertedPrice(waitForResult = false): Promise<void> {
-    const rawPrice = this.tripForm.get('price')?.value;
-    const price = Number(rawPrice);
     const currency = this.tripForm.get('foreignCurrency')?.value as ForeignCurrencyCode | '';
-    const foreignPriceControl = this.tripForm.get('foreignPrice');
+    const foreignAmount = parseForeignAmount(this.tripForm.get('foreignPrice')?.value);
+    const priceControl = this.tripForm.get('price');
 
     if (!currency) {
-      foreignPriceControl?.setValue('', { emitEvent: false });
+      // Sem moeda estrangeira: o preço em R$ passa a ser editável manualmente.
+      this.tripForm.get('foreignPrice')?.setValue('', { emitEvent: false });
       this.exchangeRateText = '';
       this.lastExchangeRate = undefined;
       return;
     }
 
-    if (!price || Number.isNaN(price) || price <= 0) {
-      foreignPriceControl?.setValue('', { emitEvent: false });
-      this.exchangeRateText = 'Informe o preço base para calcular a conversão.';
+    if (!foreignAmount || foreignAmount <= 0) {
+      priceControl?.setValue('', { emitEvent: false });
+      this.exchangeRateText = `Informe o valor em ${currency} para calcular o preço em reais.`;
       this.lastExchangeRate = undefined;
       return;
     }
 
     const applyRate = (rate: number | null) => {
       if (!rate || rate <= 0) {
-        foreignPriceControl?.setValue('', { emitEvent: false });
+        priceControl?.setValue('', { emitEvent: false });
         this.exchangeRateText = `Cadastre a cotação do ${currency} em "Cotações de câmbio" na lista de viagens.`;
         this.lastExchangeRate = undefined;
         return;
       }
 
-      const convertedValue = price / rate;
+      const brlValue = foreignAmount * rate;
       this.lastExchangeRate = rate;
-      foreignPriceControl?.setValue(formatForeignCurrency(convertedValue, currency), { emitEvent: false });
+      priceControl?.setValue(Number(brlValue.toFixed(2)), { emitEvent: false });
       this.exchangeRateText = `Câmbio usado: 1 ${currency} = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 

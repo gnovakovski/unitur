@@ -2,7 +2,8 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, firstValueFrom } from 'rxjs';
-import { User } from '../../../core/models/user.model';
+import { ModuleKey, User } from '../../../core/models/user.model';
+import { ADMIN_MODULES, AdminModule } from '../../../core/models/modules.config';
 import { UserService } from '../../../core/services/user.service';
 
 @Component({
@@ -28,6 +29,12 @@ export class UsuariosListComponent implements OnInit {
     editor: 'Editor',
     viewer: 'Visualizador'
   };
+
+  /** Módulos exibidos como checkboxes de permissão no formulário. */
+  readonly adminModules: AdminModule[] = ADMIN_MODULES;
+
+  /** Permissões marcadas no formulário (para usuários não-admin). */
+  selectedPermissions = new Set<ModuleKey>();
 
   constructor(
     private fb: FormBuilder,
@@ -74,6 +81,7 @@ export class UsuariosListComponent implements OnInit {
       // Edição: e-mail e senha não são alteráveis aqui (limitação do client SDK)
       emailCtrl?.disable();
       passwordCtrl?.disable();
+      this.selectedPermissions = new Set<ModuleKey>(user.permissions ?? []);
       this.userForm.reset({
         name: user.name,
         email: user.email,
@@ -86,6 +94,7 @@ export class UsuariosListComponent implements OnInit {
       passwordCtrl?.enable();
       passwordCtrl?.setValidators([Validators.required, Validators.minLength(6)]);
       passwordCtrl?.updateValueAndValidity();
+      this.selectedPermissions = new Set<ModuleKey>();
       this.userForm.reset({
         name: '',
         email: '',
@@ -93,6 +102,23 @@ export class UsuariosListComponent implements OnInit {
         role: 'admin',
         status: 'active'
       });
+    }
+  }
+
+  /** `true` quando o perfil selecionado é admin (acesso total, sem checkboxes). */
+  get isAdminRole(): boolean {
+    return this.userForm.get('role')?.value === 'admin';
+  }
+
+  isPermissionSelected(key: ModuleKey): boolean {
+    return this.selectedPermissions.has(key);
+  }
+
+  togglePermission(key: ModuleKey, checked: boolean): void {
+    if (checked) {
+      this.selectedPermissions.add(key);
+    } else {
+      this.selectedPermissions.delete(key);
     }
   }
 
@@ -113,11 +139,17 @@ export class UsuariosListComponent implements OnInit {
 
     try {
       const values = this.userForm.getRawValue();
+      // Admin tem acesso a tudo — a lista de permissões fica vazia (é ignorada).
+      const permissions: ModuleKey[] = values.role === 'admin'
+        ? []
+        : Array.from(this.selectedPermissions);
+
       if (this.editingUser) {
         await firstValueFrom(this.userService.updateUser(this.editingUser.id, {
           name: values.name,
           role: values.role,
-          status: values.status
+          status: values.status,
+          permissions
         }));
         this.showSuccess('Usuário atualizado com sucesso.');
       } else {
@@ -126,7 +158,8 @@ export class UsuariosListComponent implements OnInit {
           email: values.email,
           password: values.password,
           role: values.role,
-          status: values.status
+          status: values.status,
+          permissions
         }));
         this.showSuccess('Usuário criado com sucesso.');
       }

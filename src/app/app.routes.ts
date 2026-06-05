@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { viagensCategoryMatcher } from './core/routing/viagens-category.matcher';
 
@@ -56,71 +57,88 @@ export const routes: Routes = [
       },
       {
         path: 'posts',
+        canActivate: [permissionGuard('posts')],
         loadComponent: () => import('./features/admin/posts/posts-list.component').then(m => m.PostsListComponent)
       },
       {
         path: 'posts/novo',
+        canActivate: [permissionGuard('posts')],
         loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent),
         canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'posts/:id/editar',
+        canActivate: [permissionGuard('posts')],
         loadComponent: () => import('./features/admin/posts/post-form.component').then(m => m.PostFormComponent),
         canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'viagens/nova',
+        canActivate: [permissionGuard('viagens')],
         loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent),
         canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'viagens/:id/editar',
+        canActivate: [permissionGuard('viagens')],
         loadComponent: () => import('./features/admin/viagens/viagem-form.component').then(m => m.ViagemFormComponent),
         canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'viagens',
+        // moeda também entra: a modal de cotações de câmbio mora nesta tela
+        canActivate: [permissionGuard(['viagens', 'moeda'])],
         loadComponent: () => import('./features/admin/viagens/viagens-list.component').then(m => m.ViagensListComponent)
       },
       {
         path: 'categorias',
+        canActivate: [permissionGuard('categorias')],
         loadComponent: () => import('./features/admin/categorias/categorias-list.component').then(m => m.CategoriasListComponent)
       },
       {
         path: 'banners',
+        canActivate: [permissionGuard('banners')],
         loadComponent: () => import('./features/admin/banners/banners-list.component').then(m => m.BannersListComponent)
       },
       {
         path: 'depoimentos',
+        canActivate: [permissionGuard('depoimentos')],
         loadComponent: () => import('./features/admin/depoimentos/depoimentos-list.component').then(m => m.DepoimentosListComponent)
       },
       {
         path: 'conteudo',
+        canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/conteudo/conteudo-hub.component').then(m => m.ConteudoHubComponent)
       },
       {
         path: 'conteudo/cabecalho',
+        canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/conteudo/cabecalho-form.component').then(m => m.CabecalhoFormComponent)
       },
       {
         path: 'conteudo/contato',
+        canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/conteudo/contato-form.component').then(m => m.ContatoFormComponent)
       },
       {
         path: 'conteudo/home',
+        canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/conteudo/home-form.component').then(m => m.HomeFormComponent),
         canDeactivate: [unsavedChangesGuard]
       },
       {
         path: 'conteudo/rodape',
+        canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/conteudo/footer-form.component').then(m => m.FooterFormComponent)
       },
       {
         path: 'conteudo/sobre',
+        canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/sobre/sobre-form.component').then(m => m.SobreFormComponent)
       },
       {
         path: 'usuarios',
+        canActivate: [permissionGuard('usuarios')],
         loadComponent: () => import('./features/admin/usuarios/usuarios-list.component').then(m => m.UsuariosListComponent)
       },
       {

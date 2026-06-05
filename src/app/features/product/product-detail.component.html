@@ -21,24 +21,6 @@
   </section>
 
   <main class="product-page">
-    <section class="summary-band">
-      <div class="summary-item price">
-        <span>A partir de</span>
-        <strong class="price-line">
-          @if (trip.foreignPrice) {
-            <small>{{ trip.foreignPrice }}/</small>
-          }
-          <span>{{ trip.price }}</span>
-        </strong>
-      </div>
-      @if (trip.showSpots !== false) {
-        <div class="summary-item">
-          <span>Vagas</span>
-          <strong>{{ trip.spots }}</strong>
-        </div>
-      }
-    </section>
-
     <section class="content-grid">
       <div class="main-column">
         <section class="section-block">
@@ -275,8 +257,7 @@
           </div>
           <div class="timeline">
             @for (block of trip.paymentMethods; track $index) {
-              <article class="timeline-item">
-                <div class="timeline-marker">{{ $index + 1 }}</div>
+              <article class="timeline-item timeline-item--no-marker">
                 <div>
                   <h3>{{ block.title }}</h3>
                   @if (block.description) {
@@ -294,7 +275,7 @@
             <h2>Política de cancelamento</h2>
           </div>
           @if (cancellationLines.length > 1) {
-            <ul class="check-list">
+            <ul class="bullet-list">
               @for (line of cancellationLines; track line) {
                 <li>{{ line }}</li>
               }

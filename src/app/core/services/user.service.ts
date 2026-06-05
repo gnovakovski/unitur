@@ -28,6 +28,7 @@ export interface UserCreatePayload {
   password: string;
   role: User['role'];
   status: User['status'];
+  permissions?: User['permissions'];
 }
 
 export interface UserUpdatePayload {
@@ -35,6 +36,7 @@ export interface UserUpdatePayload {
   role?: User['role'];
   status?: User['status'];
   password?: string;
+  permissions?: User['permissions'];
 }
 
 @Injectable({
@@ -92,6 +94,7 @@ export class UserService {
         email: payload.email,
         role: payload.role,
         status: payload.status,
+        permissions: payload.permissions ?? [],
         createdAt: now,
         updatedAt: now
       };
@@ -120,6 +123,7 @@ export class UserService {
     if (payload.name !== undefined) updates['name'] = payload.name;
     if (payload.role !== undefined) updates['role'] = payload.role;
     if (payload.status !== undefined) updates['status'] = payload.status;
+    if (payload.permissions !== undefined) updates['permissions'] = payload.permissions;
 
     const ref = doc(this.firebaseService.firestore, this.collectionName, id);
     return from(this.firebaseService.withTimeout(

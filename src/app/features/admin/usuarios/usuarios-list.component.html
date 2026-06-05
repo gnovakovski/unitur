@@ -137,6 +137,25 @@
             <option value="inactive">Inativo</option>
           </select>
         </div>
+
+        <div class="af-field af-field--span-2">
+          <label class="af-label">Acessos do usuário</label>
+          @if (isAdminRole) {
+            <p class="af-hint">O perfil <strong>Administrador</strong> tem acesso a todos os módulos do painel.</p>
+          } @else {
+            <p class="af-hint">Marque os módulos que este usuário poderá acessar no painel.</p>
+            <div class="permissions-grid">
+              @for (module of adminModules; track module.key) {
+                <label class="permission-item">
+                  <input type="checkbox"
+                         [checked]="isPermissionSelected(module.key)"
+                         (change)="togglePermission(module.key, $any($event.target).checked)">
+                  <span>{{ module.label }}</span>
+                </label>
+              }
+            </div>
+          }
+        </div>
       </div>
 
       <div class="af-actions">

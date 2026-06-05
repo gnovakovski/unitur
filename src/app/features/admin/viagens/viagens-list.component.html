@@ -5,13 +5,18 @@
       <p class="af-page-header__subtitle">Cadastre viagens que aparecem na home por tipo.</p>
     </div>
     <div class="af-page-header__actions">
-      <button class="af-btn af-btn--secondary" type="button" (click)="openExchangeModal()">
-        Cotações de câmbio
-      </button>
-      <a class="af-btn af-btn--primary" routerLink="/admin/viagens/nova">+ Nova viagem</a>
+      @if (canMoeda) {
+        <button class="af-btn af-btn--secondary" type="button" (click)="openExchangeModal()">
+          Cotações de câmbio
+        </button>
+      }
+      @if (canViagens) {
+        <a class="af-btn af-btn--primary" routerLink="/admin/viagens/nova">+ Nova viagem</a>
+      }
     </div>
   </header>
 
+  @if (canViagens) {
   @if (error) {
     <div class="af-alert af-alert--error">
       <span class="af-alert__icon">!</span>
@@ -152,6 +157,20 @@
           }
         </tbody>
       </table>
+    </div>
+  }
+  } @else {
+    <!-- Usuário só tem permissão de moeda: orienta a usar o botão de cotações. -->
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v10"/>
+          <path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-1.5 2-2.5 2.5"/>
+        </svg>
+      </div>
+      <h3>Cotações de câmbio</h3>
+      <p>Use o botão <strong>“Cotações de câmbio”</strong> acima para gerenciar as moedas e suas cotações.</p>
     </div>
   }
 </section>

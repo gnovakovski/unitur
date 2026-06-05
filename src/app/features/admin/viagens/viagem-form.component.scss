@@ -5,6 +5,14 @@
   width: 100%;
 }
 
+// Alinha os campos pelo topo dentro de cada linha do grid. Sem isso, o
+// align-items:stretch padrão estica os .af-field e os inputs de campos com
+// texto de ajuda (.af-hint) menor ficam centralizados/desalinhados em relação
+// aos vizinhos da mesma linha. Component-scoped: não afeta outras telas do admin.
+.af-grid {
+  align-items: start;
+}
+
 .itinerary-list {
   display: flex;
   flex-direction: column;

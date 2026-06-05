@@ -2,13 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { PermissionService } from '../../../core/services/permission.service';
 import { SiteContentService } from '../../../core/services/site-content.service';
-
-interface MenuItem {
-  label: string;
-  route: string;
-  icon: string;
-}
+import { AdminModule, MENU_MODULES } from '../../../core/models/modules.config';
 
 @Component({
   selector: 'app-admin-layout',
@@ -21,17 +17,12 @@ export class AdminLayoutComponent implements OnInit {
   sidebarOpen = true;
   currentUser: any;
 
-  menuItems: MenuItem[] = [
-    { label: 'Viagens', route: '/admin/viagens', icon: 'trip' },
-    { label: 'Posts',    route: '/admin/posts',    icon: 'post' },
-    { label: 'Categorias', route: '/admin/categorias', icon: 'tag' },
-    { label: 'Depoimentos', route: '/admin/depoimentos', icon: 'quote' },
-    { label: 'Conteúdo do site', route: '/admin/conteudo', icon: 'content' },
-    { label: 'Usuários', route: '/admin/usuarios', icon: 'user' }
-  ];
+  /** Itens do menu visíveis para o usuário logado (filtrados por permissão). */
+  menuItems: AdminModule[] = [];
 
   constructor(
     private authService: AuthService,
+    private permissionService: PermissionService,
     private siteContentService: SiteContentService,
     private router: Router
   ) {}
@@ -39,6 +30,8 @@ export class AdminLayoutComponent implements OnInit {
   ngOnInit() {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
+      // Recalcula o menu sempre que a sessão muda (login, troca de permissões).
+      this.menuItems = MENU_MODULES.filter(m => this.permissionService.can(m.key));
     });
     this.siteContentService.migrateDefaultsIfMissing();
   }

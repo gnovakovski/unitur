@@ -99,65 +99,9 @@ $dark: #1a1a2e;
   padding: 0 1.5rem 5rem;
 }
 
-.summary-band {
-  width: min(1180px, 100%);
-  margin: -3.5rem auto 4rem;
-  position: relative;
-  z-index: 4;
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  background: $white;
-  border-radius: 28px;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-}
-
-.summary-item {
-  padding: 1.5rem;
-  border-right: 1px solid #edf0f2;
-
-  &:last-child {
-    border-right: none;
-  }
-
-  span {
-    display: block;
-    color: $gray;
-    font-size: 0.85rem;
-    margin-bottom: 0.35rem;
-  }
-
-  strong {
-    color: $dark;
-    font-size: 1.05rem;
-  }
-
-  &.price strong {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.12rem;
-    color: $orange;
-    font-size: 1.25rem;
-    line-height: 1.15;
-  }
-
-  small {
-    color: $gray;
-    font-size: 0.85rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .price-line span {
-    white-space: nowrap;
-  }
-}
-
 .content-grid {
   width: min(1180px, 100%);
-  margin: 0 auto;
+  margin: 3rem auto 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 2rem;
@@ -309,6 +253,12 @@ $dark: #1a1a2e;
   border: 1px solid #edf0f2;
   border-radius: 24px;
 
+  // Boxes de "Formas de pagamento" não têm número de sequência: ocupam a largura toda.
+  &--no-marker {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
   h3 {
     margin: 0 0 0.35rem;
     color: $dark;
@@ -333,7 +283,8 @@ $dark: #1a1a2e;
 }
 
 .check-list,
-.plain-list {
+.plain-list,
+.bullet-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -348,6 +299,13 @@ $dark: #1a1a2e;
 
 .check-list li::before {
   content: '✓';
+  color: $orange;
+  font-weight: 900;
+  margin-right: 0.6rem;
+}
+
+.bullet-list li::before {
+  content: '•';
   color: $orange;
   font-weight: 900;
   margin-right: 0.6rem;
@@ -448,18 +406,12 @@ $dark: #1a1a2e;
     font-size: 3rem;
   }
 
-  .summary-band,
   .content-grid,
   .inclusions-grid,
   .team-cards,
   .experience-gallery,
   .hotels-grid {
     grid-template-columns: 1fr;
-  }
-
-  .summary-item {
-    border-right: none;
-    border-bottom: 1px solid #edf0f2;
   }
 
   .booking-panel {

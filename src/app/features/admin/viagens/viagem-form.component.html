@@ -101,14 +101,6 @@
         </div>
 
         <div class="af-field">
-          <label class="af-label">Preço base <span class="af-label__required">*</span></label>
-          <div class="af-input-group">
-            <span class="af-input-group__addon">R$</span>
-            <input class="af-control" type="number" formControlName="price" min="1" placeholder="0,00">
-          </div>
-        </div>
-
-        <div class="af-field">
           <label class="af-label">Moeda estrangeira <span class="af-label__optional">opcional</span></label>
           <select class="af-control" formControlName="foreignCurrency">
             <option value="">Sem valor estrangeiro</option>
@@ -122,12 +114,35 @@
         </div>
 
         <div class="af-field">
-          <label class="af-label">Valor convertido</label>
-          <input class="af-control" formControlName="foreignPrice" readonly placeholder="Calculado automaticamente">
+          <label class="af-label">Valor na moeda estrangeira</label>
+          <input class="af-control" formControlName="foreignPrice"
+                 [attr.disabled]="tripForm.get('foreignCurrency')?.value ? null : true"
+                 placeholder="Ex: 1.500,00">
           @if (exchangeRateText) {
             <span class="af-hint">{{ exchangeRateText }}</span>
+          } @else {
+            <span class="af-hint">Selecione a moeda e informe o valor. O preço em reais é calculado automaticamente.</span>
           }
         </div>
+
+        @if (tripForm.get('foreignCurrency')?.value) {
+          <div class="af-field">
+            <label class="af-label">Preço base (calculado) <span class="af-label__required">*</span></label>
+            <div class="af-input-group">
+              <span class="af-input-group__addon">R$</span>
+              <input class="af-control" type="text" [value]="formattedPrice" readonly placeholder="0,00" aria-label="Preço base em reais">
+            </div>
+            <span class="af-hint">Valor em reais calculado a partir da cotação da moeda estrangeira.</span>
+          </div>
+        } @else {
+          <div class="af-field">
+            <label class="af-label">Preço base <span class="af-label__required">*</span></label>
+            <div class="af-input-group">
+              <span class="af-input-group__addon">R$</span>
+              <input class="af-control" type="number" formControlName="price" min="1" placeholder="0,00">
+            </div>
+          </div>
+        }
 
         <div class="af-field">
           <label class="af-label">Guia Espiritual Convidado <span class="af-label__optional">opcional</span></label>

@@ -1,22 +1,27 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, from, Observable, switchMap, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
+import { ModuleKey } from '../models/user.model';
 
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
+export interface SessionUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  permissions: ModuleKey[];
+}
+
 export interface AuthResponse {
   token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  };
+  user: SessionUser;
 }
 
 @Injectable({
@@ -26,7 +31,7 @@ export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'auth_user';
   private authReadyPromise: Promise<boolean> | null = null;
-  
+
   private currentUserSubject = new BehaviorSubject<any>(this.getUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
 
@@ -45,12 +50,7 @@ export class AuthService {
         const token = await user.getIdToken();
         return {
           token,
-          user: {
-            id: user.uid,
-            name: user.displayName || user.email || 'Administrador',
-            email: user.email || credentials.email,
-            role: 'admin'
-          }
+          user: await this.buildSessionUser(user)
         };
       }),
       tap(response => {
@@ -76,7 +76,7 @@ export class AuthService {
     if (!token) {
       return false;
     }
-    
+
     // Verifica se token está expirado
     return !this.isTokenExpired(token);
   }
@@ -85,17 +85,17 @@ export class AuthService {
     const auth = this.firebaseService.auth;
 
     if (auth.currentUser) {
-      return auth.currentUser.getIdToken().then(token => {
+      const current = auth.currentUser;
+      return current.getIdToken().then(async token => {
         this.setSession({
           token,
-          user: {
-            id: auth.currentUser!.uid,
-            name: auth.currentUser!.displayName || auth.currentUser!.email || 'Administrador',
-            email: auth.currentUser!.email || '',
-            role: 'admin'
-          }
+          user: await this.buildSessionUser(current)
         });
         return true;
+      }).catch(() => {
+        // getIdToken/leitura do perfil falhou → trata como não autenticado
+        // (o authGuard redireciona ao login). Evita promover por erro de rede.
+        return false;
       });
     }
 
@@ -123,15 +123,10 @@ export class AuthService {
           return;
         }
 
-        user.getIdToken().then(token => {
+        user.getIdToken().then(async token => {
           this.setSession({
             token,
-            user: {
-              id: user.uid,
-              name: user.displayName || user.email || 'Administrador',
-              email: user.email || '',
-              role: 'admin'
-            }
+            user: await this.buildSessionUser(user)
           });
           resolve(true);
         }).catch(() => resolve(false));
@@ -147,6 +142,50 @@ export class AuthService {
 
   getCurrentUser(): any {
     return this.currentUserSubject.value;
+  }
+
+  /**
+   * Monta o usuário da sessão a partir do perfil gravado no Firestore
+   * (coleção `users`, doc = uid), de onde vêm o `role` e as `permissions` reais.
+   *
+   * Fallback de compatibilidade: se o documento NÃO EXISTIR (conta seed antiga,
+   * primeiro admin criado direto no console), o usuário é tratado como `admin`
+   * para não travar o acesso que já funcionava antes desta feature.
+   *
+   * IMPORTANTE (segurança): uma FALHA de leitura (timeout, regra do Firestore,
+   * rede) NÃO cai no fallback admin — isso seria fail-open / escalada de
+   * privilégio (qualquer glitch de rede promoveria um editor a admin). Nesse
+   * caso o erro é propagado e quem chama trata como falha de autenticação.
+   */
+  private async buildSessionUser(firebaseUser: FirebaseUser): Promise<SessionUser> {
+    const fallbackName = firebaseUser.displayName || firebaseUser.email || 'Administrador';
+    const email = firebaseUser.email || '';
+
+    const ref = doc(this.firebaseService.firestore, 'users', firebaseUser.uid);
+    const snapshot = await this.firebaseService.withTimeout(
+      getDoc(ref),
+      'Tempo esgotado ao carregar o perfil do usuário.'
+    );
+
+    if (snapshot.exists()) {
+      const data = snapshot.data() as { name?: string; role?: string; permissions?: ModuleKey[] };
+      return {
+        id: firebaseUser.uid,
+        name: data.name || fallbackName,
+        email,
+        role: data.role || 'admin',
+        permissions: Array.isArray(data.permissions) ? data.permissions : []
+      };
+    }
+
+    // Doc genuinamente ausente → fallback admin (compatibilidade).
+    return {
+      id: firebaseUser.uid,
+      name: fallbackName,
+      email,
+      role: 'admin',
+      permissions: []
+    };
   }
 
   private setSession(authResult: AuthResponse): void {

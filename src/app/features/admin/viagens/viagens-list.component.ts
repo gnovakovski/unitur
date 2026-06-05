@@ -5,6 +5,7 @@ import { FormsModule, FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Va
 import { catchError, finalize, firstValueFrom, from, of, switchMap, timeout } from 'rxjs';
 import { Trip } from '../../../core/models/trip.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { PermissionService } from '../../../core/services/permission.service';
 import { TripService } from '../../../core/services/trip.service';
 import { CurrencyEntry, ExchangeRateService } from '../../../core/services/exchange-rate.service';
 
@@ -35,6 +36,7 @@ export class ViagensListComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
+    private permissionService: PermissionService,
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
     private fb: FormBuilder,
@@ -45,8 +47,21 @@ export class ViagensListComponent implements OnInit {
     });
   }
 
+  /** Pode gerenciar viagens (lista, criar, editar, excluir). */
+  get canViagens(): boolean {
+    return this.permissionService.can('viagens');
+  }
+
+  /** Pode abrir a modal de cotações de câmbio. */
+  get canMoeda(): boolean {
+    return this.permissionService.can('moeda');
+  }
+
   ngOnInit() {
-    this.loadTrips();
+    // Quem só tem permissão de moeda não carrega/visualiza a lista de viagens.
+    if (this.canViagens) {
+      this.loadTrips();
+    }
   }
 
   get currencyControls(): FormArray {
