@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, from, Observable, switchMap, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 import { ModuleKey } from '../models/user.model';
 
 export interface LoginCredentials {
@@ -31,6 +32,9 @@ export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'auth_user';
   private authReadyPromise: Promise<boolean> | null = null;
+
+  // Declarado antes do subject: getUserFromStorage() roda no inicializador.
+  private readonly storage = inject(BrowserStorageService);
 
   private currentUserSubject = new BehaviorSubject<any>(this.getUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -61,8 +65,8 @@ export class AuthService {
 
   logout(): void {
     signOut(this.firebaseService.auth).catch(() => undefined);
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
+    this.storage.removeItem(this.TOKEN_KEY);
+    this.storage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
     this.router.navigate(['/administrador']);
   }
@@ -104,20 +108,20 @@ export class AuthService {
     }
 
     this.authReadyPromise = new Promise(resolve => {
-      const timeoutId = window.setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         unsubscribe();
         this.authReadyPromise = null;
         resolve(false);
       }, 10000);
 
       const unsubscribe = onAuthStateChanged(auth, user => {
-        window.clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
         unsubscribe();
         this.authReadyPromise = null;
 
         if (!user) {
-          localStorage.removeItem(this.TOKEN_KEY);
-          localStorage.removeItem(this.USER_KEY);
+          this.storage.removeItem(this.TOKEN_KEY);
+          this.storage.removeItem(this.USER_KEY);
           this.currentUserSubject.next(null);
           resolve(false);
           return;
@@ -137,7 +141,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return this.storage.getItem(this.TOKEN_KEY);
   }
 
   getCurrentUser(): any {
@@ -189,14 +193,18 @@ export class AuthService {
   }
 
   private setSession(authResult: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, authResult.token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(authResult.user));
+    this.storage.setItem(this.TOKEN_KEY, authResult.token);
+    this.storage.setItem(this.USER_KEY, JSON.stringify(authResult.user));
     this.currentUserSubject.next(authResult.user);
   }
 
   private getUserFromStorage(): any {
-    const userStr = localStorage.getItem(this.USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      const userStr = this.storage.getItem(this.USER_KEY);
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
   }
 
   private isTokenExpired(token: string): boolean {

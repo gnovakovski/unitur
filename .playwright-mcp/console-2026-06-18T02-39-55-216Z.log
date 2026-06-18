@@ -1,0 +1,2 @@
+[    1446ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAccb4pfOFwtC34F-oD0cGZPTLbamBChJE:0
+[    3382ms] [LOG] Angular is running in development mode. @ http://localhost:4200/@fs/Users/nicolaslima/Desktop/projetos/Nicolas/unitur/.angular/cache/21.2.4/angular-app/vite/deps/chunk-DJ4QZ7JJ.js?v=f2085c0d:14340

@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 import {
   DEFAULT_CONTACT_CONTENT,
   DEFAULT_FOOTER_CONTENT,
@@ -28,6 +29,10 @@ export class SiteContentService {
   private readonly contactLocalKey = 'unitur_contact_content';
   private readonly homeLocalKey = 'unitur_home_content';
   private readonly footerLocalKey = 'unitur_footer_content';
+
+  // Declarado ANTES dos subjects: os getLocal*() rodam em inicializadores de
+  // campo (antes do constructor), então `storage` precisa já existir aqui.
+  private readonly storage = inject(BrowserStorageService);
 
   private headerSubject = new BehaviorSubject<SiteHeaderContent>(this.getLocalHeader());
   header$ = this.headerSubject.asObservable();
@@ -349,7 +354,7 @@ export class SiteContentService {
 
   private getLocalHeader(): SiteHeaderContent {
     try {
-      const raw = localStorage.getItem(this.headerLocalKey);
+      const raw = this.storage.getItem(this.headerLocalKey);
       if (!raw) return DEFAULT_HEADER_CONTENT;
       return this.normalizeHeader(JSON.parse(raw));
     } catch {
@@ -358,12 +363,12 @@ export class SiteContentService {
   }
 
   private persistLocalHeader(value: SiteHeaderContent): void {
-    try { localStorage.setItem(this.headerLocalKey, JSON.stringify(value)); } catch {}
+    this.storage.setItem(this.headerLocalKey, JSON.stringify(value));
   }
 
   private getLocalContact(): SiteContactContent {
     try {
-      const raw = localStorage.getItem(this.contactLocalKey);
+      const raw = this.storage.getItem(this.contactLocalKey);
       if (!raw) return DEFAULT_CONTACT_CONTENT;
       return { ...DEFAULT_CONTACT_CONTENT, ...JSON.parse(raw) };
     } catch {
@@ -372,12 +377,12 @@ export class SiteContentService {
   }
 
   private persistLocalContact(value: SiteContactContent): void {
-    try { localStorage.setItem(this.contactLocalKey, JSON.stringify(value)); } catch {}
+    this.storage.setItem(this.contactLocalKey, JSON.stringify(value));
   }
 
   private getLocalHome(): SiteHomeContent {
     try {
-      const raw = localStorage.getItem(this.homeLocalKey);
+      const raw = this.storage.getItem(this.homeLocalKey);
       if (!raw) return DEFAULT_HOME_CONTENT;
       return { ...DEFAULT_HOME_CONTENT, ...JSON.parse(raw) };
     } catch {
@@ -386,12 +391,12 @@ export class SiteContentService {
   }
 
   private persistLocalHome(value: SiteHomeContent): void {
-    try { localStorage.setItem(this.homeLocalKey, JSON.stringify(value)); } catch {}
+    this.storage.setItem(this.homeLocalKey, JSON.stringify(value));
   }
 
   private getLocalFooter(): SiteFooterContent {
     try {
-      const raw = localStorage.getItem(this.footerLocalKey);
+      const raw = this.storage.getItem(this.footerLocalKey);
       if (!raw) return DEFAULT_FOOTER_CONTENT;
       return { ...DEFAULT_FOOTER_CONTENT, ...JSON.parse(raw) };
     } catch {
@@ -400,6 +405,6 @@ export class SiteContentService {
   }
 
   private persistLocalFooter(value: SiteFooterContent): void {
-    try { localStorage.setItem(this.footerLocalKey, JSON.stringify(value)); } catch {}
+    this.storage.setItem(this.footerLocalKey, JSON.stringify(value));
   }
 }

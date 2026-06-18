@@ -22,7 +22,7 @@ export interface AdminModule {
  */
 export const ADMIN_MODULES: AdminModule[] = [
   { key: 'viagens',     label: 'Viagens',           route: '/admin/viagens',     icon: 'trip' },
-  { key: 'moeda',       label: 'Cotações de câmbio', /* sem rota: botão em Viagens */ icon: 'currency' },
+  { key: 'moeda',       label: 'Cotações de câmbio', route: '/admin/moeda',       icon: 'currency' },
   { key: 'posts',       label: 'Posts',             route: '/admin/posts',       icon: 'post' },
   { key: 'categorias',  label: 'Categorias',        route: '/admin/categorias',  icon: 'tag' },
   { key: 'depoimentos', label: 'Depoimentos',       route: '/admin/depoimentos', icon: 'quote' },

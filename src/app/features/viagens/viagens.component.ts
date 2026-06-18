@@ -7,6 +7,7 @@ import { TripService } from '../../core/services/trip.service';
 import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { SiteContentService } from '../../core/services/site-content.service';
+import { SeoService } from '../../core/services/seo.service';
 
 interface ViagemCard {
   slug: string;
@@ -55,7 +56,8 @@ export class ViagensComponent implements OnInit, OnDestroy {
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
     private siteContentService: SiteContentService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private seo: SeoService
   ) {}
 
   ngOnInit() {
@@ -88,6 +90,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
     const slug = this.route.snapshot.url.map(s => s.path).join('/');
     if (!slug || slug === 'viagens') {
       this.selectedCategory = 'Todas';
+      this.applySeo();
       return;
     }
 
@@ -103,6 +106,23 @@ export class ViagensComponent implements OnInit, OnDestroy {
     const link = links.find(l => (l.route || '').replace(/^\/+/, '').split('/').pop() === lastSegment);
 
     this.selectedCategory = (link && categoryById[link.id]) || 'Todas';
+    this.applySeo();
+  }
+
+  /** Meta tags da listagem; varia título/canonical conforme a categoria. */
+  private applySeo() {
+    const path = '/' + this.route.snapshot.url.map(s => s.path).join('/');
+    const canonicalPath = (path === '/' ? '/viagens' : path) + '/';
+
+    const isAll = this.selectedCategory === 'Todas';
+    const title = isAll
+      ? 'Viagens e Roteiros | Unitur Agência de Viagens'
+      : `${this.selectedCategory} | Unitur`;
+    const description = isAll
+      ? 'Confira todas as viagens e roteiros da Unitur: peregrinações, viagens regulares e curadoria pelo Brasil e pelo mundo.'
+      : `Conheça as opções de ${this.selectedCategory.toLowerCase()} organizadas pela Unitur, com acompanhamento em todas as etapas.`;
+
+    this.seo.setMeta({ title, description, canonicalPath, type: 'website' });
   }
 
   get filtered() {

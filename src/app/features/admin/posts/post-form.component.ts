@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -35,7 +35,10 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     categoryId: 'Categoria',
     tags: 'Tags',
     relatedTrips: 'Viagens relacionadas',
-    status: 'Status'
+    status: 'Status',
+    metaTitle: 'Meta título (SEO)',
+    metaDescription: 'Meta descrição (SEO)',
+    ogImage: 'Imagem de compartilhamento (SEO)'
   };
 
   protected getMainForm(): FormGroup { return this.postForm; }
@@ -57,7 +60,8 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     private tripService: TripService,
     private uploadService: UploadService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {
     super();
     this.postForm = this.fb.group({
@@ -71,7 +75,11 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
       categoryId: ['', [Validators.required]],
       tags: [''],
       relatedTrips: [[]],
-      status: ['draft', [Validators.required]]
+      status: ['draft', [Validators.required]],
+      // SEO (opcionais; vazio => fallback automático para title/excerpt/imagem)
+      metaTitle: ['', [Validators.maxLength(70)]],
+      metaDescription: ['', [Validators.maxLength(160)]],
+      ogImage: ['']
     });
   }
 
@@ -105,14 +113,19 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
           categoryId: post.categoryId,
           tags: post.tags.join(', '),
           relatedTrips: (post.relatedTrips || []).map(id => Number(id)).filter(Boolean).slice(0, 3),
-          status: post.status
+          status: post.status,
+          metaTitle: post.metaTitle || '',
+          metaDescription: post.metaDescription || '',
+          ogImage: post.ogImage || ''
         });
         this.postForm.markAsPristine();
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = 'Erro ao carregar post';
         this.loading = false;
+        this.cdr.markForCheck();
         console.error(err);
       }
     });
@@ -122,6 +135,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     this.categoryService.getAllCategories().subscribe({
       next: (categories) => {
         this.categories = categories.filter(c => c.type === 'blog' || c.type === 'both');
+        this.cdr.markForCheck();
       },
       error: (err) => console.error('Erro ao carregar categorias', err)
     });
@@ -131,6 +145,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     this.tripService.getTrips({ limit: 100 }).subscribe({
       next: (response) => {
         this.trips = response.data;
+        this.cdr.markForCheck();
       },
       error: (err) => console.error('Erro ao carregar viagens', err)
     });

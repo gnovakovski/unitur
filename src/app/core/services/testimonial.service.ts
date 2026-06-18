@@ -3,6 +3,7 @@ import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
 import { Testimonial } from '../models/testimonial.model';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 
 export interface TestimonialFilters {
   search?: string;
@@ -27,7 +28,10 @@ export class TestimonialService {
   private readonly collectionName = 'testimonials';
   private readonly localTestimonialsKey = 'unitur_admin_testimonials';
 
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private storage: BrowserStorageService
+  ) {}
 
   getTestimonials(filters?: TestimonialFilters): Observable<PaginatedResponse<Testimonial>> {
     const firestoreTestimonials$ = from(this.firebaseService.withTimeout(getDocs(query(
@@ -190,7 +194,7 @@ export class TestimonialService {
 
   private getLocalTestimonials(): Testimonial[] {
     try {
-      const rawTestimonials = JSON.parse(localStorage.getItem(this.localTestimonialsKey) || '[]') as Testimonial[];
+      const rawTestimonials = JSON.parse(this.storage.getItem(this.localTestimonialsKey) || '[]') as Testimonial[];
       return rawTestimonials.map(testimonial => ({
         ...testimonial,
         tripDate: testimonial.tripDate ? new Date(testimonial.tripDate) : undefined,
@@ -205,17 +209,17 @@ export class TestimonialService {
   private upsertLocalTestimonial(testimonial: Testimonial) {
     const testimonials = this.getLocalTestimonials();
     const nextTestimonials = this.dedupeTestimonials([...testimonials, testimonial]);
-    localStorage.setItem(this.localTestimonialsKey, JSON.stringify(nextTestimonials));
+    this.storage.setItem(this.localTestimonialsKey, JSON.stringify(nextTestimonials));
   }
 
   private replaceLocalTestimonials(testimonials: Testimonial[]) {
     const nextTestimonials = this.dedupeTestimonials([...this.getLocalTestimonials(), ...testimonials]);
-    localStorage.setItem(this.localTestimonialsKey, JSON.stringify(nextTestimonials));
+    this.storage.setItem(this.localTestimonialsKey, JSON.stringify(nextTestimonials));
   }
 
   private removeLocalTestimonial(id: number) {
     const nextTestimonials = this.getLocalTestimonials().filter(testimonial => Number(testimonial.id) !== Number(id));
-    localStorage.setItem(this.localTestimonialsKey, JSON.stringify(nextTestimonials));
+    this.storage.setItem(this.localTestimonialsKey, JSON.stringify(nextTestimonials));
   }
 
   private dedupeTestimonials(testimonials: Testimonial[]): Testimonial[] {

@@ -3,6 +3,7 @@ import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
 import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { Post } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 
 export interface PostFilters {
   search?: string;
@@ -27,7 +28,10 @@ export class PostService {
   private readonly collectionName = 'posts';
   private readonly localPostsKey = 'unitur_admin_posts';
 
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private storage: BrowserStorageService
+  ) {}
 
   getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
     // Sem orderBy() na query para evitar exclusão silenciosa de docs sem `createdAt`.
@@ -132,6 +136,9 @@ export class PostService {
       tags: post.tags || [],
       relatedTrips: post.relatedTrips || [],
       status: post.status || 'draft',
+      metaTitle: post.metaTitle || '',
+      metaDescription: post.metaDescription || '',
+      ogImage: post.ogImage || '',
       publishedAt: post.status === 'published' ? now : undefined,
       createdAt: now,
       updatedAt: now,
@@ -235,7 +242,7 @@ export class PostService {
 
   private getLocalPosts(): Post[] {
     try {
-      const rawPosts = JSON.parse(localStorage.getItem(this.localPostsKey) || '[]') as Post[];
+      const rawPosts = JSON.parse(this.storage.getItem(this.localPostsKey) || '[]') as Post[];
       return rawPosts.map(post => ({
         ...post,
         publishedAt: post.publishedAt ? new Date(post.publishedAt) : undefined,
@@ -250,17 +257,17 @@ export class PostService {
   private upsertLocalPost(post: Post) {
     const posts = this.getLocalPosts();
     const nextPosts = this.dedupePosts([...posts, post]);
-    localStorage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
+    this.storage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
   }
 
   private replaceLocalPosts(posts: Post[]) {
     // Source of truth = Firestore. Cache local é substituído para evitar zombies.
-    localStorage.setItem(this.localPostsKey, JSON.stringify(posts));
+    this.storage.setItem(this.localPostsKey, JSON.stringify(posts));
   }
 
   private removeLocalPost(id: number) {
     const nextPosts = this.getLocalPosts().filter(post => Number(post.id) !== Number(id));
-    localStorage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
+    this.storage.setItem(this.localPostsKey, JSON.stringify(nextPosts));
   }
 
   private dedupePosts(posts: Post[]): Post[] {

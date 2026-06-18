@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
@@ -6,6 +6,9 @@ import { PostService } from '../../core/services/post.service';
 import { TripService } from '../../core/services/trip.service';
 import { Post } from '../../core/models/post.model';
 import { Trip } from '../../core/models/trip.model';
+import { safeScrollToTop } from '../../core/utils/browser';
+import { SeoService } from '../../core/services/seo.service';
+import { postSeo } from '../../core/utils/seo-fallback';
 
 @Component({
   selector: 'app-blog-detail',
@@ -26,11 +29,13 @@ export class BlogDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private postService: PostService,
-    private tripService: TripService
+    private tripService: TripService,
+    private seo: SeoService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    safeScrollToTop();
     const origin = this.route.snapshot.queryParamMap.get('origin');
     this.origin = origin === 'home' || origin === 'footer' ? origin : 'blog';
 
@@ -57,6 +62,8 @@ export class BlogDetailComponent implements OnInit {
 
       if (!post) {
         this.error = 'Post não encontrado';
+        this.applyNotFoundSeo();
+        this.cdr.markForCheck();
         return;
       }
 
@@ -64,12 +71,57 @@ export class BlogDetailComponent implements OnInit {
       // Apenas rejeita explicitamente se status === 'draft'.
       if (post.status === 'draft') {
         this.error = 'Post não encontrado';
+        this.applyNotFoundSeo();
+        this.cdr.markForCheck();
         return;
       }
 
       this.post = post;
+      this.applyPostSeo(post);
       this.loadRelatedPosts(post);
       this.loadRelatedTrips(post);
+      this.cdr.markForCheck();
+    });
+  }
+
+  /** Define meta tags, canonical e JSON-LD (BlogPosting + Breadcrumb) do post. */
+  private applyPostSeo(post: Post): void {
+    const { title, description, image } = postSeo(post);
+    const canonicalPath = `/blog/${post.slug}/`;
+    const published = post.publishedAt || post.createdAt;
+
+    this.seo.setMeta({ title, description, image, canonicalPath, type: 'article' });
+
+    this.seo.setJsonLd('article', {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: title,
+      description,
+      image: image ? this.seo.absoluteUrl(image) : undefined,
+      url: this.seo.absoluteUrl(canonicalPath),
+      datePublished: published ? new Date(published).toISOString() : undefined,
+      dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+      author: { '@type': 'Person', name: post.author?.name || 'Unitur' },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Unitur Agência de Viagens e Turismo',
+        logo: { '@type': 'ImageObject', url: this.seo.absoluteUrl('/logo.jpeg') }
+      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': this.seo.absoluteUrl(canonicalPath) }
+    });
+
+    this.seo.setJsonLd('breadcrumb', this.seo.breadcrumbSchema([
+      { name: 'Início', path: '/' },
+      { name: 'Blog', path: '/blog/' },
+      { name: title, path: canonicalPath }
+    ]));
+  }
+
+  private applyNotFoundSeo(): void {
+    this.seo.setMeta({
+      title: 'Post não encontrado',
+      description: 'O artigo que você procura não está disponível.',
+      noindex: true
     });
   }
 
@@ -82,6 +134,7 @@ export class BlogDetailComponent implements OnInit {
       catchError(() => of({ data: [] as Post[], total: 0, page: 1, limit: 4, totalPages: 1 }))
     ).subscribe(response => {
       this.relatedPosts = response.data.filter(p => p.id !== post.id).slice(0, 3);
+      this.cdr.markForCheck();
     });
   }
 
@@ -96,6 +149,7 @@ export class BlogDetailComponent implements OnInit {
       catchError(() => of({ data: [] as Trip[], total: 0, page: 1, limit: 100, totalPages: 1 }))
     ).subscribe(response => {
       this.relatedTrips = response.data.filter(trip => ids.includes(Number(trip.id))).slice(0, 3);
+      this.cdr.markForCheck();
     });
   }
 

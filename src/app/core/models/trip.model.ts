@@ -3,6 +3,13 @@ export interface Trip {
   title: string;
   slug: string;
   tripType?: 'peregrinacao' | 'regular' | 'curadoria';
+  /**
+   * Define a URL canônica da viagem (SEO):
+   *   'nacional'      -> /roteiros-nacionais/<slug>/
+   *   'internacional' -> /roteiros-internacionais/<slug>/
+   * Para docs legados sem este campo, é inferido por `country` (ver tripScope()).
+   */
+  scope?: 'nacional' | 'internacional';
   destination: string;
   country?: string;
   period?: string;
@@ -45,6 +52,10 @@ export interface Trip {
   itinerary?: string; // HTML ou Markdown
   status: 'active' | 'inactive' | 'draft';
   featured: boolean;
+  // SEO (opcionais; fallback automático para title/shortDescription/mainImage)
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImage?: string;
   createdAt: Date;
   updatedAt: Date;
 }

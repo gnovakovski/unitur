@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -8,6 +8,7 @@ import { TripService } from '../../../core/services/trip.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { CurrencyEntry, ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode, parseForeignAmount } from '../../../core/utils/currency-format';
+import { tripScope } from '../../../core/utils/trip-scope';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 import { MultiImageUploadComponent, GalleryItem } from '../../../shared/components/multi-image-upload/multi-image-upload.component';
 import { HotelListUploadComponent, HotelItem } from '../../../shared/components/hotel-list-upload/hotel-list-upload.component';
@@ -68,7 +69,11 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     paymentMethods: 'Formas de pagamento',
     includedText: 'Incluso',
     notIncludedText: 'Não incluso',
-    cancellationPolicy: 'Política de cancelamento'
+    cancellationPolicy: 'Política de cancelamento',
+    scope: 'Abrangência (nacional/internacional)',
+    metaTitle: 'Meta título (SEO)',
+    metaDescription: 'Meta descrição (SEO)',
+    ogImage: 'Imagem de compartilhamento (SEO)'
   };
 
   protected getMainForm(): FormGroup { return this.tripForm; }
@@ -80,7 +85,8 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     private uploadService: UploadService,
     private exchangeRateService: ExchangeRateService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {
     super();
     this.tripForm = this.fb.group({
@@ -107,7 +113,13 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       itinerary: [''],
       includedText: [''],
       notIncludedText: [''],
-      cancellationPolicy: ['']
+      cancellationPolicy: [''],
+      // Define a URL canônica: /roteiros-nacionais/ ou /roteiros-internacionais/
+      scope: ['internacional', [Validators.required]],
+      // SEO (opcionais; vazio => fallback p/ título, chamada curta e imagem principal)
+      metaTitle: ['', [Validators.maxLength(70)]],
+      metaDescription: ['', [Validators.maxLength(160)]],
+      ogImage: ['']
     });
   }
 
@@ -135,6 +147,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   ngOnInit() {
     this.exchangeRateService.rates$.subscribe(content => {
       this.availableCurrencies = content.currencies;
+      this.cdr.markForCheck();
     });
     this.exchangeRateService.loadRates().subscribe();
 
@@ -176,16 +189,23 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           itinerary: trip.itinerary || '',
           includedText: (trip.included || []).join('\n'),
           notIncludedText: (trip.notIncluded || []).join('\n'),
-          cancellationPolicy: trip.cancellationPolicy || ''
+          cancellationPolicy: trip.cancellationPolicy || '',
+          // Docs legados sem `scope` recebem o valor inferido pelo país.
+          scope: tripScope(trip),
+          metaTitle: trip.metaTitle || '',
+          metaDescription: trip.metaDescription || '',
+          ogImage: trip.ogImage || ''
         });
         this.itineraryDays = this.parseItineraryDays(trip.itinerary || '');
         this.paymentBlocks = this.parsePaymentBlocks(trip.paymentMethods);
         this.tripForm.markAsPristine();
         this.lastExchangeRate = trip.foreignExchangeRate;
         this.updateConvertedPrice();
+        this.cdr.markForCheck();
       },
       error: err => {
         this.error = err?.message || 'Erro ao carregar viagem.';
+        this.cdr.markForCheck();
       }
     });
   }

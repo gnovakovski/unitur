@@ -5,6 +5,9 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { finalize, firstValueFrom, timeout } from 'rxjs';
 import { Banner } from '../../../core/models/banner.model';
 import { BannerService } from '../../../core/services/banner.service';
+import { TripService } from '../../../core/services/trip.service';
+import { Trip } from '../../../core/models/trip.model';
+import { tripCanonicalPath } from '../../../core/utils/trip-scope';
 import { UploadService } from '../../../core/services/upload.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
@@ -158,6 +161,31 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
             formControlName="imageUrl">
           </app-image-upload>
 
+          <div class="af-grid af-grid--2">
+            <div class="af-field af-field--span-2">
+              <label class="af-label">Botão de direcionamento <span class="af-label__optional">opcional</span></label>
+              <p class="af-hint">Escolha para onde o banner leva ao clicar. Deixe em "Nenhum" para um banner sem botão.</p>
+              <select class="af-control" formControlName="link">
+                <option value="">Nenhum (banner sem botão)</option>
+                @for (g of routeGroups; track g.group) {
+                  <optgroup [label]="g.group">
+                    @for (opt of g.options; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </optgroup>
+                }
+              </select>
+            </div>
+
+            @if (bannerForm.get('link')?.value) {
+              <div class="af-field af-field--span-2">
+                <label class="af-label">Texto do botão</label>
+                <input class="af-control" formControlName="buttonText" placeholder="Ex: Saiba mais, Ver roteiro, Reservar">
+                <p class="af-hint">Se vazio, o botão mostra "Saiba mais".</p>
+              </div>
+            }
+          </div>
+
           @if (saving && savingStep) {
             <div class="af-alert af-alert--info">
               <span class="af-alert__icon">i</span>
@@ -205,16 +233,22 @@ export class BannersListComponent implements OnInit {
   changedFields: string[] = [];
   reordering = false;
 
+  /** Opções de rota para o botão do banner (rotas fixas + viagens cadastradas). */
+  routeOptions: Array<{ label: string; value: string; group: string }> = [];
+
   private readonly fieldLabels: Record<string, string> = {
     title: 'Título',
     subtitle: 'Subtítulo',
     imageUrl: 'Imagem',
-    status: 'Status'
+    status: 'Status',
+    link: 'Link do botão',
+    buttonText: 'Texto do botão'
   };
 
   constructor(
     private fb: FormBuilder,
     private bannerService: BannerService,
+    private tripService: TripService,
     private uploadService: UploadService,
     private cdr: ChangeDetectorRef
   ) {
@@ -222,12 +256,47 @@ export class BannersListComponent implements OnInit {
       title: ['', [Validators.required]],
       subtitle: [''],
       imageUrl: ['', [Validators.required]],
-      status: ['active', [Validators.required]]
+      status: ['active', [Validators.required]],
+      link: [''],
+      buttonText: ['']
     });
   }
 
   ngOnInit() {
     this.loadBanners();
+    this.loadRouteOptions();
+  }
+
+  /** Monta as opções de rota: páginas fixas + cada viagem ativa pelo path canônico. */
+  private loadRouteOptions() {
+    const fixed = [
+      { label: 'Home', value: '/', group: 'Páginas' },
+      { label: 'Viagens (listagem)', value: '/viagens', group: 'Páginas' },
+      { label: 'Blog', value: '/blog', group: 'Páginas' },
+      { label: 'Sobre', value: '/sobre/sobre-a-unitur', group: 'Páginas' },
+      { label: 'Contato', value: '/contato', group: 'Páginas' }
+    ];
+    this.routeOptions = [...fixed];
+
+    this.tripService.getTrips({ status: 'active', limit: 100 }).subscribe(res => {
+      const trips = (res.data || []).filter(t => t.slug || t.title);
+      const tripOpts = trips.map((t: Trip) => ({
+        label: t.title,
+        value: tripCanonicalPath(t),
+        group: 'Viagens'
+      }));
+      this.routeOptions = [...fixed, ...tripOpts];
+      this.cdr.detectChanges();
+    });
+  }
+
+  /** Agrupa as opções por categoria para o <optgroup> do select. */
+  get routeGroups(): Array<{ group: string; options: Array<{ label: string; value: string }> }> {
+    const groups: Record<string, Array<{ label: string; value: string }>> = {};
+    for (const opt of this.routeOptions) {
+      (groups[opt.group] ||= []).push({ label: opt.label, value: opt.value });
+    }
+    return Object.entries(groups).map(([group, options]) => ({ group, options }));
   }
 
   private showSuccess(message: string) {
@@ -253,12 +322,12 @@ export class BannersListComponent implements OnInit {
       next: banners => {
         this.banners = banners;
         this.loading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: err => {
         this.error = err?.message || 'Erro ao carregar banners.';
         this.loading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -270,7 +339,9 @@ export class BannersListComponent implements OnInit {
       title: banner?.title || '',
       subtitle: banner?.subtitle || '',
       imageUrl: banner?.imageUrl || '',
-      status: banner?.status || 'active'
+      status: banner?.status || 'active',
+      link: banner?.link || '',
+      buttonText: banner?.buttonText || ''
     });
     this.bannerForm.markAsPristine();
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -24,7 +24,8 @@ export class AdminLayoutComponent implements OnInit {
     private authService: AuthService,
     private permissionService: PermissionService,
     private siteContentService: SiteContentService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -32,6 +33,7 @@ export class AdminLayoutComponent implements OnInit {
       this.currentUser = user;
       // Recalcula o menu sempre que a sessão muda (login, troca de permissões).
       this.menuItems = MENU_MODULES.filter(m => this.permissionService.can(m.key));
+      this.cdr.markForCheck();
     });
     this.siteContentService.migrateDefaultsIfMissing();
   }

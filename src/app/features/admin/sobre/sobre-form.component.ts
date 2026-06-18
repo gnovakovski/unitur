@@ -10,6 +10,7 @@ import {
 } from '../../../core/models/about-content.model';
 import { AboutContentService } from '../../../core/services/about-content.service';
 import { UploadService } from '../../../core/services/upload.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 
 @Component({
@@ -36,7 +37,8 @@ export class SobreFormComponent implements OnInit {
     private aboutContentService: AboutContentService,
     private uploadService: UploadService,
     private cdr: ChangeDetectorRef,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -244,6 +246,7 @@ export class SobreFormComponent implements OnInit {
         this.feedback = 'Conteúdo institucional salvo com sucesso. As alterações já estão no site.';
         this.saving = false;
         this.savingStep = '';
+        this.toast.success('Conteúdo institucional salvo com sucesso.');
         this.cdr.detectChanges();
         setTimeout(() => {
           this.feedback = '';
@@ -255,6 +258,7 @@ export class SobreFormComponent implements OnInit {
         this.error = err?.message || 'Erro ao salvar conteúdo.';
         this.saving = false;
         this.savingStep = '';
+        this.toast.error(this.error);
         this.cdr.detectChanges();
       });
     }

@@ -11,6 +11,10 @@ export interface Post {
   tags: string[];
   relatedTrips?: number[];
   status: 'draft' | 'published';
+  // SEO (opcionais; fallback automático para title/excerpt/featuredImage)
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImage?: string;
   publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;

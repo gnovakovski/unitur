@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
@@ -25,7 +25,8 @@ export class LoginComponent {
     private authService: AuthService,
     private permissionService: PermissionService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {
     // Redireciona se já estiver autenticado E tiver acesso a algum módulo.
     // Sem acesso, mantém na tela de login (evita loop de redirect p/ o login).
@@ -71,6 +72,7 @@ export class LoginComponent {
           this.authService.logout();
           this.error = 'Seu usuário ainda não tem acesso a nenhum módulo. Solicite a um administrador que libere suas permissões.';
           this.loading = false;
+          this.cdr.markForCheck();
           return;
         }
 
@@ -81,6 +83,7 @@ export class LoginComponent {
       error: (err) => {
         this.error = err?.message || err?.error?.message || 'Erro ao fazer login. Verifique suas credenciais.';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }

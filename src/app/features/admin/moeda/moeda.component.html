@@ -1,0 +1,102 @@
+<section class="af-page">
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Cotações de câmbio</h1>
+      <p class="af-page-header__subtitle">
+        Moedas disponíveis e quanto vale 1 unidade de cada uma em Reais (R$).
+      </p>
+    </div>
+    <div class="af-page-header__actions">
+      <button class="af-btn af-btn--primary" type="button" (click)="openCreate()">+ Nova moeda</button>
+    </div>
+  </header>
+
+  @if (loading) {
+    <p class="af-hint">Carregando cotações...</p>
+  } @else if (currencies.length === 0) {
+    <div class="af-card moeda-empty">
+      <p>Nenhuma moeda cadastrada ainda.</p>
+      <button class="af-btn af-btn--primary" type="button" (click)="openCreate()">+ Cadastrar primeira moeda</button>
+    </div>
+  } @else {
+    <div class="table-card">
+      <table class="moeda-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nome</th>
+            <th>Símbolo</th>
+            <th>Valor em R$</th>
+            <th class="moeda-table__actions">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of currencies; track c.code; let i = $index) {
+            <tr>
+              <td><strong>{{ c.code }}</strong></td>
+              <td>{{ c.name }}</td>
+              <td>{{ c.symbol || '—' }}</td>
+              <td>{{ formatRate(c.rate) }}</td>
+              <td class="moeda-table__actions">
+                <button class="af-btn af-btn--secondary af-btn--sm" type="button" (click)="openEdit(i)">Editar</button>
+                <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="removeCurrency(i)">Excluir</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (updatedAt) {
+      <p class="af-hint">Última atualização: {{ updatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+    }
+  }
+</section>
+
+@if (modalOpen) {
+  <div class="af-modal-overlay" (click)="closeModal()">
+    <form class="af-modal" [formGroup]="currencyForm" (ngSubmit)="submitCurrency()" (click)="$event.stopPropagation()">
+      <div class="af-modal__header">
+        <h2 class="af-modal__title">{{ editingIndex === null ? 'Nova moeda' : 'Editar moeda' }}</h2>
+        <button class="af-modal__close" type="button" (click)="closeModal()" aria-label="Fechar">✕</button>
+      </div>
+
+      @if (modalError) {
+        <div class="af-alert af-alert--error">
+          <span class="af-alert__icon">!</span>
+          <span>{{ modalError }}</span>
+        </div>
+      }
+
+      <div class="af-field">
+        <label class="af-label">Código <span class="af-label__required">*</span></label>
+        <input class="af-control" type="text" formControlName="code" maxlength="6" placeholder="USD">
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Nome da moeda <span class="af-label__required">*</span></label>
+        <input class="af-control" type="text" formControlName="name" placeholder="Dólar Americano">
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Símbolo <span class="af-label__optional">opcional</span></label>
+        <input class="af-control" type="text" formControlName="symbol" maxlength="6" placeholder="US$">
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Valor em R$</label>
+        <div class="af-input-group">
+          <span class="af-input-group__addon">R$</span>
+          <input class="af-control" type="number" step="0.01" min="0" formControlName="rate" placeholder="Ex: 5,40">
+        </div>
+      </div>
+
+      <div class="af-actions">
+        <button class="af-btn af-btn--secondary" type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
+        <button class="af-btn af-btn--primary" type="submit" [disabled]="saving">
+          {{ saving ? 'Salvando...' : (editingIndex === null ? 'Cadastrar moeda' : 'Salvar alterações') }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

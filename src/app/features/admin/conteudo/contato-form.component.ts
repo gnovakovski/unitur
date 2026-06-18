@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom, timeout } from 'rxjs';
 import { DEFAULT_CONTACT_CONTENT } from '../../../core/models/site-content.model';
 import { SiteContentService } from '../../../core/services/site-content.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-contato-form',
@@ -25,7 +26,8 @@ export class ContatoFormComponent implements OnInit {
     private siteContentService: SiteContentService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {
     this.form = this.fb.group({
       phone: [''],
@@ -70,6 +72,7 @@ export class ContatoFormComponent implements OnInit {
       this.ngZone.run(() => {
         this.saved = true;
         this.saving = false;
+        this.toast.success('Dados de contato salvos com sucesso.');
         this.cdr.detectChanges();
         setTimeout(() => {
           this.saved = false;
@@ -80,6 +83,7 @@ export class ContatoFormComponent implements OnInit {
       this.ngZone.run(() => {
         this.error = err?.message || 'Falha ao salvar.';
         this.saving = false;
+        this.toast.error(this.error);
         this.cdr.detectChanges();
       });
     }

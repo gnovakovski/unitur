@@ -196,6 +196,45 @@
           </div>
         </div>
 
+        <div class="af-card">
+          <h3 class="af-section__title">SEO (opcional)</h3>
+          <p class="af-hint">Deixe em branco para usar automaticamente o título, o resumo e a imagem destacada do post.</p>
+
+          <div class="af-field">
+            <label for="metaTitle" class="af-label">Meta título</label>
+            <input
+              id="metaTitle"
+              type="text"
+              formControlName="metaTitle"
+              class="af-control"
+              maxlength="70"
+              placeholder="Título exibido no Google e nas abas do navegador">
+            <span class="af-hint">{{ (postForm.get('metaTitle')?.value || '').length }}/70 — ideal até 60 caracteres.</span>
+          </div>
+
+          <div class="af-field">
+            <label for="metaDescription" class="af-label">Meta descrição</label>
+            <textarea
+              id="metaDescription"
+              formControlName="metaDescription"
+              class="af-control"
+              rows="3"
+              maxlength="160"
+              placeholder="Resumo que aparece nos resultados de busca"></textarea>
+            <span class="af-hint">{{ (postForm.get('metaDescription')?.value || '').length }}/160 — ideal entre 120 e 155 caracteres.</span>
+          </div>
+
+          <div class="af-field">
+            <label for="ogImage" class="af-label">Imagem de compartilhamento (URL)</label>
+            <input
+              id="ogImage"
+              type="text"
+              formControlName="ogImage"
+              class="af-control"
+              placeholder="https://... (1200×630). Vazio usa a imagem destacada.">
+          </div>
+        </div>
+
         @if (error) {
           <div class="af-alert af-alert--error">
             <span class="af-alert__icon">!</span>

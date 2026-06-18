@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 import {
   DEFAULT_ABOUT_CONTENT,
   SiteAboutContent
@@ -15,6 +16,9 @@ export class AboutContentService {
   private readonly collectionName = 'siteContent';
   private readonly docId = 'about';
   private readonly localKey = 'unitur_about_content';
+
+  // Declarado antes do subject: getLocal() roda no inicializador.
+  private readonly storage = inject(BrowserStorageService);
 
   private contentSubject = new BehaviorSubject<SiteAboutContent>(this.getLocal());
   content$ = this.contentSubject.asObservable();
@@ -73,7 +77,7 @@ export class AboutContentService {
 
   private getLocal(): SiteAboutContent {
     try {
-      const raw = localStorage.getItem(this.localKey);
+      const raw = this.storage.getItem(this.localKey);
       if (!raw) return DEFAULT_ABOUT_CONTENT;
       const parsed = JSON.parse(raw) as SiteAboutContent;
       return this.mergeWithDefaults(parsed);
@@ -83,11 +87,7 @@ export class AboutContentService {
   }
 
   private persistLocal(value: SiteAboutContent): void {
-    try {
-      localStorage.setItem(this.localKey, JSON.stringify(value));
-    } catch {
-      // ignore storage errors
-    }
+    this.storage.setItem(this.localKey, JSON.stringify(value));
   }
 
   private mergeWithDefaults(value: Partial<SiteAboutContent>): SiteAboutContent {

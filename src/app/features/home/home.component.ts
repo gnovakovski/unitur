@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
@@ -17,6 +17,7 @@ import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about
 import { SiteContentService } from '../../core/services/site-content.service';
 import { DEFAULT_HOME_CONTENT, SiteHomeContent } from '../../core/models/site-content.model';
 import { Banner } from '../../core/models/banner.model';
+import { SeoService } from '../../core/services/seo.service';
 
 interface HomeTripCard {
   slug: string;
@@ -42,6 +43,8 @@ interface HomeBannerSlide {
   imageUrl: string;
   title: string;
   subtitle: string;
+  link?: string;
+  buttonText?: string;
 }
 
 interface HomeCuradoriaCard {
@@ -92,6 +95,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   searchStartDate = '';
   searchEndDate = '';
   private slideInterval: any;
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor(
     private tripService: TripService,
@@ -102,7 +106,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private siteContentService: SiteContentService,
     private exchangeRateService: ExchangeRateService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private seo: SeoService
   ) {}
 
   homeAbout: HomeAboutContent = JSON.parse(JSON.stringify(DEFAULT_ABOUT_CONTENT.home));
@@ -123,12 +128,35 @@ export class HomeComponent implements OnInit, OnDestroy {
   blogPosts: HomeBlogPostCard[] = [];
 
   ngOnInit() {
+    this.applySeo();
     this.loadBanners();
     this.loadTrips();
     this.loadTestimonials();
     this.loadPosts();
     this.loadAboutContent();
     this.loadHomeContent();
+  }
+
+  private applySeo() {
+    this.seo.setMeta({
+      title: 'Unitur Agência de Viagens e Turismo | Peregrinações e Roteiros',
+      description: 'A Unitur é uma agência de viagens especializada em peregrinações e roteiros para grupos pelo Brasil e diversos destinos internacionais. Conheça nossas viagens.',
+      canonicalPath: '/',
+      type: 'website'
+    });
+    // JSON-LD global: agência + site (com SearchAction).
+    this.seo.setJsonLd('organization', this.seo.organizationSchema());
+    this.seo.setJsonLd('website', {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Unitur',
+      url: this.seo.absoluteUrl('/'),
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: this.seo.absoluteUrl('/viagens?destination={search_term_string}'),
+        'query-input': 'required name=search_term_string'
+      }
+    });
   }
 
   private loadAboutContent() {
@@ -154,6 +182,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   startSlideShow() {
+    // O autoplay do carousel é puramente visual; não roda no SSR.
+    if (!this.isBrowser) return;
     this.slideInterval = setInterval(() => {
       this.nextSlide();
     }, 5000);
@@ -234,7 +264,9 @@ export class HomeComponent implements OnInit, OnDestroy {
           id: String(banner.id),
           imageUrl: this.normalizeImage(banner.imageUrl),
           title: banner.title || '',
-          subtitle: banner.subtitle || ''
+          subtitle: banner.subtitle || '',
+          link: banner.link || '',
+          buttonText: banner.buttonText || ''
         }));
       this.currentSlide = 0;
       if (this.bannerSlides.length > 0) {

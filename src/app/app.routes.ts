@@ -14,13 +14,37 @@ export const routes: Routes = [
     path: 'about',
     loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent)
   },
+  // Paridade com o WordPress antigo: /sobre/sobre-a-unitur e /contato
+  {
+    path: 'sobre/sobre-a-unitur',
+    loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent)
+  },
+  {
+    path: 'contato',
+    loadComponent: () => import('./features/contato/contato.component').then(m => m.ContatoComponent)
+  },
   {
     path: 'viagens',
+    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+  },
+  // Listagem por categoria, padrão WordPress: /categoria-internacional/<cat>
+  {
+    path: 'categoria-internacional/:cat',
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
   {
     matcher: viagensCategoryMatcher,
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+  },
+  // Detalhe da viagem nos caminhos do WordPress antigo (preserva ranking).
+  // O canonical é resolvido por `scope` dentro do ProductDetailComponent.
+  {
+    path: 'roteiros-internacionais/:slug',
+    loadComponent: () => import('./features/product/product-detail.component').then(m => m.ProductDetailComponent)
+  },
+  {
+    path: 'roteiros-nacionais/:slug',
+    loadComponent: () => import('./features/product/product-detail.component').then(m => m.ProductDetailComponent)
   },
   {
     path: 'viagens/:slug',
@@ -28,6 +52,15 @@ export const routes: Routes = [
   },
   {
     path: 'blog',
+    loadComponent: () => import('./features/blog/blog-list.component').then(m => m.BlogListComponent)
+  },
+  // Paginação e categorias do blog no padrão WordPress.
+  {
+    path: 'blog/page/:page',
+    loadComponent: () => import('./features/blog/blog-list.component').then(m => m.BlogListComponent)
+  },
+  {
+    path: 'blog/categoria/:cat',
     loadComponent: () => import('./features/blog/blog-list.component').then(m => m.BlogListComponent)
   },
   {
@@ -86,9 +119,13 @@ export const routes: Routes = [
       },
       {
         path: 'viagens',
-        // moeda também entra: a modal de cotações de câmbio mora nesta tela
-        canActivate: [permissionGuard(['viagens', 'moeda'])],
+        canActivate: [permissionGuard('viagens')],
         loadComponent: () => import('./features/admin/viagens/viagens-list.component').then(m => m.ViagensListComponent)
+      },
+      {
+        path: 'moeda',
+        canActivate: [permissionGuard('moeda')],
+        loadComponent: () => import('./features/admin/moeda/moeda.component').then(m => m.MoedaComponent)
       },
       {
         path: 'categorias',
@@ -151,6 +188,6 @@ export const routes: Routes = [
 
   {
     path: '**',
-    redirectTo: ''
+    loadComponent: () => import('./features/not-found/not-found.component').then(m => m.NotFoundComponent)
   }
 ];

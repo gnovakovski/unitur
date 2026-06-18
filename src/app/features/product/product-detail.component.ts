@@ -1,11 +1,16 @@
-import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
 import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
+import { safeScrollToTop } from '../../core/utils/browser';
+import { SeoService } from '../../core/services/seo.service';
+import { SiteContentService } from '../../core/services/site-content.service';
+import { tripScope, tripCanonicalPath } from '../../core/utils/trip-scope';
+import { tripSeo } from '../../core/utils/seo-fallback';
 
 interface ProductTrip {
   slug: string;
@@ -54,20 +59,43 @@ export class ProductDetailComponent implements OnInit {
   galleryLightboxOpen = false;
   hotelIndex = 0;
   hotelLightboxOpen = false;
+  /** Número de WhatsApp (só dígitos) vindo do conteúdo de contato do site. */
+  private whatsappNumber = '';
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor(
     private route: ActivatedRoute,
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
     private cdr: ChangeDetectorRef,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private seo: SeoService,
+    private siteContentService: SiteContentService
   ) {}
 
+  /**
+   * Link de WhatsApp dinâmico: número real do contato + mensagem com o nome
+   * da viagem. Se não houver número cadastrado, usa só o texto (wa.me/?text=).
+   */
+  get whatsappLink(): string {
+    const nome = this.trip?.title || 'esta viagem';
+    const texto = `Olá, estava vendo o roteiro ${nome} e gostaria de fazer a minha reserva, pode me ajudar?`;
+    const base = this.whatsappNumber ? `https://wa.me/${this.whatsappNumber}` : 'https://wa.me/';
+    return `${base}?text=${encodeURIComponent(texto)}`;
+  }
+
   ngOnInit() {
+    // Número de WhatsApp do contato do site (usado no botão "Reservar agora").
+    this.siteContentService.contact$.subscribe(contact => {
+      this.whatsappNumber = String(contact?.whatsapp || '').replace(/\D/g, '');
+      this.cdr.detectChanges();
+    });
+    this.siteContentService.loadContact().subscribe();
+
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
       this.loadTrip(slug);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      safeScrollToTop('smooth');
     });
   }
 
@@ -81,6 +109,8 @@ export class ProductDetailComponent implements OnInit {
    * de download ao trocar no carrossel.
    */
   private preloadGalleryImages() {
+    // `Image` não existe no SSR; o preload é puramente uma otimização de browser.
+    if (!this.isBrowser) return;
     const urls = [
       ...this.galleryImages,
       ...this.hotelItems.map(h => h.image)
@@ -206,11 +236,14 @@ export class ProductDetailComponent implements OnInit {
           if (!trip) {
             this.trip = null;
             this.notFound = true;
+            this.applyNotFoundSeo();
           } else if (trip.status === 'inactive' || trip.status === 'draft') {
             this.trip = null;
             this.notFound = true;
+            this.applyNotFoundSeo();
           } else {
             this.trip = this.mapFirestoreTrip(trip);
+            this.applyTripSeo(trip);
             this.preloadGalleryImages();
           }
 
@@ -225,6 +258,51 @@ export class ProductDetailComponent implements OnInit {
           this.cdr.detectChanges();
         });
       }
+    });
+  }
+
+  /** Define meta tags, canonical e JSON-LD (Product + Breadcrumb) da viagem. */
+  private applyTripSeo(trip: Trip): void {
+    const { title, description, image } = tripSeo(trip);
+    const canonicalPath = tripCanonicalPath(trip);
+    const scopeLabel = tripScope(trip) === 'nacional' ? 'Roteiros Nacionais' : 'Roteiros Internacionais';
+    const scopePath = tripScope(trip) === 'nacional' ? '/roteiros-nacionais/' : '/roteiros-internacionais/';
+
+    this.seo.setMeta({ title, description, image, canonicalPath, type: 'product' });
+
+    this.seo.setJsonLd('product', {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: title,
+      description,
+      image: this.seo.absoluteUrl(image),
+      url: this.seo.absoluteUrl(canonicalPath),
+      brand: { '@type': 'Brand', name: 'Unitur' },
+      ...(trip.price && Number(trip.price) > 0
+        ? {
+            offers: {
+              '@type': 'Offer',
+              price: Number(trip.price),
+              priceCurrency: 'BRL',
+              availability: 'https://schema.org/InStock',
+              url: this.seo.absoluteUrl(canonicalPath)
+            }
+          }
+        : {})
+    });
+
+    this.seo.setJsonLd('breadcrumb', this.seo.breadcrumbSchema([
+      { name: 'Início', path: '/' },
+      { name: scopeLabel, path: scopePath },
+      { name: title, path: canonicalPath }
+    ]));
+  }
+
+  private applyNotFoundSeo(): void {
+    this.seo.setMeta({
+      title: 'Viagem não encontrada',
+      description: 'A viagem que você procura não está mais disponível.',
+      noindex: true
     });
   }
 

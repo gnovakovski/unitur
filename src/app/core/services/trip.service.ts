@@ -3,6 +3,8 @@ import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import { Trip } from '../models/trip.model';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
+import { inferTripScope } from '../utils/trip-scope';
 
 export interface TripFilters {
   search?: string;
@@ -27,7 +29,10 @@ export class TripService {
   private readonly collectionName = 'trips';
   private readonly localTripsKey = 'unitur_admin_trips';
 
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private storage: BrowserStorageService
+  ) {}
 
   getTrips(filters?: TripFilters): Observable<PaginatedResponse<Trip>> {
     // Não usamos orderBy() na query porque documentos sem o campo `createdAt`
@@ -109,6 +114,7 @@ export class TripService {
       title: trip.title || '',
       slug: trip.slug || this.generateSlug(trip.title || ''),
       tripType: trip.tripType || 'regular',
+      scope: trip.scope || inferTripScope(trip),
       destination: trip.destination || '',
       country: trip.country || trip.destination || '',
       period: trip.period || '',
@@ -139,6 +145,9 @@ export class TripService {
       itinerary: trip.itinerary,
       status: trip.status || 'active',
       featured: Boolean(trip.featured),
+      metaTitle: trip.metaTitle || '',
+      metaDescription: trip.metaDescription || '',
+      ogImage: trip.ogImage || '',
       createdAt: now,
       updatedAt: now
     };
@@ -276,7 +285,7 @@ export class TripService {
 
   private getLocalTrips(): Trip[] {
     try {
-      const rawTrips = JSON.parse(localStorage.getItem(this.localTripsKey) || '[]') as Trip[];
+      const rawTrips = JSON.parse(this.storage.getItem(this.localTripsKey) || '[]') as Trip[];
       return rawTrips.map(trip => ({
         ...trip,
         startDate: trip.startDate ? new Date(trip.startDate) : new Date(),
@@ -292,18 +301,18 @@ export class TripService {
   private upsertLocalTrip(trip: Trip) {
     const trips = this.getLocalTrips();
     const nextTrips = this.dedupeTrips([...trips, trip]);
-    localStorage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
+    this.storage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
   }
 
   private removeLocalTrip(id: number) {
     const nextTrips = this.getLocalTrips().filter(trip => Number(trip.id) !== Number(id));
-    localStorage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
+    this.storage.setItem(this.localTripsKey, JSON.stringify(nextTrips));
   }
 
   private replaceLocalTrips(trips: Trip[]) {
     // Substitui o cache local pelo que veio do Firestore (source of truth).
     // Isso evita que viagens deletadas no Firestore voltem como zombies do cache.
-    localStorage.setItem(this.localTripsKey, JSON.stringify(trips));
+    this.storage.setItem(this.localTripsKey, JSON.stringify(trips));
   }
 
   private getTime(date?: Date): number {

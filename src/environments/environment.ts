@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://127.0.0.1:3000/api',
+  siteUrl: 'https://www.unitur.com.br',
   firebase: {
     apiKey: 'AIzaSyAccb4pfOFwtC34F-oD0cGZPTLbamBChJE',
     authDomain: 'unitur-e7882.firebaseapp.com',

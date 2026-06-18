@@ -1,5 +1,6 @@
 import { UrlMatcher, UrlSegment } from '@angular/router';
 import { DEFAULT_HEADER_CONTENT } from '../models/site-content.model';
+import { safeLocalStorageGet } from '../utils/browser';
 
 const STORAGE_KEY = 'unitur_header_content';
 
@@ -32,7 +33,8 @@ export const viagensCategoryMatcher: UrlMatcher = (segments: UrlSegment[]) => {
 function readCategorySlugs(): Set<string> {
   const fromDefaults = DEFAULT_HEADER_CONTENT.links.map(link => slugFromRoute(link.route));
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    // SSR-safe: no servidor devolve null e usamos apenas os defaults.
+    const raw = safeLocalStorageGet(STORAGE_KEY);
     if (!raw) return new Set(fromDefaults);
     const parsed = JSON.parse(raw) as { links?: Array<{ route?: string }> };
     const fromStorage = (parsed.links || []).map(link => slugFromRoute(link?.route || ''));

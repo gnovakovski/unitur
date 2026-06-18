@@ -355,6 +355,54 @@
       </div>
     </div>
 
+    <!-- Seção 6: SEO e indexação -->
+    <div class="af-section af-section--no-border">
+      <div class="af-section__header">
+        <span class="af-section__step">6</span>
+        <h2 class="af-section__title">SEO e indexação</h2>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Abrangência <span class="af-label__required">*</span></label>
+        <p class="af-hint">Define a URL pública e como o Google indexa esta viagem.</p>
+        <select class="af-control" formControlName="scope">
+          <option value="internacional">Internacional — /roteiros-internacionais/</option>
+          <option value="nacional">Nacional — /roteiros-nacionais/</option>
+        </select>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Meta título</label>
+        <input
+          type="text"
+          class="af-control"
+          formControlName="metaTitle"
+          maxlength="70"
+          placeholder="Vazio usa o nome da viagem">
+        <span class="af-hint">{{ (tripForm.get('metaTitle')?.value || '').length }}/70 — ideal até 60 caracteres.</span>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Meta descrição</label>
+        <textarea
+          class="af-control af-control--textarea"
+          rows="3"
+          formControlName="metaDescription"
+          maxlength="160"
+          placeholder="Vazio usa a chamada curta da viagem"></textarea>
+        <span class="af-hint">{{ (tripForm.get('metaDescription')?.value || '').length }}/160 — ideal entre 120 e 155 caracteres.</span>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Imagem de compartilhamento (URL)</label>
+        <input
+          type="text"
+          class="af-control"
+          formControlName="ogImage"
+          placeholder="https://... (1200×630). Vazio usa a imagem principal.">
+      </div>
+    </div>
+
     @if (saving && savingStep) {
       <div class="af-alert af-alert--info">
         <span class="af-alert__icon">i</span>

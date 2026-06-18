@@ -1,3 +1,7 @@
+<!-- H1 semântico da página (visível só para leitores de tela / crawlers).
+     O carousel usa H2 para os títulos dos banners. -->
+<h1 class="visually-hidden">Unitur — Agência de Viagens, Peregrinações e Roteiros</h1>
+
 <!-- Banner Carousel -->
 @if (bannerSlides.length > 0) {
   <section class="banner-carousel">
@@ -9,10 +13,16 @@
             <div class="carousel-overlay">
               <div class="carousel-content">
                 @if (slide.title) {
-                  <h1 class="carousel-title animate-fade-in">{{ slide.title }}</h1>
+                  <!-- H2: o H1 da página é o título oculto no topo (1 H1 por página). -->
+                  <h2 class="carousel-title animate-fade-in">{{ slide.title }}</h2>
                 }
                 @if (slide.subtitle) {
                   <p class="carousel-subtitle animate-fade-in-delay">{{ slide.subtitle }}</p>
+                }
+                @if (slide.link) {
+                  <a class="carousel-cta animate-fade-in-delay" [routerLink]="slide.link">
+                    {{ slide.buttonText || 'Saiba mais' }}
+                  </a>
                 }
               </div>
             </div>
@@ -47,15 +57,15 @@
     <h2>{{ homeContent.searchTitle }}</h2>
     <div class="search-form">
       <div class="search-input">
-        <span class="icon">Destino</span>
+        <span class="field-label">Destino</span>
         <input type="text" placeholder="Para onde voc&ecirc; quer ir?" [(ngModel)]="searchDestination">
       </div>
       <div class="search-input">
-        <span class="icon">Ida</span>
+        <span class="field-label">Ida</span>
         <input type="date" placeholder="Data de ida" [(ngModel)]="searchStartDate">
       </div>
       <div class="search-input">
-        <span class="icon">At&eacute;</span>
+        <span class="field-label">Volta</span>
         <input type="date" placeholder="Data de volta" [(ngModel)]="searchEndDate">
       </div>
       <button class="search-button" (click)="searchTrips()">Buscar</button>

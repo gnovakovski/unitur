@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PendingTasks, inject } from '@angular/core';
 import { initializeApp, FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { Firestore, getFirestore, initializeFirestore, Timestamp } from 'firebase/firestore';
@@ -9,6 +9,11 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class FirebaseService {
+  // Registra cada chamada ao Firestore como tarefa pendente: no SSR isso impede
+  // a app de "estabilizar" (e serializar o HTML) antes dos dados chegarem,
+  // garantindo que o conteúdo e as meta tags saiam renderizados no servidor.
+  private readonly pendingTasks = inject(PendingTasks);
+
   private app: FirebaseApp | null = null;
   private firestoreDb: Firestore | null = null;
 
@@ -47,12 +52,19 @@ export class FirebaseService {
   }
 
   withTimeout<T>(promise: Promise<T>, message = 'Tempo esgotado ao consultar o Firestore.', ms = 10000): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        window.setTimeout(() => reject(new Error(message)), ms);
-      })
-    ]);
+    // Mantém a app "instável" durante o SSR até a promise resolver — assim o
+    // HTML é serializado só depois dos dados chegarem (em vez de no estado de
+    // loading). `add()` retorna a função que remove a tarefa pendente.
+    const removeTask = this.pendingTasks.add();
+    let timer: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), ms);
+    });
+    // clearTimeout + removeTask evitam que o timer pendente atrase a estabilização.
+    return Promise.race([promise, timeout]).finally(() => {
+      clearTimeout(timer);
+      removeTask();
+    });
   }
 
   private getApp(): FirebaseApp {

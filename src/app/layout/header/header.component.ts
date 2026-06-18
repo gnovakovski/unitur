@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HeaderLink } from '../../core/models/site-content.model';
@@ -15,11 +15,15 @@ export class HeaderComponent implements OnInit {
   menuOpen = false;
   links: HeaderLink[] = [];
 
-  constructor(private siteContentService: SiteContentService) {}
+  constructor(
+    private siteContentService: SiteContentService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.siteContentService.header$.subscribe(content => {
       this.links = content.links.filter(link => link.visible);
+      this.cdr.markForCheck();
     });
     this.siteContentService.loadHeader().subscribe();
   }

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /administrador
+
+Sitemap: https://www.unitur.com.br/sitemap.xml

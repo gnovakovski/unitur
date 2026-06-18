@@ -6,6 +6,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { HeaderLink, SiteHeaderContent } from '../../../core/models/site-content.model';
 import { SiteContentService } from '../../../core/services/site-content.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-cabecalho-form',
@@ -25,7 +26,8 @@ export class CabecalhoFormComponent implements OnInit {
     private siteContentService: SiteContentService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -111,6 +113,7 @@ export class CabecalhoFormComponent implements OnInit {
       this.ngZone.run(() => {
         this.saved = true;
         this.saving = false;
+        this.toast.success('Cabeçalho salvo com sucesso.');
         this.cdr.detectChanges();
         setTimeout(() => {
           this.saved = false;
@@ -121,6 +124,7 @@ export class CabecalhoFormComponent implements OnInit {
       this.ngZone.run(() => {
         this.error = err?.message || 'Falha ao salvar.';
         this.saving = false;
+        this.toast.error(this.error);
         this.cdr.detectChanges();
       });
     }

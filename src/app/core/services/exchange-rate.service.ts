@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   BehaviorSubject,
   Observable,
@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ForeignCurrencyCode, registerCurrencySymbol } from '../utils/currency-format';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 
 export interface ExchangeRate {
   value: number | null;
@@ -42,6 +43,9 @@ export class ExchangeRateService {
   private readonly settingsCollection = 'siteContent';
   private readonly settingsDocId = 'exchangeRates';
   private readonly localKey = 'unitur_exchange_rates';
+
+  // Declarado antes do subject: getLocalRates() roda no inicializador.
+  private readonly storage = inject(BrowserStorageService);
 
   private ratesSubject = new BehaviorSubject<ExchangeRatesContent>(this.getLocalRates());
   rates$ = this.ratesSubject.asObservable();
@@ -202,7 +206,7 @@ export class ExchangeRateService {
 
   private getLocalRates(): ExchangeRatesContent {
     try {
-      const raw = localStorage.getItem(this.localKey);
+      const raw = this.storage.getItem(this.localKey);
       if (!raw) return { currencies: [...DEFAULT_CURRENCIES] };
       const parsed = JSON.parse(raw);
       return this.normalize(parsed);
@@ -212,6 +216,6 @@ export class ExchangeRateService {
   }
 
   private persistLocalRates(value: ExchangeRatesContent): void {
-    try { localStorage.setItem(this.localKey, JSON.stringify(value)); } catch {}
+    this.storage.setItem(this.localKey, JSON.stringify(value));
   }
 }

@@ -300,7 +300,7 @@
           <span>{{ trip.price }}</span>
         </h2>
         <p>Converse com a equipe Unitur para confirmar disponibilidade, formas de pagamento e próximos passos.</p>
-        <a class="primary-cta" href="https://wa.me/5500000000000" target="_blank" rel="noopener">Reservar agora</a>
+        <a class="primary-cta" [href]="whatsappLink" target="_blank" rel="noopener">Reservar agora</a>
         
       </aside>
     </section>
@@ -383,7 +383,7 @@
   }
 } @else if (loading) {
   <section class="not-found">
-    <h1>Carregando viagem...</h1>
+    <p class="loading-title">Carregando viagem...</p>
     <p>Buscando os detalhes do pacote.</p>
   </section>
 } @else {
