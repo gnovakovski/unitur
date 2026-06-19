@@ -11,7 +11,6 @@ import { routes } from './app.routes';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { UserBootstrapService } from './core/services/user-bootstrap.service';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -33,6 +32,5 @@ export const appConfig: ApplicationConfig = {
       const bootstrap = inject(UserBootstrapService);
       return bootstrap.ensureSeedUser();
     }),
-    provideClientHydration(withEventReplay()),
   ],
 };

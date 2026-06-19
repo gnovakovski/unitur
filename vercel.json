@@ -4,12 +4,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api"
+      "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "api/index.mjs": {
-      "includeFiles": "dist/angular-app/**"
-    }
-  }
+  ]
 }

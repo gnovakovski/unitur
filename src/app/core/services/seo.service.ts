@@ -24,8 +24,9 @@ const DEFAULT_IMAGE = '/logo.jpeg';
  * Serviço central de SEO. Gerencia `<title>`, meta tags (description, Open
  * Graph, Twitter), `<link rel="canonical">` e blocos JSON-LD.
  *
- * Tudo é SSR-safe: usa `Title`/`Meta` (que funcionam no platform-server) e
- * manipula `<head>` via `DOCUMENT` + `Renderer2` — nunca o `document` global.
+ * Usa `Title`/`Meta` do Angular e manipula `<head>` via `DOCUMENT` +
+ * `Renderer2` (nunca o `document` global). As meta tags são aplicadas no
+ * cliente após o app carregar (o site roda como SPA, sem SSR).
  */
 @Injectable({ providedIn: 'root' })
 export class SeoService {
