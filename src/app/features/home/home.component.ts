@@ -15,7 +15,7 @@ import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AboutContentService } from '../../core/services/about-content.service';
 import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about-content.model';
 import { SiteContentService } from '../../core/services/site-content.service';
-import { DEFAULT_HOME_CONTENT, SiteHomeContent } from '../../core/models/site-content.model';
+import { DEFAULT_HOME_CONTENT, LEGACY_TRIP_TYPE_TO_MENU_ID, SiteHomeContent } from '../../core/models/site-content.model';
 import { Banner } from '../../core/models/banner.model';
 import { SeoService } from '../../core/services/seo.service';
 
@@ -239,13 +239,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     ).subscribe(response => {
       const activeTrips = response.data;
       this.peregrinacoes = activeTrips
-        .filter(trip => trip.tripType === 'peregrinacao')
+        .filter(trip => this.belongsToMenu(trip, 'peregrinacao'))
         .map(trip => this.mapTripCard(trip, 'Guia Espiritual Convidado'));
       this.regulares = activeTrips
-        .filter(trip => trip.tripType === 'regular')
+        .filter(trip => this.belongsToMenu(trip, 'regulares'))
         .map(trip => this.mapTripCard(trip, 'Guia'));
       this.curadoria = activeTrips
-        .filter(trip => trip.tripType === 'curadoria')
+        .filter(trip => this.belongsToMenu(trip, 'curadoria'))
         .map(trip => this.mapCuradoriaCard(trip));
       this.continents = this.mapWorldCards(activeTrips);
 
@@ -313,6 +313,16 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
       this.cdr.detectChanges();
     });
+  }
+
+  /**
+   * Decide se a viagem pertence a uma seção da home (por id de menu), com
+   * fallback para o tripType legado quando a viagem ainda não tem `menuIds`.
+   */
+  private belongsToMenu(trip: Trip, menuId: string): boolean {
+    const menuIds = Array.isArray(trip.menuIds) ? trip.menuIds.filter(Boolean) : [];
+    if (menuIds.length) return menuIds.includes(menuId);
+    return LEGACY_TRIP_TYPE_TO_MENU_ID[trip.tripType || 'regular'] === menuId;
   }
 
   private mapTripCard(trip: Trip, guideRole: string): HomeTripCard {

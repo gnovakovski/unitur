@@ -8,12 +8,12 @@
 <section class="viagens-section">
   <div class="container">
     <div class="filters">
-      @for (cat of categories; track cat) {
+      @for (cat of categories; track cat.id) {
         <button
           class="filter-btn"
-          [class.active]="selectedCategory === cat"
+          [class.active]="selectedMenuId === cat.id"
           (click)="selectCategory(cat)">
-          {{ cat }}
+          {{ cat.label }}
         </button>
       }
     </div>

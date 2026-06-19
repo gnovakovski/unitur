@@ -63,40 +63,40 @@ export class CabecalhoFormComponent implements OnInit {
     link.visible = !link.visible;
   }
 
+  /** Adiciona um novo menu vazio ao final da lista. */
+  addLink() {
+    const id = this.siteContentService.generateMenuId('menu', this.links.map(l => l.id));
+    this.links = [
+      ...this.links,
+      {
+        id,
+        label: 'Novo menu',
+        route: this.siteContentService.ensureMenuRoute('/viagens/novo-menu'),
+        order: this.links.length,
+        visible: true
+      }
+    ];
+  }
+
+  /** Remove um menu. As viagens que apontavam para ele simplesmente deixam de listá-lo. */
+  removeLink(link: HeaderLink) {
+    if (!confirm(`Excluir o menu "${link.label}"? As viagens vinculadas a ele deixarão de aparecer neste menu.`)) {
+      return;
+    }
+    this.links = this.links
+      .filter(l => l.id !== link.id)
+      .map((l, index) => ({ ...l, order: index }));
+  }
+
   /** Atualiza o label e, simultaneamente, recalcula a rota a partir do novo nome. */
   onLabelChange(link: HeaderLink, value: string) {
     link.label = value;
-    link.route = this.buildRoute(value, link.route);
+    link.route = this.siteContentService.ensureMenuRoute(value);
   }
 
-  /** Permite ao usuário sobrescrever a rota manualmente. */
+  /** Permite ao usuário sobrescrever a rota manualmente — sempre sob /viagens/. */
   onRouteChange(link: HeaderLink, value: string) {
-    link.route = this.sanitizeRoute(value);
-  }
-
-  /** Gera rota canonical mantendo o prefixo existente quando possível. */
-  private buildRoute(label: string, currentRoute: string): string {
-    const slug = this.slugify(label);
-    if (!slug) return currentRoute;
-
-    const trimmed = (currentRoute || '').replace(/^\/+/, '').replace(/\/+$/, '');
-    const parts = trimmed ? trimmed.split('/') : [];
-
-    if (parts.length > 1) {
-      // Substitui apenas o último segmento, preservando o prefixo (ex: /viagens/...)
-      parts[parts.length - 1] = slug;
-      return '/' + parts.join('/');
-    }
-
-    return '/' + slug;
-  }
-
-  private sanitizeRoute(value: string): string {
-    return this.siteContentService.sanitizeRoute(value || '');
-  }
-
-  private slugify(value: string): string {
-    return this.siteContentService.sanitizeRoute(value).replace(/^\//, '');
+    link.route = this.siteContentService.ensureMenuRoute(value);
   }
 
   async save() {

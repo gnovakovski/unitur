@@ -2,7 +2,18 @@ export interface Trip {
   id: number;
   title: string;
   slug: string;
+  /**
+   * @deprecated Mantido apenas para compatibilidade com viagens antigas.
+   * A classificação por menu agora é feita por `menuIds`. Para docs legados
+   * sem `menuIds`, o id do menu correspondente é inferido a partir deste campo.
+   */
   tripType?: 'peregrinacao' | 'regular' | 'curadoria';
+  /**
+   * IDs dos menus do cabeçalho em que esta viagem deve aparecer.
+   * São os mesmos `HeaderLink.id` configurados em Conteúdo > Cabeçalho.
+   * Uma viagem pode aparecer em vários menus ao mesmo tempo.
+   */
+  menuIds?: string[];
   /**
    * Define a URL canônica da viagem (SEO):
    *   'nacional'      -> /roteiros-nacionais/<slug>/

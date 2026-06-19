@@ -137,3 +137,38 @@
   }
 }
 
+
+// Checkboxes de "Aparece nos menus" — substituem o antigo select de tipo.
+.menu-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: 0.25rem;
+}
+
+.menu-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid $af-border;
+  border-radius: $af-radius-sm;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: $af-text;
+  user-select: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:has(input:checked) {
+    border-color: $af-orange;
+    background: rgba($af-orange, 0.08);
+    font-weight: 600;
+  }
+
+  input { accent-color: $af-orange; }
+}
+
+.af-hint--error {
+  color: #dc2626;
+}

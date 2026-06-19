@@ -2,9 +2,10 @@
   <header class="af-page-header">
     <div>
       <h1 class="af-page-header__title">Cabeçalho do site</h1>
-      <p class="af-page-header__subtitle">Renomeie, reordene e oculte os links do menu principal. A rota é gerada automaticamente a partir do nome.</p>
+      <p class="af-page-header__subtitle">Crie, renomeie, reordene, oculte e exclua os menus do site. A rota é gerada a partir do nome e sempre fica sob <code>/viagens/</code>. As viagens escolhem em quais menus aparecem no próprio cadastro.</p>
     </div>
     <div class="af-page-header__actions">
+      <button class="af-btn af-btn--primary" type="button" (click)="addLink()" [disabled]="loading || saving">+ Adicionar menu</button>
       <a class="af-btn af-btn--secondary" routerLink="/admin/conteudo">← Voltar</a>
     </div>
   </header>
@@ -53,7 +54,7 @@
                        (ngModelChange)="onLabelChange(link, $event)">
               </label>
               <label class="link-item__field link-item__field--route">
-                <span>Rota (gerada automaticamente — você pode editar)</span>
+                <span>Rota (sempre sob /viagens/ — gerada do nome, você pode editar o slug)</span>
                 <input class="af-control" type="text" [ngModel]="link.route"
                        (ngModelChange)="onRouteChange(link, $event)">
               </label>
@@ -63,6 +64,9 @@
               <input type="checkbox" [checked]="link.visible" (change)="toggleVisible(link)">
               <span>Visível</span>
             </label>
+
+            <button type="button" class="af-btn af-btn--danger af-btn--sm link-item__remove"
+                    (click)="removeLink(link)" aria-label="Excluir menu">Excluir</button>
           </li>
         }
       </ul>

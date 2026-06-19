@@ -9,12 +9,21 @@ import {
   DEFAULT_FOOTER_CONTENT,
   DEFAULT_HEADER_CONTENT,
   DEFAULT_HOME_CONTENT,
+  HEADER_ROUTE_PREFIX,
   HeaderLink,
   SiteContactContent,
   SiteFooterContent,
   SiteHeaderContent,
-  SiteHomeContent
+  SiteHomeContent,
+  slugFromHeaderRoute
 } from '../models/site-content.model';
+
+/** Opção de menu apresentada no formulário de viagem. */
+export interface MenuOption {
+  id: string;
+  label: string;
+  slug: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -300,29 +309,70 @@ export class SiteContentService {
     return this.normalizeLinks(this.headerSubject.value.links);
   }
 
+  /** Opções de menu (id, label, slug) para popular o formulário de viagem. */
+  getMenuOptions(): MenuOption[] {
+    return this.getCurrentHeaderLinks().map(link => ({
+      id: link.id,
+      label: link.label,
+      slug: slugFromHeaderRoute(link.route)
+    }));
+  }
+
+  /** Gera um id estável e único de menu a partir de um label. */
+  generateMenuId(label: string, existingIds: string[] = []): string {
+    const base = this.slugify(label) || 'menu';
+    let candidate = base;
+    let counter = 2;
+    const taken = new Set(existingIds);
+    while (taken.has(candidate)) {
+      candidate = `${base}-${counter++}`;
+    }
+    return candidate;
+  }
+
+  /**
+   * Garante que a rota de um menu seja sempre "/viagens/<slug>".
+   * Sem isso, um menu poderia ficar com rota de 1 segmento (ex.: "/peregrinacao")
+   * que não casa com nenhuma rota -> 404. Forçar o prefixo elimina esse caso.
+   */
+  ensureMenuRoute(route: string): string {
+    const slug = slugFromHeaderRoute(this.sanitizeRoute(route));
+    return slug ? `/${HEADER_ROUTE_PREFIX}/${slug}` : `/${HEADER_ROUTE_PREFIX}`;
+  }
+
   private normalizeHeader(value: Partial<SiteHeaderContent>): SiteHeaderContent {
     const links = this.normalizeLinks(value.links || DEFAULT_HEADER_CONTENT.links);
     return { links, updatedAt: value.updatedAt };
   }
 
+  /**
+   * Normaliza qualquer conjunto de menus: aceita ids livres (admin pode criar
+   * menus novos), garante id único e não-vazio, força a rota "/viagens/<slug>".
+   * Se nada vier, cai nos defaults. Não descarta mais menus fora dos 3 fixos.
+   */
   private normalizeLinks(links: HeaderLink[]): HeaderLink[] {
-    const validIds = new Set(DEFAULT_HEADER_CONTENT.links.map(l => l.id));
+    const source = Array.isArray(links) && links.length ? links : DEFAULT_HEADER_CONTENT.links;
     const byId = new Map<string, HeaderLink>();
 
-    for (const link of links) {
-      if (!validIds.has(link.id)) continue;
-      const def = DEFAULT_HEADER_CONTENT.links.find(l => l.id === link.id)!;
-      byId.set(link.id, {
-        id: link.id,
-        label: link.label || def.label,
-        route: this.sanitizeRoute(link.route || def.route),
-        order: typeof link.order === 'number' ? link.order : def.order,
-        visible: link.visible !== false
+    source.forEach((link, index) => {
+      const label = (link?.label || '').trim() || 'Menu';
+      let id = (link?.id || '').trim() || this.slugify(label);
+      // Garante id único mesmo que dois menus colidam.
+      if (byId.has(id)) {
+        id = this.generateMenuId(id, [...byId.keys()]);
+      }
+      byId.set(id, {
+        id,
+        label,
+        route: this.ensureMenuRoute(link?.route || `/${HEADER_ROUTE_PREFIX}/${this.slugify(label)}`),
+        order: typeof link?.order === 'number' ? link.order : index,
+        visible: link?.visible !== false
       });
-    }
+    });
 
-    for (const def of DEFAULT_HEADER_CONTENT.links) {
-      if (!byId.has(def.id)) byId.set(def.id, { ...def });
+    // Se por algum motivo ficou sem menus, restaura os defaults.
+    if (byId.size === 0) {
+      DEFAULT_HEADER_CONTENT.links.forEach(def => byId.set(def.id, { ...def }));
     }
 
     return [...byId.values()].sort((a, b) => a.order - b.order);

@@ -1,10 +1,40 @@
 export interface HeaderLink {
+  /**
+   * Identificador estável do menu. NÃO muda quando o admin renomeia o label
+   * ou edita a rota — é por ele que as viagens (`Trip.menuIds`) se vinculam ao
+   * menu, garantindo que renomear/mudar rota nunca quebre o vínculo.
+   */
   id: string;
   label: string;
   route: string;
   order: number;
   visible: boolean;
 }
+
+/** Prefixo obrigatório de toda rota de menu de viagens. */
+export const HEADER_ROUTE_PREFIX = 'viagens';
+
+/**
+ * Extrai o slug de categoria a partir da rota de um menu.
+ * Sempre devolve o último segmento (ex.: "/viagens/peregrinacao" -> "peregrinacao").
+ * Usado pelo matcher de rota, pelo service e pela listagem para falarem a mesma língua.
+ */
+export function slugFromHeaderRoute(route: string): string {
+  const trimmed = (route || '').replace(/^\/+/, '').replace(/\/+$/, '');
+  if (!trimmed) return '';
+  const parts = trimmed.split('/');
+  return parts[parts.length - 1] || '';
+}
+
+/**
+ * Mapa de compatibilidade: viagens antigas só têm `tripType`. Quando uma viagem
+ * não tiver `menuIds`, inferimos o menu pelo id correspondente abaixo.
+ */
+export const LEGACY_TRIP_TYPE_TO_MENU_ID: Record<string, string> = {
+  peregrinacao: 'peregrinacao',
+  regular: 'regulares',
+  curadoria: 'curadoria'
+};
 
 export interface SiteHeaderContent {
   links: HeaderLink[];

@@ -8,6 +8,7 @@ import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/curre
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { SiteContentService } from '../../core/services/site-content.service';
 import { SeoService } from '../../core/services/seo.service';
+import { LEGACY_TRIP_TYPE_TO_MENU_ID, slugFromHeaderRoute } from '../../core/models/site-content.model';
 
 interface ViagemCard {
   slug: string;
@@ -26,7 +27,14 @@ interface ViagemCard {
   guide: string;
   coordinator: string;
   category: string;
+  menuIds: string[];
   startDate?: Date;
+}
+
+interface CategoryFilter {
+  /** '' representa "Todas". */
+  id: string;
+  label: string;
 }
 
 @Component({
@@ -43,8 +51,12 @@ export class ViagensComponent implements OnInit, OnDestroy {
 
   viagens: ViagemCard[] = [];
 
+  /** id do menu selecionado; '' = Todas. */
+  selectedMenuId = '';
+  /** Label exibido no hero/SEO. */
   selectedCategory = 'Todas';
-  categories = ['Todas', 'Viagens de Peregrinação', 'Viagens Regulares', 'Viagens de Curadoria'];
+  /** Filtros (chips) montados a partir dos menus reais do header. */
+  categories: CategoryFilter[] = [{ id: '', label: 'Todas' }];
   private routeSub?: Subscription;
   private querySub?: Subscription;
   private filterDestination = '';
@@ -61,8 +73,13 @@ export class ViagensComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Garante que o header esteja carregado para o mapeamento de slug → categoria
+    // Monta os filtros com o que já está em cache (imediato)...
+    this.rebuildCategories();
+    this.updateSelectedCategory();
+
+    // ...e atualiza quando o header chegar do Firestore (slug → menu).
     this.siteContentService.loadHeader().subscribe(() => {
+      this.rebuildCategories();
       this.updateSelectedCategory();
       this.cdr.detectChanges();
     });
@@ -86,26 +103,35 @@ export class ViagensComponent implements OnInit, OnDestroy {
     this.querySub?.unsubscribe();
   }
 
+  /** Reconstrói os chips de filtro a partir dos menus reais do header. */
+  private rebuildCategories() {
+    const menus = this.siteContentService.getCurrentHeaderLinks()
+      .filter(link => link.visible)
+      .map(link => ({ id: link.id, label: link.label }));
+    this.categories = [{ id: '', label: 'Todas' }, ...menus];
+  }
+
+  /**
+   * Resolve o menu selecionado a partir do slug da URL.
+   * Casa pelo ID estável do menu (via slug da rota), não por label — assim
+   * renomear o menu nunca quebra a listagem.
+   */
   private updateSelectedCategory() {
-    const slug = this.route.snapshot.url.map(s => s.path).join('/');
-    if (!slug || slug === 'viagens') {
+    const path = this.route.snapshot.url.map(s => s.path).join('/');
+    const lastSegment = this.route.snapshot.url[this.route.snapshot.url.length - 1]?.path || '';
+
+    if (!path || path === 'viagens') {
+      this.selectedMenuId = '';
       this.selectedCategory = 'Todas';
       this.applySeo();
       return;
     }
 
-    // Casa o slug atual com o link do header e mapeia para a categoria pelo id estável
-    const categoryById: Record<string, string> = {
-      peregrinacao: 'Viagens de Peregrinação',
-      regulares: 'Viagens Regulares',
-      curadoria: 'Viagens de Curadoria'
-    };
-
-    const lastSegment = this.route.snapshot.url[this.route.snapshot.url.length - 1]?.path || '';
     const links = this.siteContentService.getCurrentHeaderLinks();
-    const link = links.find(l => (l.route || '').replace(/^\/+/, '').split('/').pop() === lastSegment);
+    const link = links.find(l => slugFromHeaderRoute(l.route) === lastSegment);
 
-    this.selectedCategory = (link && categoryById[link.id]) || 'Todas';
+    this.selectedMenuId = link?.id || '';
+    this.selectedCategory = link?.label || 'Todas';
     this.applySeo();
   }
 
@@ -132,7 +158,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
     const hasSearch = !!destination || !!startDate || !!endDate;
 
     return this.viagens.filter(v => {
-      const matchesCategory = hasSearch || this.selectedCategory === 'Todas' || v.category === this.selectedCategory;
+      const matchesCategory = hasSearch || !this.selectedMenuId || v.menuIds.includes(this.selectedMenuId);
       const matchesDestination = !destination || v.location.toLowerCase().includes(destination) || v.title.toLowerCase().includes(destination);
       const tripDate = this.parseFilterDate(v.startDate);
       const matchesStart = !startDate || (tripDate ? tripDate >= startDate : false);
@@ -142,8 +168,9 @@ export class ViagensComponent implements OnInit, OnDestroy {
     });
   }
 
-  selectCategory(cat: string) {
-    this.selectedCategory = cat;
+  selectCategory(cat: CategoryFilter) {
+    this.selectedMenuId = cat.id;
+    this.selectedCategory = cat.label;
   }
 
   useFallbackImage(event: Event) {
@@ -189,7 +216,8 @@ export class ViagensComponent implements OnInit, OnDestroy {
       showSpots: trip.showAvailableSpots !== false,
       guide: (trip.spiritualGuide || '').trim(),
       coordinator: (trip.coordinator || '').trim(),
-      category: this.getCategoryLabel(trip.tripType),
+      menuIds: this.resolveMenuIds(trip),
+      category: this.getCategoryLabel(trip),
       startDate: trip.startDate
     };
     this.attachForeignPrice(card, trip);
@@ -226,14 +254,30 @@ export class ViagensComponent implements OnInit, OnDestroy {
     return parsed;
   }
 
-  private getCategoryLabel(type?: Trip['tripType']) {
+  /** menuIds da viagem, migrando o tripType legado quando o campo não existir. */
+  private resolveMenuIds(trip: Trip): string[] {
+    const fromTrip = Array.isArray(trip.menuIds) ? trip.menuIds.filter(Boolean) : [];
+    if (fromTrip.length) return fromTrip;
+    const legacy = LEGACY_TRIP_TYPE_TO_MENU_ID[trip.tripType || 'regular'];
+    return legacy ? [legacy] : [];
+  }
+
+  /** Label do badge do card: nome do primeiro menu real da viagem. */
+  private getCategoryLabel(trip: Trip): string {
+    const menuIds = this.resolveMenuIds(trip);
+    const links = this.siteContentService.getCurrentHeaderLinks();
+    for (const id of menuIds) {
+      const link = links.find(l => l.id === id);
+      if (link) return link.label;
+    }
+
+    // Fallback para viagens cujo menu não existe mais no header.
     const labels: Record<string, string> = {
       peregrinacao: 'Viagens de Peregrinação',
       regular: 'Viagens Regulares',
       curadoria: 'Viagens de Curadoria'
     };
-
-    return labels[type || 'regular'];
+    return labels[trip.tripType || 'regular'] || 'Viagens';
   }
 
   private formatPeriod(date?: Date) {

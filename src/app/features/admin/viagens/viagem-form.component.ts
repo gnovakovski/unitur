@@ -9,6 +9,8 @@ import { UploadService } from '../../../core/services/upload.service';
 import { CurrencyEntry, ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode, parseForeignAmount } from '../../../core/utils/currency-format';
 import { tripScope } from '../../../core/utils/trip-scope';
+import { SiteContentService, MenuOption } from '../../../core/services/site-content.service';
+import { LEGACY_TRIP_TYPE_TO_MENU_ID } from '../../../core/models/site-content.model';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
 import { MultiImageUploadComponent, GalleryItem } from '../../../shared/components/multi-image-upload/multi-image-upload.component';
 import { HotelListUploadComponent, HotelItem } from '../../../shared/components/hotel-list-upload/hotel-list-upload.component';
@@ -42,11 +44,13 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   itineraryDays: Array<{ title: string; description: string }> = [];
   paymentBlocks: Array<{ title: string; description: string }> = [];
   availableCurrencies: CurrencyEntry[] = [];
+  menuOptions: MenuOption[] = [];
+  selectedMenuIds = new Set<string>();
   private lastExchangeRate: number | undefined;
 
   protected fieldLabels: Record<string, string> = {
     title: 'Nome da viagem',
-    tripType: 'Tipo',
+    menuIds: 'Menus onde aparece',
     country: 'País',
     period: 'Embarque',
     startDate: 'Data de embarque',
@@ -86,12 +90,16 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     private exchangeRateService: ExchangeRateService,
     private router: Router,
     private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private siteContentService: SiteContentService
   ) {
     super();
     this.tripForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
-      tripType: ['peregrinacao', [Validators.required]],
+      // Mantido por compatibilidade; o vínculo de menus agora é `menuIds`.
+      tripType: ['regular'],
+      // IDs dos menus em que a viagem aparece. Pelo menos um é exigido.
+      menuIds: [[] as string[], [Validators.required, Validators.minLength(1)]],
       country: ['', [Validators.required]],
       period: ['', [Validators.required]],
       startDate: ['', [Validators.required]],
@@ -151,6 +159,13 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     });
     this.exchangeRateService.loadRates().subscribe();
 
+    // Carrega os menus disponíveis (cache local imediato + Firestore).
+    this.menuOptions = this.siteContentService.getMenuOptions();
+    this.siteContentService.loadHeader().subscribe(() => {
+      this.menuOptions = this.siteContentService.getMenuOptions();
+      this.cdr.markForCheck();
+    });
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode = true;
@@ -165,9 +180,12 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   loadTrip(id: number) {
     this.tripService.getTrip(id).subscribe({
       next: trip => {
+        const menuIds = this.resolveMenuIds(trip);
+        this.selectedMenuIds = new Set(menuIds);
         this.tripForm.patchValue({
           title: trip.title,
           tripType: trip.tripType || 'regular',
+          menuIds,
           country: trip.country || trip.destination,
           period: trip.period || '',
           startDate: this.formatDateInput(trip.startDate),
@@ -252,8 +270,16 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       const now = new Date();
       const startDate = value.startDate ? new Date(`${value.startDate}T00:00:00`) : now;
 
+      const menuIds = Array.from(this.selectedMenuIds);
+      // tripType legado é derivado dos menus para manter a home (que ainda lê
+      // tripType) coerente. Usa o id do menu como tripType quando bate com os
+      // tipos conhecidos; senão cai em 'regular'.
+      const derivedType = this.deriveLegacyTripType(menuIds);
+
       const tripData: Partial<Trip> = {
         ...baseValue,
+        menuIds,
+        tripType: derivedType,
         mainImage: existingMainImage,
         foreignPrice: baseValue.foreignCurrency ? (parseForeignAmount(baseValue.foreignPrice) ?? '') : '',
         foreignExchangeRate: baseValue.foreignCurrency ? this.lastExchangeRate : undefined,
@@ -261,7 +287,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         categoryId: 0,
         startDate,
         endDate: startDate,
-        featured: value.tripType === 'curadoria',
+        featured: menuIds.includes('curadoria'),
         experienceImages: existingExperienceUrls,
         gallery: existingExperienceUrls,
         hotels: existingHotelsResolved,
@@ -368,6 +394,44 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
 
   cancel() {
     this.router.navigate(['/admin/viagens']);
+  }
+
+  // ---------- Menus em que a viagem aparece ----------
+  isMenuSelected(menuId: string): boolean {
+    return this.selectedMenuIds.has(menuId);
+  }
+
+  toggleMenu(menuId: string, checked: boolean) {
+    if (checked) {
+      this.selectedMenuIds.add(menuId);
+    } else {
+      this.selectedMenuIds.delete(menuId);
+    }
+    const control = this.tripForm.get('menuIds');
+    control?.setValue(Array.from(this.selectedMenuIds));
+    control?.markAsDirty();
+    control?.markAsTouched();
+  }
+
+  /** Resolve os menuIds de uma viagem, migrando o tripType legado quando faltar. */
+  private resolveMenuIds(trip: Trip): string[] {
+    const fromTrip = Array.isArray(trip.menuIds) ? trip.menuIds.filter(Boolean) : [];
+    if (fromTrip.length) return fromTrip;
+    const legacy = LEGACY_TRIP_TYPE_TO_MENU_ID[trip.tripType || 'regular'];
+    return legacy ? [legacy] : [];
+  }
+
+  /** Deriva o tripType legado a partir dos menus selecionados (compat com a home). */
+  private deriveLegacyTripType(menuIds: string[]): Trip['tripType'] {
+    const legacyByMenu: Record<string, Trip['tripType']> = {
+      peregrinacao: 'peregrinacao',
+      regulares: 'regular',
+      curadoria: 'curadoria'
+    };
+    for (const id of menuIds) {
+      if (legacyByMenu[id]) return legacyByMenu[id];
+    }
+    return 'regular';
   }
 
   isFieldInvalid(fieldName: string): boolean {

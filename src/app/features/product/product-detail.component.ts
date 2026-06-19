@@ -1,6 +1,6 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
@@ -9,6 +9,7 @@ import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
 import { SiteContentService } from '../../core/services/site-content.service';
+import { slugFromHeaderRoute } from '../../core/models/site-content.model';
 import { tripScope, tripCanonicalPath } from '../../core/utils/trip-scope';
 import { tripSeo } from '../../core/utils/seo-fallback';
 
@@ -65,6 +66,7 @@ export class ProductDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
     private cdr: ChangeDetectorRef,
@@ -72,6 +74,20 @@ export class ProductDetailComponent implements OnInit {
     private seo: SeoService,
     private siteContentService: SiteContentService
   ) {}
+
+  /**
+   * Salvaguarda contra "página não encontrada": se o slug não é uma viagem mas
+   * casa com um menu do cabeçalho, renderiza a listagem daquele menu. Cobre o
+   * caso em que o matcher de rota ainda não conhecia o slug (ex.: menu novo
+   * acessado por URL direta / SSR). Retorna true se redirecionou.
+   */
+  private redirectIfMenuSlug(slug: string): boolean {
+    const links = this.siteContentService.getCurrentHeaderLinks();
+    const isMenu = links.some(l => slugFromHeaderRoute(l.route) === slug);
+    if (!isMenu) return false;
+    this.router.navigate(['/viagens', slug], { replaceUrl: true });
+    return true;
+  }
 
   /**
    * Link de WhatsApp dinâmico: número real do contato + mensagem com o nome
@@ -234,6 +250,10 @@ export class ProductDetailComponent implements OnInit {
           this.loading = false;
 
           if (!trip) {
+            // Antes de 404, verifica se o slug é, na verdade, um menu do site.
+            if (this.redirectIfMenuSlug(slug)) {
+              return;
+            }
             this.trip = null;
             this.notFound = true;
             this.applyNotFoundSeo();

@@ -32,13 +32,28 @@
             placeholder="Ex: Terra Santa — Peregrinação 2026">
         </div>
 
-        <div class="af-field">
-          <label class="af-label">Tipo <span class="af-label__required">*</span></label>
-          <select class="af-control" formControlName="tripType">
-            <option value="peregrinacao">Viagens de Peregrinação</option>
-            <option value="regular">Viagens Regulares</option>
-            <option value="curadoria">Viagens de Curadoria</option>
-          </select>
+        <div class="af-field af-field--span-2">
+          <label class="af-label">Aparece nos menus <span class="af-label__required">*</span></label>
+          <p class="af-hint">Marque em quais menus do site esta viagem deve aparecer. Ao clicar no menu, o visitante cai na listagem que mostra estas viagens. Os menus são gerenciados em <strong>Conteúdo &gt; Cabeçalho</strong>.</p>
+          @if (menuOptions.length === 0) {
+            <div class="af-empty-card">
+              <p>Nenhum menu cadastrado. Crie menus em Conteúdo &gt; Cabeçalho.</p>
+            </div>
+          } @else {
+            <div class="menu-checkboxes">
+              @for (menu of menuOptions; track menu.id) {
+                <label class="menu-checkbox">
+                  <input type="checkbox"
+                         [checked]="isMenuSelected(menu.id)"
+                         (change)="toggleMenu(menu.id, $any($event.target).checked)">
+                  <span>{{ menu.label }}</span>
+                </label>
+              }
+            </div>
+          }
+          @if (isFieldInvalid('menuIds')) {
+            <span class="af-hint af-hint--error">Selecione pelo menos um menu.</span>
+          }
         </div>
 
         <div class="af-field">
