@@ -15,7 +15,7 @@ import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AboutContentService } from '../../core/services/about-content.service';
 import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about-content.model';
 import { SiteContentService } from '../../core/services/site-content.service';
-import { DEFAULT_HOME_CONTENT, LEGACY_TRIP_TYPE_TO_MENU_ID, SiteHomeContent } from '../../core/models/site-content.model';
+import { DEFAULT_HOME_CONTENT, HeaderLink, LEGACY_TRIP_TYPE_TO_MENU_ID, SiteHomeContent } from '../../core/models/site-content.model';
 import { Banner } from '../../core/models/banner.model';
 import { SeoService } from '../../core/services/seo.service';
 
@@ -113,6 +113,20 @@ export class HomeComponent implements OnInit, OnDestroy {
   homeAbout: HomeAboutContent = JSON.parse(JSON.stringify(DEFAULT_ABOUT_CONTENT.home));
   homeContent: SiteHomeContent = { ...DEFAULT_HOME_CONTENT };
 
+  /**
+   * Títulos das seções de viagens da home, sincronizados com o nome do menu
+   * correspondente no header. Quando a usuária renomeia um menu em
+   * "Conteúdo > Cabeçalho", o título da seção na home acompanha — sem precisar
+   * editar o texto separadamente. Inicia com o título configurado em
+   * "Conteúdo > Home" (fallback) e é sobrescrito assim que o header carrega.
+   */
+  peregrinacoesTitle = DEFAULT_HOME_CONTENT.peregrinacoesTitle;
+  regularesTitle = DEFAULT_HOME_CONTENT.regularesTitle;
+  curadoriaTitle = DEFAULT_HOME_CONTENT.curadoriaTitle;
+
+  /** Menus do header em cache; alimentam a sincronia dos títulos das seções. */
+  private headerLinks: HeaderLink[] = [];
+
   bannerSlides: HomeBannerSlide[] = [];
 
   peregrinacoes: HomeTripCard[] = [];
@@ -135,6 +149,39 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadPosts();
     this.loadAboutContent();
     this.loadHomeContent();
+    this.loadHeaderTitles();
+  }
+
+  /**
+   * Mantém os títulos das seções de viagens em sincronia com os nomes dos
+   * menus do header. Cada seção está vinculada a um menu pelo seu id estável:
+   *   - "Próximas Peregrinações" -> menu id `peregrinacao`
+   *   - "Viagens Regulares"      -> menu id `regulares`
+   *   - "Curadoria Unitur"       -> menu id `curadoria`
+   * Se o menu existir, o título passa a ser o label do menu; senão, mantém o
+   * texto configurado em "Conteúdo > Home" como fallback.
+   */
+  private loadHeaderTitles() {
+    this.siteContentService.header$.subscribe(header => {
+      this.headerLinks = header.links || [];
+      this.resolveSectionTitles();
+      this.cdr.detectChanges();
+    });
+    this.siteContentService.loadHeader().subscribe();
+  }
+
+  /**
+   * Calcula os títulos das seções a partir do label do menu (fonte da verdade)
+   * com fallback para o título configurado em "Conteúdo > Home". Chamado quando
+   * o header OU o conteúdo da home mudam, pois ambos influenciam o resultado.
+   */
+  private resolveSectionTitles() {
+    const labelOf = (menuId: string) =>
+      this.headerLinks.find(link => link.id === menuId)?.label?.trim();
+
+    this.peregrinacoesTitle = labelOf('peregrinacao') || this.homeContent.peregrinacoesTitle;
+    this.regularesTitle = labelOf('regulares') || this.homeContent.regularesTitle;
+    this.curadoriaTitle = labelOf('curadoria') || this.homeContent.curadoriaTitle;
   }
 
   private applySeo() {
@@ -170,6 +217,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   private loadHomeContent() {
     this.siteContentService.home$.subscribe(content => {
       this.homeContent = content;
+      // Reavalia os títulos: o conteúdo da home alimenta o fallback usado
+      // quando o menu correspondente não existe mais no header.
+      this.resolveSectionTitles();
       this.cdr.detectChanges();
     });
     this.siteContentService.loadHome().subscribe();

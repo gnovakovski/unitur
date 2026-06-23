@@ -29,6 +29,12 @@ interface ViagemCard {
   category: string;
   menuIds: string[];
   startDate?: Date;
+  /**
+   * Texto pré-normalizado (minúsculo, sem acentos) com todos os campos
+   * pesquisáveis da viagem (país, destino, coordenador, guia, descrições,
+   * período etc.). Usado pelo filtro de busca livre da home/listagem.
+   */
+  searchText: string;
 }
 
 interface CategoryFilter {
@@ -89,7 +95,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
     this.querySub = this.route.queryParamMap.subscribe(params => {
-      this.filterDestination = (params.get('destination') || '').trim().toLowerCase();
+      this.filterDestination = this.normalizeSearch((params.get('destination') || '').trim());
       this.filterStartDate = this.parseFilterDate(params.get('startDate'));
       this.filterEndDate = this.parseFilterDate(params.get('endDate'));
       this.cdr.detectChanges();
@@ -157,14 +163,20 @@ export class ViagensComponent implements OnInit, OnDestroy {
     const endDate = this.filterEndDate;
     const hasSearch = !!destination || !!startDate || !!endDate;
 
+    // Busca livre ("like"): cada termo digitado precisa aparecer em algum dos
+    // campos pesquisáveis da viagem (país, destino, coordenador, guia,
+    // descrições etc.), concatenados em `searchText`. Vários termos =>
+    // todos precisam casar (AND), permitindo refinar a busca.
+    const terms = destination ? destination.split(/\s+/).filter(Boolean) : [];
+
     return this.viagens.filter(v => {
       const matchesCategory = hasSearch || !this.selectedMenuId || v.menuIds.includes(this.selectedMenuId);
-      const matchesDestination = !destination || v.location.toLowerCase().includes(destination) || v.title.toLowerCase().includes(destination);
+      const matchesSearch = terms.length === 0 || terms.every(term => v.searchText.includes(term));
       const tripDate = this.parseFilterDate(v.startDate);
       const matchesStart = !startDate || (tripDate ? tripDate >= startDate : false);
       const matchesEnd = !endDate || (tripDate ? tripDate <= endDate : false);
 
-      return matchesCategory && matchesDestination && matchesStart && matchesEnd;
+      return matchesCategory && matchesSearch && matchesStart && matchesEnd;
     });
   }
 
@@ -218,10 +230,41 @@ export class ViagensComponent implements OnInit, OnDestroy {
       coordinator: (trip.coordinator || '').trim(),
       menuIds: this.resolveMenuIds(trip),
       category: this.getCategoryLabel(trip),
-      startDate: trip.startDate
+      startDate: trip.startDate,
+      searchText: this.buildSearchText(trip)
     };
     this.attachForeignPrice(card, trip);
     return card;
+  }
+
+  /**
+   * Concatena e normaliza (minúsculo, sem acentos) todos os campos por onde a
+   * busca livre deve procurar: país, destino, título, coordenador, guia
+   * espiritual, período/data e as descrições. Assim o filtro vira um "like"
+   * sobre todas essas informações de uma vez.
+   */
+  private buildSearchText(trip: Trip): string {
+    const parts = [
+      trip.title,
+      trip.country,
+      trip.destination,
+      trip.period,
+      trip.coordinator,
+      trip.spiritualGuide,
+      trip.operator,
+      trip.shortDescription,
+      trip.description,
+      this.getCategoryLabel(trip)
+    ];
+    return this.normalizeSearch(parts.filter(Boolean).join(' '));
+  }
+
+  /** Minúsculo + sem acentos, para comparações de busca tolerantes. */
+  private normalizeSearch(value: string): string {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
   }
 
   private attachForeignPrice(card: ViagemCard, trip: Trip) {
