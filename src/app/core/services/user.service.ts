@@ -14,6 +14,7 @@ import {
 import {
   createUserWithEmailAndPassword,
   getAuth,
+  signInWithEmailAndPassword,
   signOut,
   updateProfile
 } from 'firebase/auth';
@@ -78,13 +79,34 @@ export class UserService {
       secondaryApp = initializeApp(environment.firebase, secondaryAppName);
       const secondaryAuth = getAuth(secondaryApp);
 
-      const credential = await createUserWithEmailAndPassword(secondaryAuth, payload.email, payload.password);
-      const uid = credential.user.uid;
+      let uid: string;
+      let displayNameUser: Parameters<typeof updateProfile>[0] | null = null;
 
       try {
-        await updateProfile(credential.user, { displayName: payload.name });
-      } catch {
-        // displayName é cosmético; falhar aqui não invalida o cadastro
+        const credential = await createUserWithEmailAndPassword(secondaryAuth, payload.email, payload.password);
+        uid = credential.user.uid;
+        displayNameUser = credential.user;
+      } catch (err: any) {
+        // A conta já existe no Auth. Isso costuma acontecer quando um usuário foi
+        // excluído só do Firestore (o app cliente não pode apagar contas de outros
+        // do Auth — isso exige o Admin SDK no backend), deixando uma conta "órfã".
+        // Aqui tentamos reaproveitá-la: logamos com a senha informada e, se não
+        // houver perfil no Firestore, recriamos o perfil sobre o mesmo uid.
+        if (err?.code !== 'auth/email-already-in-use') {
+          throw err;
+        }
+
+        const recovered = await this.recoverOrphanAuthAccount(secondaryAuth, payload, err);
+        uid = recovered.uid;
+        displayNameUser = recovered.authUser;
+      }
+
+      if (displayNameUser) {
+        try {
+          await updateProfile(displayNameUser, { displayName: payload.name });
+        } catch {
+          // displayName é cosmético; falhar aqui não invalida o cadastro
+        }
       }
 
       const now = new Date();
@@ -110,6 +132,46 @@ export class UserService {
         await deleteApp(secondaryApp).catch(() => undefined);
       }
     }
+  }
+
+  /**
+   * Trata o caso de uma conta que existe no Auth mas pode não ter perfil no
+   * Firestore (conta "órfã", típica de quem foi excluído só do banco).
+   *
+   * - Se a senha informada bate e NÃO há perfil no Firestore → reaproveita a conta.
+   * - Se a senha informada bate mas JÁ existe perfil → é um cadastro realmente
+   *   duplicado; repropaga o erro `email-already-in-use`.
+   * - Se a senha não bate → a conta existe com outra senha; erro específico.
+   */
+  private async recoverOrphanAuthAccount(
+    secondaryAuth: ReturnType<typeof getAuth>,
+    payload: UserCreatePayload,
+    originalError: any
+  ): Promise<{ uid: string; authUser: Parameters<typeof updateProfile>[0] }> {
+    let signedIn;
+    try {
+      signedIn = await signInWithEmailAndPassword(secondaryAuth, payload.email, payload.password);
+    } catch {
+      // Conta existe no Auth, mas a senha informada não confere. Não dá para
+      // reaproveitar pelo client; orienta a usar outra senha/limpar no Console.
+      const e: any = new Error(
+        'Este e-mail já tem uma conta de acesso com outra senha. Use a senha original dessa conta para reativá-la, ou remova-a em Authentication no console do Firebase.'
+      );
+      e.code = 'auth/account-exists-other-password';
+      throw e;
+    }
+
+    const uid = signedIn.user.uid;
+    const profileRef = doc(this.firebaseService.firestore, this.collectionName, uid);
+    const profileSnap = await getDoc(profileRef);
+
+    if (profileSnap.exists()) {
+      // Há conta no Auth E perfil no banco → é mesmo um duplicado.
+      throw originalError;
+    }
+
+    // Conta órfã (sem perfil): reaproveitamos o uid existente.
+    return { uid, authUser: signedIn.user };
   }
 
   /**

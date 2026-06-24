@@ -38,6 +38,21 @@ interface HomeTripCard {
   coordinator: string;
 }
 
+/**
+ * Seção de viagens da home gerada dinamicamente a partir de um menu do header.
+ * Título = nome atual do menu, então renomear/criar/excluir menu reflete na home.
+ */
+interface HomeTripSection {
+  /** id estável do menu (HeaderLink.id). */
+  id: string;
+  title: string;
+  /** Texto do badge no card ("Peregrinação", "Regular", ou o próprio nome do menu). */
+  tagLabel: string;
+  /** Usa o estilo azul de badge "regular". */
+  isRegular: boolean;
+  trips: HomeTripCard[];
+}
+
 interface HomeBannerSlide {
   id: string;
   imageUrl: string;
@@ -115,9 +130,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   bannerSlides: HomeBannerSlide[] = [];
 
-  peregrinacoes: HomeTripCard[] = [];
+  /** Seções de viagem geradas dinamicamente, uma por menu visível do header. */
+  tripSections: HomeTripSection[] = [];
 
-  regulares: HomeTripCard[] = [];
+  /** Viagens ativas já carregadas (reprocessadas quando o header muda). */
+  private activeTrips: Trip[] = [];
+
+  /** Menu que recebe layout especial de curadoria (cards grandes alternados). */
+  private readonly curadoriaMenuId = 'curadoria';
 
   continents: HomeWorldCard[] = [];
 
@@ -130,11 +150,24 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.applySeo();
     this.loadBanners();
+    this.loadHeaderMenus();
     this.loadTrips();
     this.loadTestimonials();
     this.loadPosts();
     this.loadAboutContent();
     this.loadHomeContent();
+  }
+
+  /**
+   * Mantém as seções da home sincronizadas com os menus do header: ao
+   * renomear/criar/excluir um menu no admin, as seções são recalculadas.
+   */
+  private loadHeaderMenus() {
+    this.siteContentService.header$.subscribe(() => {
+      this.buildTripSections();
+      this.cdr.detectChanges();
+    });
+    this.siteContentService.loadHeader().subscribe();
   }
 
   private applySeo() {
@@ -237,20 +270,46 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
       catchError(() => of(emptyResponse))
     ).subscribe(response => {
-      const activeTrips = response.data;
-      this.peregrinacoes = activeTrips
-        .filter(trip => this.belongsToMenu(trip, 'peregrinacao'))
-        .map(trip => this.mapTripCard(trip, 'Guia Espiritual Convidado'));
-      this.regulares = activeTrips
-        .filter(trip => this.belongsToMenu(trip, 'regulares'))
-        .map(trip => this.mapTripCard(trip, 'Guia'));
-      this.curadoria = activeTrips
-        .filter(trip => this.belongsToMenu(trip, 'curadoria'))
+      this.activeTrips = response.data;
+      this.buildTripSections();
+      this.curadoria = this.activeTrips
+        .filter(trip => this.belongsToMenu(trip, this.curadoriaMenuId))
         .map(trip => this.mapCuradoriaCard(trip));
-      this.continents = this.mapWorldCards(activeTrips);
+      this.continents = this.mapWorldCards(this.activeTrips);
 
       this.cdr.detectChanges();
     });
+  }
+
+  /**
+   * Gera uma seção de viagens para CADA menu visível do header (exceto curadoria,
+   * que tem layout próprio). Título = nome atual do menu, então renomear/criar/
+   * excluir menu no admin reflete automaticamente aqui. Só entram menus que têm
+   * ao menos uma viagem vinculada, para não exibir seções vazias.
+   */
+  private buildTripSections() {
+    const menus = this.siteContentService.getCurrentHeaderLinks()
+      .filter(link => link.visible && link.id !== this.curadoriaMenuId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    this.tripSections = menus
+      .map(menu => {
+        // Peregrinação usa o papel "Guia Espiritual Convidado"; demais usam "Guia".
+        const isPeregrinacao = menu.id === 'peregrinacao';
+        const guideRole = isPeregrinacao ? 'Guia Espiritual Convidado' : 'Guia';
+        const trips = this.activeTrips
+          .filter(trip => this.belongsToMenu(trip, menu.id))
+          .map(trip => this.mapTripCard(trip, guideRole));
+
+        return {
+          id: menu.id,
+          title: menu.label,
+          tagLabel: isPeregrinacao ? 'Peregrinação' : menu.label,
+          isRegular: !isPeregrinacao,
+          trips
+        } as HomeTripSection;
+      })
+      .filter(section => section.trips.length > 0);
   }
 
   private loadBanners() {

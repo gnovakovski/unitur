@@ -247,6 +247,32 @@ $soft: #f5f8fc;
     margin: 1.75rem 0;
     border-radius: 24px;
   }
+
+  // Conteúdo vem de HTML do admin via [innerHTML]; conter mídia/larguras que
+  // poderiam estourar a coluna no mobile (tabelas largas, code blocks, embeds).
+  figure,
+  video,
+  iframe {
+    max-width: 100%;
+  }
+
+  iframe {
+    width: 100%;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre;
+  }
 }
 
 .content-images {
@@ -466,7 +492,7 @@ $soft: #f5f8fc;
 
 @media (max-width: 720px) {
   .post-hero {
-    min-height: 380px;
+    min-height: 360px;
     padding: 4.5rem 0 4rem;
   }
 
@@ -479,8 +505,36 @@ $soft: #f5f8fc;
     padding: 1.25rem;
   }
 
+  .content-images {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .post-hero {
+    min-height: 280px;
+    padding: 3.5rem 0 3rem;
+  }
+
+  .post-body {
+    font-size: 1rem;
+
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.2rem; }
+  }
+
+  .post-excerpt p {
+    font-size: 1rem;
+  }
+
+  // No celular, empilha os botões de compartilhar (texto "Copiar link" é longo).
   .share-buttons {
     flex-direction: column;
+
+    .share-btn {
+      width: 100%;
+      text-align: center;
+    }
   }
 
   .content-images {

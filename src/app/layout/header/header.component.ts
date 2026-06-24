@@ -31,4 +31,8 @@ export class HeaderComponent implements OnInit {
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
   }
+
+  closeMenu() {
+    this.menuOpen = false;
+  }
 }

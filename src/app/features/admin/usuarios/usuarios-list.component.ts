@@ -177,7 +177,7 @@ export class UsuariosListComponent implements OnInit {
   }
 
   deleteUser(user: User) {
-    if (!confirm(`Excluir o usuário "${user.name}"? A conta no Firebase Auth precisará ser removida manualmente no console.`)) {
+    if (!confirm(`Excluir o usuário "${user.name}"? Ele perde o acesso ao painel imediatamente. Caso precise recadastrá-lo depois com o mesmo e-mail, use a mesma senha para reativar a conta.`)) {
       return;
     }
 
@@ -213,6 +213,8 @@ export class UsuariosListComponent implements OnInit {
     const code = err?.code || '';
     const map: Record<string, string> = {
       'auth/email-already-in-use': 'Este e-mail já está cadastrado.',
+      'auth/account-exists-other-password': err?.message
+        || 'Este e-mail já tem uma conta de acesso com outra senha.',
       'auth/invalid-email': 'E-mail inválido.',
       'auth/weak-password': 'Senha muito fraca (mínimo 6 caracteres).',
       'auth/operation-not-allowed': 'Cadastro por e-mail/senha não está habilitado no Firebase.'

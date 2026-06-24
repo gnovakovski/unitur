@@ -41,11 +41,21 @@ import { safeScrollToTop } from '../../core/utils/browser';
     .contato__hero { text-align: center; margin-bottom: 3rem; }
     .contato__hero h1 { font-size: 2.25rem; color: #0a3d62; margin: 0 0 0.75rem; }
     .contato__hero p { color: #555; max-width: 600px; margin: 0 auto; }
-    .contato__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+    /* min(100%, 240px) evita overflow horizontal em telas muito estreitas. */
+    .contato__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1.25rem; }
     .contato__card { display: block; padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 12px; text-decoration: none; color: inherit; transition: box-shadow .2s; }
     .contato__card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.08); }
     .contato__card h2 { font-size: 1.1rem; color: #0a3d62; margin: 0 0 0.5rem; }
-    .contato__card p { margin: 0; color: #444; }
+    .contato__card p { margin: 0; color: #444; word-break: break-word; }
+    @media (max-width: 768px) {
+      .contato { padding: 2.5rem 1rem 3.5rem; }
+      .contato__hero { margin-bottom: 2rem; }
+    }
+    @media (max-width: 480px) {
+      .contato__hero h1 { font-size: 1.6rem; }
+      .contato__hero p { font-size: 0.95rem; }
+      .contato__card { padding: 1.25rem; }
+    }
   `]
 })
 export class ContatoComponent implements OnInit {

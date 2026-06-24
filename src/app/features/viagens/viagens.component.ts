@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, finalize, of, Subscription } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
@@ -63,8 +63,15 @@ export class ViagensComponent implements OnInit, OnDestroy {
   private filterStartDate: Date | null = null;
   private filterEndDate: Date | null = null;
 
+  /** Texto original digitado na busca (para o informativo de "filtrando por..."). */
+  searchTermLabel = '';
+  /** Datas de filtro formatadas para exibição (vazio se não houver). */
+  searchStartLabel = '';
+  searchEndLabel = '';
+
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
     private siteContentService: SiteContentService,
@@ -89,9 +96,13 @@ export class ViagensComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
     this.querySub = this.route.queryParamMap.subscribe(params => {
-      this.filterDestination = (params.get('destination') || '').trim().toLowerCase();
+      const rawTerm = (params.get('destination') || '').trim();
+      this.filterDestination = this.normalizeText(rawTerm);
+      this.searchTermLabel = rawTerm;
       this.filterStartDate = this.parseFilterDate(params.get('startDate'));
       this.filterEndDate = this.parseFilterDate(params.get('endDate'));
+      this.searchStartLabel = this.formatFilterDateLabel(this.filterStartDate);
+      this.searchEndLabel = this.formatFilterDateLabel(this.filterEndDate);
       this.cdr.detectChanges();
     });
     this.updateSelectedCategory();
@@ -152,20 +163,83 @@ export class ViagensComponent implements OnInit, OnDestroy {
   }
 
   get filtered() {
-    const destination = this.filterDestination;
+    const term = this.filterDestination;
     const startDate = this.filterStartDate;
     const endDate = this.filterEndDate;
-    const hasSearch = !!destination || !!startDate || !!endDate;
+    const hasSearch = !!term || !!startDate || !!endDate;
+
+    // Quebra o termo em palavras: cada palavra precisa casar em ALGUM campo
+    // (busca tipo "like"). Ex.: "padre brasil" acha viagem cujo guia tem "padre"
+    // E o país tem "brasil". Acentos são ignorados (normalizeText).
+    const words = term ? term.split(/\s+/).filter(Boolean) : [];
 
     return this.viagens.filter(v => {
       const matchesCategory = hasSearch || !this.selectedMenuId || v.menuIds.includes(this.selectedMenuId);
-      const matchesDestination = !destination || v.location.toLowerCase().includes(destination) || v.title.toLowerCase().includes(destination);
+
+      // Texto pesquisável agregado de todos os campos relevantes da viagem.
+      const haystack = this.normalizeText([
+        v.title,
+        v.location,
+        v.category,
+        v.guide,
+        v.coordinator,
+        v.date,
+        v.duration
+      ].join(' '));
+
+      const matchesText = !words.length || words.every(word => haystack.includes(word));
+
       const tripDate = this.parseFilterDate(v.startDate);
       const matchesStart = !startDate || (tripDate ? tripDate >= startDate : false);
       const matchesEnd = !endDate || (tripDate ? tripDate <= endDate : false);
 
-      return matchesCategory && matchesDestination && matchesStart && matchesEnd;
+      return matchesCategory && matchesText && matchesStart && matchesEnd;
     });
+  }
+
+  /** minúsculas + sem acentos, para a busca casar "sao paulo" com "São Paulo". */
+  private normalizeText(value?: string | null): string {
+    return (value || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      // Remove os diacríticos (acentos) decompostos pelo NFD (U+0300–U+036F).
+      .replace(/[̀-ͯ]/g, '')
+      .trim();
+  }
+
+  /**
+   * Título exibido no banner. Quando nenhuma categoria está selecionada,
+   * `selectedCategory` é 'Todas' (usado internamente para filtro/SEO), mas no
+   * banner mostramos algo mais convidativo em vez da palavra "Todas".
+   */
+  get heroTitle(): string {
+    return this.selectedCategory === 'Todas' ? 'Encontre sua Viagem' : this.selectedCategory;
+  }
+
+  /** Há algum filtro de busca (termo ou datas) vindo da URL? */
+  get hasActiveSearch(): boolean {
+    return !!this.filterDestination || !!this.filterStartDate || !!this.filterEndDate;
+  }
+
+  /**
+   * Remove os filtros de busca: limpa os query params da URL, o que faz a
+   * listagem voltar a mostrar todas as viagens (a categoria selecionada volta
+   * a valer normalmente).
+   */
+  clearSearch() {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { destination: null, startDate: null, endDate: null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  private formatFilterDateLabel(date: Date | null): string {
+    if (!date) {
+      return '';
+    }
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   selectCategory(cat: CategoryFilter) {

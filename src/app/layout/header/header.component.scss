@@ -8,7 +8,6 @@ $shadow: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   color: $white;
-  padding: 1rem 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
@@ -19,7 +18,10 @@ $shadow: rgba(0, 0, 0, 0.1);
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  // Padding vertical fica no container (não no .header) para que a altura do
+  // container inclua o padding. Assim o menu mobile (top: 100%) cola na base
+  // real do header, sem vão e sem cortar.
+  padding: 1.75rem 1rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -48,7 +50,7 @@ $shadow: rgba(0, 0, 0, 0.1);
 }
 
 .logo-image {
-  height: 50px;
+  height: 44px;
   width: auto;
   object-fit: contain;
   transition: none;
@@ -167,29 +169,48 @@ $shadow: rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
+  // Ancora o hambúrguer no canto direito (o logo já é absoluto à esquerda).
+  // Sem isto, com a .nav fixed e o logo absoluto, o botão ficava centralizado
+  // no header pelo justify-content: center do .container.
   .menu-toggle {
     display: flex;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1001;
   }
-  
+
   .partner-logos {
     display: none;
   }
   
+  // Menu ancorado na BASE do container (top: 100%) → cola exatamente no header,
+  // sem número fixo em px e sem vão, qualquer que seja a altura do header.
+  // IMPORTANTE: fechado usamos opacity/visibility (NÃO translateX para fora),
+  // porque um elemento deslocado para fora da tela estica a página e cria
+  // overflow horizontal — era o que deixava o header com faixa branca nas laterais.
   .nav {
-    position: fixed;
-    top: 70px;
-    left: -100%;
-    width: 100%;
-    height: calc(100vh - 70px);
+    position: absolute;
+    top: 100%;
+    // left/right: 0 → o menu preenche a largura total do container (= largura da
+    // tela no mobile) sem ultrapassar as bordas, então não há overflow horizontal.
+    left: 0;
+    right: 0;
+    // Cobre o resto da tela; o excesso abaixo do header fica fora da viewport.
+    min-height: 100vh;
     background: rgba($blue, 0.98);
     backdrop-filter: blur(20px);
     flex-direction: column;
     padding: 2rem;
     gap: 1.5rem;
-    transition: left 0.3s ease;
-    
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+
     &.active {
-      left: 0;
+      opacity: 1;
+      visibility: visible;
     }
   }
   
@@ -197,5 +218,25 @@ $shadow: rgba(0, 0, 0, 0.1);
     font-size: 1.2rem;
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 360px) {
+  // Logo menor aqui → recalcula a altura para o menu continuar colado sem vão.
+  .header {
+    --header-height: calc(1.75rem * 2 + 42px + 1px);
+  }
+
+  .logo-image {
+    height: 42px;
+  }
+
+  .nav {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .nav-link {
+    font-size: 1.05rem;
   }
 }

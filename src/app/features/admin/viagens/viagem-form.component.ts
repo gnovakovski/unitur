@@ -52,8 +52,8 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     title: 'Nome da viagem',
     menuIds: 'Menus onde aparece',
     country: 'País',
-    period: 'Embarque',
-    startDate: 'Data de embarque',
+    period: 'Data da Viagem',
+    startDate: 'Data de início',
     duration: 'Duração',
     availableSpots: 'Vagas',
     price: 'Preço',
@@ -271,9 +271,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       const startDate = value.startDate ? new Date(`${value.startDate}T00:00:00`) : now;
 
       const menuIds = Array.from(this.selectedMenuIds);
-      // tripType legado é derivado dos menus para manter a home (que ainda lê
-      // tripType) coerente. Usa o id do menu como tripType quando bate com os
-      // tipos conhecidos; senão cai em 'regular'.
+      // A home e a listagem hoje filtram por `menuIds` (sincronizado com os menus
+      // do header). O `tripType` é mantido apenas como campo legado/compatibilidade
+      // para viagens antigas sem `menuIds`; derivamos um valor coerente aqui.
       const derivedType = this.deriveLegacyTripType(menuIds);
 
       const tripData: Partial<Trip> = {

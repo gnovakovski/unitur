@@ -18,9 +18,10 @@ $dark: #1a1a2e;
   font-size: 3rem;
   font-weight: 800;
   display: inline-block;
-  margin-bottom: 0.5rem;
+  // Espaço extra para a linha decorativa (::after) não colar no subtítulo.
+  margin-bottom: 1.25rem;
   line-height: 1.1;
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.6rem;
   background: linear-gradient(135deg, $blue, $orange);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -283,7 +284,10 @@ $dark: #1a1a2e;
 .peregrinacoes-section {
   padding: 6rem 3rem;
   background: linear-gradient(135deg, rgba($blue, 0.04), rgba($orange, 0.04));
-  @media (max-width: 768px) { padding: 6rem 1.5rem; }
+  // Contém o carrossel de viagens no mobile, evitando overflow horizontal da página.
+  overflow-x: clip;
+  // Padding lateral 1rem no mobile bate com o full-bleed (-1rem) do carrossel.
+  @media (max-width: 768px) { padding: 4rem 1rem; }
 }
 
 .regulares-section {
@@ -403,9 +407,14 @@ $dark: #1a1a2e;
 .world-section {
   padding: 6rem 3rem;
   background-color: $blue;
+  // Contém o full-bleed do carrossel de continentes (margens negativas) para que
+  // não vire overflow horizontal da página. `clip` não cria scroll nem afeta o
+  // scroll interno do próprio carrossel.
+  overflow-x: clip;
   .section-title { color: $white; background: none; -webkit-text-fill-color: $white; &::after { background: $orange; } }
   .section-subtitle { color: rgba($white, 0.9); }
-  @media (max-width: 768px) { padding: 6rem 1.5rem; }
+  // Padding lateral 1rem no mobile bate com o full-bleed do carrossel de continentes.
+  @media (max-width: 768px) { padding: 4rem 1rem; }
 }
 
 .continents-grid {
@@ -414,6 +423,31 @@ $dark: #1a1a2e;
   gap: 1.5rem;
   @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
   @media (max-width: 600px)  { gap: 1rem; }
+
+  // No mobile vira carrossel horizontal (swipe), igual às demais seções.
+  // Full-bleed: escapa o padding lateral da seção (1rem no mobile) e o recoloca
+  // como padding interno, para o carrossel ir até a borda da tela (sinaliza swipe).
+  @media (max-width: 680px) {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 0 1rem 0.5rem;
+    scroll-padding-left: 1rem;
+
+    &::-webkit-scrollbar { display: none; }
+
+    // Cada card ~70% da largura (são mais "altos", aspect 3/4), com espiada do próximo.
+    > .continent-card {
+      flex: 0 0 70%;
+      max-width: 280px;
+      scroll-snap-align: start;
+    }
+  }
 }
 
 .continent-card {
@@ -432,14 +466,29 @@ $dark: #1a1a2e;
 .continent-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba($dark, 0.85) 0%, transparent 60%);
+  background: linear-gradient(to top, rgba($dark, 0.9) 0%, rgba($dark, 0.55) 45%, transparent 75%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 1.5rem;
   .continent-icon { font-size: 2rem; margin-bottom: 0.4rem; }
   h3 { color: $white; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem; }
-  p  { color: rgba($white, 0.8); font-size: 0.82rem; margin-bottom: 0.9rem; line-height: 1.4; }
+  p  {
+    color: rgba($white, 0.85);
+    font-size: 0.82rem;
+    margin-bottom: 0.9rem;
+    line-height: 1.4;
+    // Corta a descrição com reticências para não estourar o card nem cobrir o título.
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  // No carrossel mobile o card é mais estreito: descrição ainda mais curta.
+  @media (max-width: 680px) {
+    p { -webkit-line-clamp: 2; }
+  }
 }
 
 .btn-continent {
@@ -462,10 +511,47 @@ $dark: #1a1a2e;
 .curadoria-section {
   padding: 6rem 3rem;
   background: linear-gradient(135deg, rgba($blue, 0.05), rgba($orange, 0.05));
-  @media (max-width: 768px) { padding: 6rem 1.5rem; }
+  // Contém o full-bleed do carrossel de curadoria no mobile (sem overflow da página).
+  overflow-x: clip;
+  @media (max-width: 768px) { padding: 4rem 1rem; }
 }
 
-.curadoria-list { display: flex; flex-direction: column; gap: 4rem; margin-top: 4rem; }
+.curadoria-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  margin-top: 4rem;
+
+  @media (max-width: 968px) { gap: 2rem; margin-top: 2.5rem; }
+
+  // No mobile vira carrossel horizontal (swipe), igual às demais seções.
+  // Full-bleed: escapa o padding lateral da seção (1rem) e o recoloca como
+  // padding interno, para os cards irem até a borda da tela.
+  @media (max-width: 680px) {
+    flex-direction: row;
+    gap: 1rem;
+    margin-top: 2rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 0 1rem 0.5rem;
+    scroll-padding-left: 1rem;
+
+    &::-webkit-scrollbar { display: none; }
+
+    // Cada card ~88% da largura, com a "espiada" do próximo (sinaliza swipe).
+    // Altura fixa → todos os cards do carrossel ficam idênticos (mesmo padrão).
+    > .curadoria-card {
+      flex: 0 0 88%;
+      max-width: 360px;
+      height: 460px;
+      scroll-snap-align: start;
+    }
+  }
+}
 
 .curadoria-card {
   display: grid;
@@ -474,10 +560,22 @@ $dark: #1a1a2e;
   overflow: hidden;
   box-shadow: 0 16px 48px rgba(0,0,0,0.12);
   min-height: 280px;
+
+  @media (max-width: 480px) { border-radius: 22px; }
   &.reverse { .curadoria-content { order: 2; } .curadoria-image { order: 1; } }
+
+  // No mobile o card vira coluna única: imagem no topo (altura natural) e
+  // conteúdo azul preenchendo o resto, colados (linhas auto / 1fr → sem gap
+  // branco entre a imagem e o bloco azul). Ordem consistente.
   @media (max-width: 968px) {
     grid-template-columns: 1fr;
-    &.reverse { .curadoria-content { order: 1; } .curadoria-image { order: 2; } }
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+
+    .curadoria-image,
+    &.reverse .curadoria-image { order: 1; }
+    .curadoria-content,
+    &.reverse .curadoria-content { order: 2; }
   }
 }
 
@@ -485,7 +583,7 @@ $dark: #1a1a2e;
   position: relative;
   min-height: 280px;
   overflow: hidden;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
   &::before {
     content: '';
     position: absolute;
@@ -496,6 +594,18 @@ $dark: #1a1a2e;
   .reverse &::before {
     background: linear-gradient(90deg, transparent 0%, rgba($blue, 0.4) 60%, $blue 100%);
   }
+
+  // No mobile: imagem limpa no topo (sem gradiente), proporção menor para o card
+  // não ficar comprido, e colada no bloco azul de baixo (sem faixa branca).
+  @media (max-width: 968px) {
+    min-height: 0;
+    aspect-ratio: 16 / 11;
+
+    &::before,
+    .reverse &::before {
+      display: none;
+    }
+  }
 }
 
 .curadoria-content {
@@ -505,9 +615,49 @@ $dark: #1a1a2e;
   justify-content: center;
   background: $blue;
   @media (max-width: 768px) { padding: 2rem; }
+
+  // No mobile, conteúdo centralizado e alinhado ao topo, com espaçamento
+  // uniforme entre os elementos (gap) — visual de card limpo e moderno.
+  @media (max-width: 968px) {
+    text-align: center;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 1.75rem 1.5rem 2rem;
+
+    // Oculta a descrição longa no mobile para o card ficar enxuto no carrossel.
+    p { display: none; }
+
+    // Zera margens individuais — o espaçamento vem do `gap` do container.
+    h3, h4 { margin: 0; }
+
+    // Título: corta com "..." em até 2 linhas → todos os cards no mesmo padrão,
+    // independentemente do tamanho do nome.
+    h3 {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    // Subtítulo (ex.: país): 1 linha com reticências.
+    h4 {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
   h3 { color: $white; font-size: 2.4rem; font-weight: 900; margin-bottom: 0.4rem; letter-spacing: -1px; }
   h4 { color: $orange; font-size: 1.4rem; font-weight: 700; margin-bottom: 1.2rem; }
   p  { color: rgba($white, 0.9); line-height: 1.8; margin-bottom: 1.5rem; font-size: 1rem; }
+
+  @media (max-width: 480px) {
+    padding: 1.5rem 1.25rem 1.75rem;
+    h3 { font-size: 1.65rem; letter-spacing: -0.5px; }
+    h4 { font-size: 1.1rem; }
+  }
 }
 
 .curator-badge {
@@ -523,9 +673,19 @@ $dark: #1a1a2e;
   margin-bottom: 1.5rem;
   align-self: flex-start;
   &::before { content: '⭐'; }
+
+  // Conteúdo centralizado no mobile → badge também (gap do container espaça).
+  @media (max-width: 968px) { align-self: center; margin-bottom: 0; }
 }
 
-.tags { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.tags {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+
+  @media (max-width: 968px) { justify-content: center; margin-bottom: 0; }
+}
 
 .tag {
   background: rgba($white, 0.15);
@@ -545,6 +705,15 @@ $dark: #1a1a2e;
   font-size: 1rem;
   align-self: flex-start;
   box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+
+  // Centralizado no mobile; em telas bem estreitas ocupa a largura para um
+  // alvo de toque maior e visual mais equilibrado.
+  @media (max-width: 968px) { align-self: center; }
+  @media (max-width: 480px) {
+    width: 100%;
+    text-align: center;
+    padding: 0.9rem 1.5rem;
+  }
 }
 
 // ── Testimonials ─────────────────────────────────────────
@@ -701,6 +870,48 @@ $dark: #1a1a2e;
   object-fit: cover;
   border-radius: 32px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  @media (max-width: 768px) { height: 300px; border-radius: 24px; }
+  @media (max-width: 480px) { height: 220px; }
+}
+
+// No mobile, a seção Sobre fica centralizada e com a imagem em destaque no topo,
+// para um layout mais moderno e equilibrado.
+@media (max-width: 768px) {
+  .about-content {
+    // Imagem primeiro (visual de destaque), texto centralizado abaixo.
+    .about-image { order: 1; }
+    .about-text  { order: 2; }
+  }
+
+  .about-text {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    // Título centralizado com a linha decorativa de volta ao centro.
+    .section-title {
+      text-align: center;
+      &::after { left: 50%; transform: translateX(-50%); }
+    }
+  }
+
+  .about-stats {
+    justify-content: center;
+    gap: 1.5rem 2.5rem;
+  }
+
+  .stat {
+    align-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-about {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 // ============================================================================
@@ -719,9 +930,62 @@ $dark: #1a1a2e;
     gap: 1.5rem;
   }
 
+  // No mobile, vira carrossel horizontal (swipe) em vez de empilhar vertical.
   @media (max-width: 680px) {
-    grid-template-columns: 1fr;
-    padding: 0 1rem;
+    display: flex;
+    // align-items: start → cada card tem a própria altura (não estica todos à
+    // altura do maior, o que deixava cards com muito espaço vazio).
+    align-items: start;
+    grid-template-columns: none;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    // Rolagem suave com inércia no iOS e sem barra visível.
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    // Full-bleed: escapa o padding lateral da seção (1rem no mobile) e o recoloca
+    // como padding interno, para o carrossel ir até a borda da tela (sem faixa
+    // branca). A seção tem `overflow-x: clip`, que contém esse transbordo.
+    max-width: none;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 0 1rem 0.5rem;
+    scroll-padding-left: 1rem;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // Cada card ocupa ~85% da largura, deixando uma "espiada" do próximo
+    // para sinalizar que há mais conteúdo ao lado (swipe).
+    > .trip-card {
+      flex: 0 0 85%;
+      max-width: 340px;
+      scroll-snap-align: start;
+    }
+
+    // Body mais compacto no card do carrossel.
+    .trip-card__body {
+      gap: 0.85rem;
+      padding: 1.1rem 1rem 1rem;
+    }
+
+    // Footer empilhado: preço em cima, botão de largura total embaixo.
+    // Evita o preço (R$ ...) ser cortado pelo botão "Reservar" na largura estreita.
+    .trip-card__footer {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .trip-card__cta {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .trip-card__price strong {
+      font-size: 1.35rem;
+    }
   }
 }
 
@@ -1011,4 +1275,59 @@ $dark: #1a1a2e;
     height: 15px;
     transition: transform 0.2s ease;
   }
+}
+
+// ============================================================================
+// Ajustes responsivos consolidados — celular médio (≤480px) e pequeno (≤360px).
+// Os breakpoints ≥768px ficam junto de cada regra acima; aqui só o que faltava
+// para celular não cobrir bem (alturas de imagem, fontes de hero, paddings).
+// ============================================================================
+@media (max-width: 480px) {
+  // Banner / hero
+  .banner-carousel { height: 380px; }
+  .carousel-content { padding: 1.25rem; }
+  .carousel-title { font-size: 1.9rem; margin-bottom: 1rem; }
+  .carousel-subtitle { font-size: 1.05rem; margin-bottom: 1.5rem; }
+  .carousel-cta { font-size: 0.9rem; padding: 0.7rem 1.4rem; }
+  .carousel-btn { width: 40px; height: 40px; font-size: 1.6rem; &.prev { left: 0.5rem; } &.next { right: 0.5rem; } }
+  .carousel-indicators { bottom: 1rem; gap: 0.5rem; }
+  .indicator { width: 28px; &.active { width: 44px; } }
+
+  // Busca
+  .search-section { margin-top: -40px; padding: 0 1rem 3rem; }
+  .search-card { padding: 1.5rem; border-radius: 18px; }
+
+  // Espaçamento vertical das seções (era 6rem em todas)
+  .peregrinacoes-section,
+  .world-section,
+  .curadoria-section,
+  .testimonials-section,
+  .blog-section,
+  .about-section { padding: 3.5rem 1rem; }
+
+  // Alturas de imagem fixas → menores no celular
+  .card-image { height: 180px; }
+  .blog-image img { height: 170px; }
+
+  // Tipografia de seção mais compacta
+  .section-title { font-size: 1.65rem; }
+  .section-subtitle { font-size: 1.05rem; }
+  .curadoria-content {
+    padding: 1.5rem;
+    h3 { font-size: 1.7rem; }
+    h4 { font-size: 1.15rem; }
+  }
+
+  // Cards de viagem / depoimentos
+  .testimonial-card { padding: 1.5rem; }
+  .testimonial-avatar { width: 50px; height: 50px; }
+}
+
+@media (max-width: 360px) {
+  .banner-carousel { height: 340px; }
+  .carousel-title { font-size: 1.6rem; }
+  .section-title { font-size: 1.45rem; }
+  .card-content,
+  .blog-content { padding: 1.1rem; }
+  .trip-grid { padding: 0 0.75rem; }
 }

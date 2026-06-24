@@ -48,6 +48,92 @@ $white: #ffffff;
     background: rgba($orange, 0.1);
     color: #9b4b12;
   }
+
+  &__link {
+    margin-left: 0.5rem;
+    border: none;
+    background: none;
+    color: $orange;
+    font: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+}
+
+// Informativo de busca ativa (mostra o filtro aplicado + botão de remover).
+.active-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: rgba($orange, 0.1);
+  border: 1px solid rgba($orange, 0.35);
+  border-radius: 16px;
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.5rem;
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+
+    svg {
+      width: 18px;
+      height: 18px;
+      color: #9b4b12;
+      flex: none;
+    }
+  }
+
+  &__label {
+    color: #6b4b2a;
+    font-size: 0.95rem;
+    line-height: 1.5;
+
+    strong {
+      color: #9b4b12;
+      font-weight: 700;
+      margin: 0 0.15rem;
+    }
+  }
+
+  &__count {
+    color: $blue;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  &__clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: none;
+    border: none;
+    border-radius: 999px;
+    background: $orange;
+    color: $white;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+
+    svg { width: 15px; height: 15px; }
+
+    &:hover {
+      background: darken($orange, 8%);
+      transform: translateY(-1px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    &__clear { width: 100%; justify-content: center; }
+  }
 }
 
 .filter-btn {
@@ -69,7 +155,8 @@ $white: #ffffff;
 
 .viagens-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  // min(100%, 300px) evita overflow horizontal em telas mais estreitas que 300px.
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 1.5rem;
 }
 
@@ -225,11 +312,117 @@ $white: #ffffff;
 }
 
 @media (max-width: 768px) {
-  .viagens-hero h1 {
-    font-size: 1.8rem;
+  .viagens-hero {
+    padding: 3.5rem 1rem;
+
+    h1 {
+      font-size: 1.8rem;
+    }
   }
 
+  // Chips de filtro em uma única fileira deslizável (swipe), sem quebrar linhas.
+  // Full-bleed: a fileira "escapa" o padding lateral da seção (margin -1rem) e
+  // o recoloca como padding interno, para o último chip ir até a borda da tela
+  // (mostrando que há mais ao lado) e o primeiro alinhar com o conteúdo.
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.6rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .filter-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  // No mobile, a listagem da categoria vira carrossel horizontal (swipe),
+  // igual à home, em vez de empilhar os cards verticalmente.
+  // Full-bleed: escapa o padding lateral da seção e o recoloca como padding
+  // interno, para o carrossel ir até a borda da tela (sem faixa branca).
   .viagens-grid {
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 0.5rem;
+    scroll-padding-left: 1rem;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // Cada card ~85% da largura, deixando uma "espiada" do próximo (sinaliza swipe).
+    > .viagem-card {
+      flex: 0 0 85%;
+      max-width: 340px;
+      scroll-snap-align: start;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .viagens-hero {
+    padding: 2.5rem 1rem;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    p {
+      font-size: 0.95rem;
+    }
+  }
+
+  .viagens-section {
+    padding: 2rem 1rem;
+  }
+
+  .filters {
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .card-image img {
+    height: 180px;
+  }
+
+  // Em telas estreitas, 2 colunas de info ficam apertadas demais.
+  .card-info {
     grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  // Footer empilhado: preço em cima, botão de largura total — não corta no carrossel.
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .btn-reserve {
+    justify-content: center;
+    width: 100%;
   }
 }

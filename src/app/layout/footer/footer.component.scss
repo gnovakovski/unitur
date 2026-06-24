@@ -253,10 +253,20 @@ $dark: #1a1a2e;
 
 @media (max-width: 768px) {
   .footer-content {
-    grid-template-columns: 1fr;
+    gap: 2rem;
     text-align: center;
+
+    .footer-section {
+      max-width: 100%;
+    }
   }
-  
+
+  // Logo (display: block) centralizado junto com o restante do conteúdo do footer.
+  .footer-logo {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .social-links {
     justify-content: center;
   }
@@ -269,5 +279,38 @@ $dark: #1a1a2e;
   .exchange-rate {
     text-align: center;
     align-items: center;
+  }
+
+  // Centraliza os logos de certificação junto com os demais itens da coluna.
+  .exchange-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .certifications {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-content {
+    gap: 1.75rem;
+  }
+
+  .footer-section {
+    h3 {
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+
+    h4 {
+      font-size: 1rem;
+    }
+  }
+
+  .certifications__logo {
+    height: 46px;
   }
 }
