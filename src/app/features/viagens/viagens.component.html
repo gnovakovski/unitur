@@ -78,6 +78,11 @@
             @if (viagem.showSpots) {
               <span class="badge-spots">{{ viagem.spots }}</span>
             }
+            @if (tagBadge(viagem.tagId); as badge) {
+              <span class="badge-tag" [style.background]="badge.background" [style.color]="badge.textColor">
+                {{ badge.label }}
+              </span>
+            }
           </div>
           <div class="card-content">
             <div class="card-header">

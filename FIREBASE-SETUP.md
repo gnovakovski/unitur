@@ -58,6 +58,13 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Tags dos cards de viagem ("Poucas vagas restantes", etc).
+    // Leitura pública: o site precisa delas para pintar o badge.
+    match /tags/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     match /banners/{document} {
       allow read: if resource.data.status == 'active' || request.auth != null;
       allow write: if request.auth != null;

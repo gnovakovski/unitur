@@ -172,3 +172,49 @@
 .af-hint--error {
   color: #dc2626;
 }
+
+// ---------- Tag do card -----------------------------------------------------
+// Select da tag + prévia do badge ao lado, e a modal de cadastro rápido.
+// Component-scoped: não afeta outras telas do admin.
+.af-tag-select {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+
+  select { flex: 1; min-width: 0; }
+}
+
+.af-tag-preview {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--lg {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    justify-self: start;
+  }
+}
+
+.af-tag-add {
+  justify-self: start;
+}
+
+.af-control--color {
+  padding: 0.25rem;
+  height: 42px;
+  cursor: pointer;
+}
+
+.af-modal--narrow {
+  width: min(520px, 100%);
+}

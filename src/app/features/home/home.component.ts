@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
+import { TripTag } from '../../core/models/tag.model';
 import { PaginatedResponse, TripService } from '../../core/services/trip.service';
+import { TagService } from '../../core/services/tag.service';
+import { TagBadge, resolveTagBadge } from '../../core/utils/tag-badge';
 import { Testimonial } from '../../core/models/testimonial.model';
 import { TestimonialService } from '../../core/services/testimonial.service';
 import { BannerService } from '../../core/services/banner.service';
@@ -21,6 +24,7 @@ import { SeoService } from '../../core/services/seo.service';
 
 interface HomeTripCard {
   slug: string;
+  tagId?: number | null;
   title: string;
   country: string;
   date: string;
@@ -106,6 +110,8 @@ interface HomeBlogPostCard {
 export class HomeComponent implements OnInit, OnDestroy {
   private readonly fallbackTripImage = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&h=350&fit=crop';
   currentSlide = 0;
+  /** Tags cadastradas, para resolver o badge de cada card por `tagId`. */
+  tags: TripTag[] = [];
   searchDestination = '';
   searchStartDate = '';
   searchEndDate = '';
@@ -122,8 +128,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     private exchangeRateService: ExchangeRateService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private seo: SeoService
+    private seo: SeoService,
+    private tagService: TagService
   ) {}
+
+  /** Badge da tag do card, ou null se a viagem não tem tag / a tag sumiu. */
+  tagBadge(tagId: number | null | undefined): TagBadge | null {
+    return resolveTagBadge(tagId, this.tags);
+  }
 
   homeAbout: HomeAboutContent = JSON.parse(JSON.stringify(DEFAULT_ABOUT_CONTENT.home));
   homeContent: SiteHomeContent = { ...DEFAULT_HOME_CONTENT };
@@ -151,6 +163,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.applySeo();
     this.loadBanners();
     this.loadHeaderMenus();
+    this.loadTags();
     this.loadTrips();
     this.loadTestimonials();
     this.loadPosts();
@@ -312,6 +325,19 @@ export class HomeComponent implements OnInit, OnDestroy {
       .filter(section => section.trips.length > 0);
   }
 
+  private loadTags() {
+    this.tagService.getAllTags().pipe(
+      timeout(12000),
+      catchError(() => of([] as TripTag[]))
+    ).subscribe(tags => {
+      this.tags = tags;
+      // markForCheck e não detectChanges: o cache do TagService reemite de forma
+      // síncrona quando já está quente, e forçar CD dentro do ngOnInit seria
+      // reentrante.
+      this.cdr.markForCheck();
+    });
+  }
+
   private loadBanners() {
     this.bannerService.getActiveBanners().pipe(
       timeout(12000),
@@ -387,6 +413,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private mapTripCard(trip: Trip, guideRole: string): HomeTripCard {
     const card: HomeTripCard = {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      tagId: trip.tagId ?? null,
       title: trip.title,
       country: trip.country || trip.destination || 'A definir',
       date: trip.period || this.formatTripPeriod(trip.startDate),

@@ -12,9 +12,14 @@ import { SiteContentService } from '../../core/services/site-content.service';
 import { slugFromHeaderRoute } from '../../core/models/site-content.model';
 import { tripScope, tripCanonicalPath } from '../../core/utils/trip-scope';
 import { tripSeo } from '../../core/utils/seo-fallback';
+import { buildWhatsappLink, resolveWhatsappMessage } from '../../core/utils/whatsapp-message';
+import { TripTag } from '../../core/models/tag.model';
+import { TagService } from '../../core/services/tag.service';
+import { TagBadge, resolveTagBadge } from '../../core/utils/tag-badge';
 
 interface ProductTrip {
   slug: string;
+  tagId?: number | null;
   title: string;
   eyebrow: string;
   destination: string;
@@ -22,6 +27,7 @@ interface ProductTrip {
   duration: string;
   price: string;
   priceTagline?: string;
+  whatsappMessage?: string;
   foreignPrice?: string;
   spots: string;
   showSpots?: boolean;
@@ -60,6 +66,8 @@ export class ProductDetailComponent implements OnInit {
   galleryLightboxOpen = false;
   hotelIndex = 0;
   hotelLightboxOpen = false;
+  /** Tags cadastradas, para resolver o badge desta viagem por `tagId`. */
+  tags: TripTag[] = [];
   /** Número de WhatsApp (só dígitos) vindo do conteúdo de contato do site. */
   private whatsappNumber = '';
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -72,8 +80,14 @@ export class ProductDetailComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
     private seo: SeoService,
-    private siteContentService: SiteContentService
+    private siteContentService: SiteContentService,
+    private tagService: TagService
   ) {}
+
+  /** Badge da tag desta viagem, exibido acima do título. */
+  get tagBadge(): TagBadge | null {
+    return resolveTagBadge(this.trip?.tagId, this.tags);
+  }
 
   /**
    * Salvaguarda contra "página não encontrada": se o slug não é uma viagem mas
@@ -90,17 +104,24 @@ export class ProductDetailComponent implements OnInit {
   }
 
   /**
-   * Link de WhatsApp dinâmico: número real do contato + mensagem com o nome
-   * da viagem. Se não houver número cadastrado, usa só o texto (wa.me/?text=).
+   * Link de WhatsApp dinâmico: número real do contato + a mensagem cadastrada
+   * na viagem (ou o texto padrão com o nome dela, quando não há mensagem).
    */
   get whatsappLink(): string {
-    const nome = this.trip?.title || 'esta viagem';
-    const texto = `Olá, estava vendo o roteiro ${nome} e gostaria de fazer a minha reserva, pode me ajudar?`;
-    const base = this.whatsappNumber ? `https://wa.me/${this.whatsappNumber}` : 'https://wa.me/';
-    return `${base}?text=${encodeURIComponent(texto)}`;
+    const texto = resolveWhatsappMessage(this.trip?.whatsappMessage, this.trip?.title);
+    return buildWhatsappLink(this.whatsappNumber, texto);
   }
 
   ngOnInit() {
+    // Tag exibida no topo da página (cadastrada no admin da viagem).
+    // markForCheck e não detectChanges: o cache do TagService reemite de forma
+    // síncrona quando já está quente, e forçar CD dentro do ngOnInit seria
+    // reentrante.
+    this.tagService.getAllTags().subscribe(tags => {
+      this.tags = tags;
+      this.cdr.markForCheck();
+    });
+
     // Número de WhatsApp do contato do site (usado no botão "Reservar agora").
     this.siteContentService.contact$.subscribe(contact => {
       this.whatsappNumber = String(contact?.whatsapp || '').replace(/\D/g, '');
@@ -334,6 +355,7 @@ export class ProductDetailComponent implements OnInit {
 
     const mapped: ProductTrip = {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      tagId: trip.tagId ?? null,
       title: trip.title,
       eyebrow: this.getTripTypeLabel(trip.tripType),
       destination,
@@ -341,6 +363,7 @@ export class ProductDetailComponent implements OnInit {
       duration,
       price,
       priceTagline: trip.priceTagline !== undefined ? trip.priceTagline : 'Aéreo e apartamento duplo, a partir de:',
+      whatsappMessage: trip.whatsappMessage || '',
       foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,

@@ -77,6 +77,29 @@ $dark: #1a1a2e;
   box-shadow: 0 8px 22px rgba($orange, 0.35);
 }
 
+// Linha com o tipo da viagem + a tag cadastrada no admin. A margem inferior
+// passa do .eyebrow para a linha, senão os dois badges ficam desalinhados.
+.hero-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+
+  .eyebrow { margin-bottom: 0; }
+}
+
+// Fundo e cor do texto vêm inline, do cadastro da tag.
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+
 .hero-meta {
   display: flex;
   flex-wrap: wrap;

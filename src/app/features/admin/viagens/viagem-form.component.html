@@ -109,10 +109,41 @@
         </div>
 
         <div class="af-field af-field--span-2">
+          <label class="af-label">Tag do card <span class="af-label__optional">opcional</span></label>
+          <div class="af-tag-select">
+            <select class="af-control" formControlName="tagId">
+              <option [ngValue]="null">Sem tag</option>
+              @for (tag of tags; track tag.id) {
+                <option [ngValue]="tag.id">{{ tag.label }}</option>
+              }
+            </select>
+            @if (selectedTagBadge; as badge) {
+              <span class="af-tag-preview" [style.background]="badge.background" [style.color]="badge.textColor">
+                {{ badge.label }}
+              </span>
+            }
+          </div>
+          <button type="button" class="af-btn af-btn--secondary af-btn--sm af-tag-add" (click)="openTagModal()">
+            + Adicionar tag
+          </button>
+          <span class="af-hint">Etiqueta exibida sobre a foto no card e no topo da página da viagem (ex.: "Poucas vagas restantes").</span>
+        </div>
+
+        <div class="af-field af-field--span-2">
           <label class="af-label">Frase acima do preço <span class="af-label__optional">opcional</span></label>
           <input class="af-control" formControlName="priceTagline" maxlength="120"
                  placeholder="Ex: Aéreo e apartamento duplo, a partir de:">
           <span class="af-hint">Aparece em letras pequenas no card de preço, acima do valor. Deixe em branco para ocultar.</span>
+        </div>
+
+        <div class="af-field af-field--span-2">
+          <label class="af-label">Mensagem do botão "Reservar agora" <span class="af-label__optional">opcional</span></label>
+          <textarea class="af-control" formControlName="whatsappMessage" rows="3" maxlength="600"
+                    placeholder="Ex: Olá! Quero reservar a vaga para Portugal &amp; Itália, pode me ajudar?"></textarea>
+          <span class="af-hint">
+            É o texto que já vai preenchido no WhatsApp quando o cliente clica em "Reservar agora".
+            Deixe em branco para usar o padrão: "{{ defaultWhatsappMessage }}"
+          </span>
         </div>
 
         <div class="af-field">
@@ -435,6 +466,54 @@
     </div>
   </form>
 </section>
+
+@if (tagModalOpen) {
+  <div class="af-modal-overlay" (click)="closeTagModal()">
+    <form class="af-modal af-modal--narrow" [formGroup]="tagForm" (ngSubmit)="saveTag()" (click)="$event.stopPropagation()">
+      <div class="af-modal__header">
+        <div>
+          <h2 class="af-modal__title">Nova tag</h2>
+          <p class="af-modal__subtitle">A tag fica disponível para todas as viagens.</p>
+        </div>
+        <button class="af-modal__close" type="button" (click)="closeTagModal()" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="af-field">
+        <label class="af-label">Frase da tag <span class="af-label__required">*</span></label>
+        <input class="af-control" type="text" formControlName="label" maxlength="40"
+               placeholder="Ex: Poucas vagas restantes">
+        <span class="af-hint">Máximo de 40 caracteres, para caber no card.</span>
+      </div>
+
+      <div class="af-grid af-grid--2">
+        <div class="af-field">
+          <label class="af-label">Cor de fundo</label>
+          <input class="af-control af-control--color" type="color" formControlName="color">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Prévia</label>
+          <span class="af-tag-preview af-tag-preview--lg"
+                [style.background]="newTagBadge.background" [style.color]="newTagBadge.textColor">
+            {{ newTagBadge.label }}
+          </span>
+          <span class="af-hint">A cor do texto se ajusta sozinha ao fundo.</span>
+        </div>
+      </div>
+
+      @if (tagError) {
+        <p class="af-alert af-alert--error">{{ tagError }}</p>
+      }
+
+      <div class="af-actions">
+        <button class="af-btn af-btn--secondary" type="button" (click)="closeTagModal()" [disabled]="savingTag">Cancelar</button>
+        <button class="af-btn af-btn--primary" type="submit" [disabled]="tagForm.invalid || savingTag">
+          {{ savingTag ? 'Salvando...' : 'Criar tag' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
 
 <app-saving-overlay
   [show]="saving"

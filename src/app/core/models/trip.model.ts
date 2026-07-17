@@ -21,6 +21,11 @@ export interface Trip {
    * Para docs legados sem este campo, é inferido por `country` (ver tripScope()).
    */
   scope?: 'nacional' | 'internacional';
+  /**
+   * Tag exibida no card e na página da viagem. Guarda só o `TripTag.id`
+   * (a frase e a cor vivem na coleção `tags`). null / ausente => sem tag.
+   */
+  tagId?: number | null;
   destination: string;
   country?: string;
   period?: string;
@@ -38,6 +43,12 @@ export interface Trip {
   duration: number; // em dias
   price: number;
   priceTagline?: string;
+  /**
+   * Mensagem que já vem preenchida no WhatsApp quando o cliente clica em
+   * "Reservar agora". Vazio => usa o texto padrão com o nome da viagem
+   * (ver `whatsappLink` em product-detail).
+   */
+  whatsappMessage?: string;
   foreignPrice?: number | string;
   foreignCurrency?: string;
   foreignExchangeRate?: number;

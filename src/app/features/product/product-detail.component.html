@@ -9,7 +9,14 @@
     <div class="hero-shade"></div>
     <div class="hero-content">
       <a routerLink="/viagens" class="back-link">Voltar para viagens</a>
-      <span class="eyebrow">{{ trip.eyebrow }}</span>
+      <div class="hero-labels">
+        <span class="eyebrow">{{ trip.eyebrow }}</span>
+        @if (tagBadge; as badge) {
+          <span class="hero-tag" [style.background]="badge.background" [style.color]="badge.textColor">
+            {{ badge.label }}
+          </span>
+        }
+      </div>
       <h1>{{ trip.title }}</h1>
       <p>{{ trip.summary }}</p>
       @if (trip.showSpots !== false) {

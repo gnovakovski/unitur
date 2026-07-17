@@ -90,6 +90,11 @@
                  [style.transform]="'rotate(' + (trip.imageRotation || 0) + 'deg)'">
             <div class="trip-card__media-gradient"></div>
             <span class="trip-card__tag" [class.trip-card__tag--regular]="section.isRegular">{{ section.tagLabel }}</span>
+            @if (tagBadge(trip.tagId); as badge) {
+              <span class="trip-card__custom-tag" [style.background]="badge.background" [style.color]="badge.textColor">
+                {{ badge.label }}
+              </span>
+            }
             @if (trip.showSpots) {
               <span class="trip-card__spots">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

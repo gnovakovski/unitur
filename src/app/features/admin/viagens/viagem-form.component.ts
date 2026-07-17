@@ -4,11 +4,15 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Trip } from '../../../core/models/trip.model';
+import { DEFAULT_TAG_COLOR, TripTag } from '../../../core/models/tag.model';
 import { TripService } from '../../../core/services/trip.service';
+import { TagService } from '../../../core/services/tag.service';
+import { TagBadge, resolveTagBadge, tagTextColor } from '../../../core/utils/tag-badge';
 import { UploadService } from '../../../core/services/upload.service';
 import { CurrencyEntry, ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode, parseForeignAmount } from '../../../core/utils/currency-format';
 import { tripScope } from '../../../core/utils/trip-scope';
+import { defaultWhatsappMessage } from '../../../core/utils/whatsapp-message';
 import { SiteContentService, MenuOption } from '../../../core/services/site-content.service';
 import { LEGACY_TRIP_TYPE_TO_MENU_ID } from '../../../core/models/site-content.model';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
@@ -46,6 +50,12 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   availableCurrencies: CurrencyEntry[] = [];
   menuOptions: MenuOption[] = [];
   selectedMenuIds = new Set<string>();
+  /** Tags disponíveis no select (recarregadas ao cadastrar uma nova). */
+  tags: TripTag[] = [];
+  tagModalOpen = false;
+  savingTag = false;
+  tagError = '';
+  tagForm: FormGroup;
   private lastExchangeRate: number | undefined;
 
   protected fieldLabels: Record<string, string> = {
@@ -57,7 +67,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     duration: 'Duração',
     availableSpots: 'Vagas',
     price: 'Preço',
+    tagId: 'Tag do card',
     priceTagline: 'Frase acima do preço',
+    whatsappMessage: 'Mensagem do botão "Reservar agora"',
     foreignCurrency: 'Moeda estrangeira',
     foreignPrice: 'Valor convertido',
     status: 'Status',
@@ -91,9 +103,14 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private siteContentService: SiteContentService
+    private siteContentService: SiteContentService,
+    private tagService: TagService
   ) {
     super();
+    this.tagForm = this.fb.group({
+      label: ['', [Validators.required, Validators.maxLength(40)]],
+      color: [DEFAULT_TAG_COLOR, [Validators.required]]
+    });
     this.tripForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       // Mantido por compatibilidade; o vínculo de menus agora é `menuIds`.
@@ -106,7 +123,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       duration: [1, [Validators.required, Validators.min(1)]],
       availableSpots: [0, [Validators.required, Validators.min(0)]],
       price: ['', [Validators.required, Validators.min(1)]],
+      tagId: [null as number | null],
       priceTagline: ['Aéreo e apartamento duplo, a partir de:'],
+      whatsappMessage: ['', [Validators.maxLength(600)]],
       foreignCurrency: [''],
       foreignPrice: [''],
       status: ['active', [Validators.required]],
@@ -144,6 +163,70 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  /** Badge da tag escolhida, para a prévia ao lado do select. */
+  get selectedTagBadge(): TagBadge | null {
+    return resolveTagBadge(this.tripForm.get('tagId')?.value, this.tags);
+  }
+
+  /** Prévia ao vivo da tag sendo cadastrada na modal. */
+  get newTagBadge(): TagBadge {
+    const value = this.tagForm.getRawValue();
+    const background = value.color || DEFAULT_TAG_COLOR;
+    return {
+      label: (value.label || '').trim() || 'Poucas vagas restantes',
+      background,
+      textColor: tagTextColor(background)
+    };
+  }
+
+  openTagModal(): void {
+    this.tagError = '';
+    this.tagForm.reset({ label: '', color: DEFAULT_TAG_COLOR });
+    this.tagModalOpen = true;
+  }
+
+  closeTagModal(): void {
+    if (this.savingTag) return;
+    this.tagModalOpen = false;
+  }
+
+  /**
+   * Cadastra a tag, recarrega a lista do select e já deixa a nova selecionada.
+   * Não recarrega a tela: o form da viagem continua com tudo preenchido.
+   */
+  async saveTag(): Promise<void> {
+    if (this.tagForm.invalid) {
+      this.tagForm.markAllAsTouched();
+      return;
+    }
+
+    this.savingTag = true;
+    this.tagError = '';
+
+    try {
+      const value = this.tagForm.getRawValue();
+      const created = await firstValueFrom(this.tagService.createTag({
+        label: value.label,
+        color: value.color
+      }));
+
+      this.tags = await firstValueFrom(this.tagService.getAllTags(true));
+      this.tripForm.get('tagId')?.setValue(created.id);
+      this.tripForm.markAsDirty();
+      this.tagModalOpen = false;
+    } catch (err: any) {
+      this.tagError = err?.message || 'Erro ao salvar a tag.';
+    } finally {
+      this.savingTag = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  /** Texto usado no WhatsApp quando a mensagem da viagem fica em branco. */
+  get defaultWhatsappMessage(): string {
+    return defaultWhatsappMessage(this.tripForm.get('title')?.value);
+  }
+
   get includedPreview(): string[] {
     return this.parseLines(this.tripForm.get('includedText')?.value || '');
   }
@@ -158,6 +241,12 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       this.cdr.markForCheck();
     });
     this.exchangeRateService.loadRates().subscribe();
+
+    // Tags disponíveis para o select.
+    this.tagService.getAllTags().subscribe(tags => {
+      this.tags = tags;
+      this.cdr.markForCheck();
+    });
 
     // Carrega os menus disponíveis (cache local imediato + Firestore).
     this.menuOptions = this.siteContentService.getMenuOptions();
@@ -192,7 +281,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           duration: trip.duration,
           availableSpots: trip.availableSpots,
           price: trip.price,
+          tagId: trip.tagId ?? null,
           priceTagline: trip.priceTagline ?? 'Aéreo e apartamento duplo, a partir de:',
+          whatsappMessage: trip.whatsappMessage || '',
           foreignCurrency: trip.foreignCurrency || this.detectCurrency(trip.foreignPrice),
           foreignPrice: trip.foreignPrice ? formatForeignCurrency(trip.foreignPrice, trip.foreignCurrency || this.detectCurrency(trip.foreignPrice)) : '',
           status: trip.status,
@@ -280,6 +371,8 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         ...baseValue,
         menuIds,
         tripType: derivedType,
+        // null (e não undefined) para o "Sem tag" apagar a tag ao editar.
+        tagId: baseValue.tagId ?? null,
         mainImage: existingMainImage,
         foreignPrice: baseValue.foreignCurrency ? (parseForeignAmount(baseValue.foreignPrice) ?? '') : '',
         foreignExchangeRate: baseValue.foreignCurrency ? this.lastExchangeRate : undefined,

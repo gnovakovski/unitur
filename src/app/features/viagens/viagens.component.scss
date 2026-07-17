@@ -209,6 +209,24 @@ $white: #ffffff;
   border-radius: 999px;
 }
 
+// Tag cadastrada pelo admin (ex.: "Poucas vagas restantes"). Fica no rodapé da
+// foto porque o topo já tem a categoria (esquerda) e as vagas (direita).
+// Cor de fundo/texto vêm inline, do cadastro da tag.
+.badge-tag {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  max-width: calc(100% - 1.5rem);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .card-content {
   padding: 1.25rem;
   background: $white;

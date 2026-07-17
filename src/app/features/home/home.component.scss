@@ -1065,6 +1065,28 @@ $dark: #1a1a2e;
   }
 }
 
+// Tag cadastrada pelo admin (ex.: "Poucas vagas restantes"). Fica no rodapé da
+// foto: o topo já tem o tipo da viagem (esquerda) e as vagas (direita).
+// Fundo e cor do texto vêm inline, do cadastro da tag.
+.trip-card__custom-tag {
+  position: absolute;
+  bottom: 0.85rem;
+  left: 0.85rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 1.7rem);
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .trip-card__spots {
   position: absolute;
   bottom: 0.85rem;

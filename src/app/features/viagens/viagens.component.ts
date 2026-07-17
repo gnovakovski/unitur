@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, finalize, of, Subscription } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
+import { TripTag } from '../../core/models/tag.model';
 import { TripService } from '../../core/services/trip.service';
+import { TagService } from '../../core/services/tag.service';
+import { TagBadge, resolveTagBadge } from '../../core/utils/tag-badge';
 import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { SiteContentService } from '../../core/services/site-content.service';
@@ -27,6 +30,7 @@ interface ViagemCard {
   guide: string;
   coordinator: string;
   category: string;
+  tagId?: number | null;
   menuIds: string[];
   startDate?: Date;
 }
@@ -50,6 +54,8 @@ export class ViagensComponent implements OnInit, OnDestroy {
   error = '';
 
   viagens: ViagemCard[] = [];
+  /** Tags cadastradas, para resolver o badge de cada card por `tagId`. */
+  tags: TripTag[] = [];
 
   /** id do menu selecionado; '' = Todas. */
   selectedMenuId = '';
@@ -76,10 +82,24 @@ export class ViagensComponent implements OnInit, OnDestroy {
     private exchangeRateService: ExchangeRateService,
     private siteContentService: SiteContentService,
     private cdr: ChangeDetectorRef,
-    private seo: SeoService
+    private seo: SeoService,
+    private tagService: TagService
   ) {}
 
+  /** Badge da tag da viagem, ou null se ela não tem tag / a tag foi excluída. */
+  tagBadge(tagId: number | null | undefined): TagBadge | null {
+    return resolveTagBadge(tagId, this.tags);
+  }
+
   ngOnInit() {
+    // Tags dos cards (chegam independentemente das viagens). markForCheck e não
+    // detectChanges: o cache do TagService reemite de forma síncrona quando já
+    // está quente, e forçar CD aqui dentro do ngOnInit seria reentrante.
+    this.tagService.getAllTags().subscribe(tags => {
+      this.tags = tags;
+      this.cdr.markForCheck();
+    });
+
     // Monta os filtros com o que já está em cache (imediato)...
     this.rebuildCategories();
     this.updateSelectedCategory();
@@ -290,6 +310,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
       showSpots: trip.showAvailableSpots !== false,
       guide: (trip.spiritualGuide || '').trim(),
       coordinator: (trip.coordinator || '').trim(),
+      tagId: trip.tagId ?? null,
       menuIds: this.resolveMenuIds(trip),
       category: this.getCategoryLabel(trip),
       startDate: trip.startDate
