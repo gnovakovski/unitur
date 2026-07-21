@@ -9,7 +9,7 @@ import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
 import { SiteContentService } from '../../core/services/site-content.service';
-import { slugFromHeaderRoute } from '../../core/models/site-content.model';
+import { normalizeWhatsAppNumber, slugFromHeaderRoute } from '../../core/models/site-content.model';
 import { tripScope, tripCanonicalPath } from '../../core/utils/trip-scope';
 import { tripSeo } from '../../core/utils/seo-fallback';
 import { buildWhatsappLink, resolveWhatsappMessage } from '../../core/utils/whatsapp-message';
@@ -124,7 +124,7 @@ export class ProductDetailComponent implements OnInit {
 
     // Número de WhatsApp do contato do site (usado no botão "Reservar agora").
     this.siteContentService.contact$.subscribe(contact => {
-      this.whatsappNumber = String(contact?.whatsapp || '').replace(/\D/g, '');
+      this.whatsappNumber = normalizeWhatsAppNumber(contact?.whatsapp);
       this.cdr.detectChanges();
     });
     this.siteContentService.loadContact().subscribe();

@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PostService, PostFilters } from '../../core/services/post.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -11,7 +12,7 @@ import { SeoService } from '../../core/services/seo.service';
 @Component({
   selector: 'app-blog-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './blog-list.component.html',
   styleUrl: './blog-list.component.scss'
 })
@@ -19,6 +20,8 @@ export class BlogListComponent implements OnInit {
   posts: Post[] = [];
   categories: Category[] = [];
   selectedCategory: number | null = null;
+  categorySearch = '';
+  categorySelectOpen = false;
   loading = false;
   loaded = false;
 
@@ -133,8 +136,41 @@ export class BlogListComponent implements OnInit {
 
   filterByCategory(categoryId: number | null) {
     this.selectedCategory = categoryId;
+    this.categorySearch = '';
+    this.categorySelectOpen = false;
     this.currentPage = 1;
     this.loadPosts();
+  }
+
+  get selectedCategoryName(): string {
+    return this.categories.find(category => category.id === this.selectedCategory)?.name || 'Todos os países';
+  }
+
+  get filteredCategories(): Category[] {
+    const search = this.categorySearch.trim().toLocaleLowerCase('pt-BR');
+    if (!search) {
+      return this.categories;
+    }
+
+    return this.categories.filter(category =>
+      category.name.toLocaleLowerCase('pt-BR').includes(search)
+    );
+  }
+
+  toggleCategorySelect(event: Event) {
+    event.stopPropagation();
+    this.categorySelectOpen = !this.categorySelectOpen;
+    if (!this.categorySelectOpen) {
+      this.categorySearch = '';
+    }
+  }
+
+  @HostListener('document:click')
+  closeCategorySelect() {
+    if (this.categorySelectOpen) {
+      this.categorySelectOpen = false;
+      this.categorySearch = '';
+    }
   }
 
   changePage(page: number) {

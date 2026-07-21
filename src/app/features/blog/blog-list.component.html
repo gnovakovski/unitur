@@ -13,22 +13,55 @@
   </section>
 
   <div class="container">
-    <!-- Filtros de Categoria -->
+    <!-- Filtro pesquisável de países/categorias -->
     <section class="categories-filter">
-      <button 
-        class="category-btn"
-        [class.active]="selectedCategory === null"
-        (click)="filterByCategory(null)">
-        Todos
-      </button>
-      @for (category of categories; track category.id) {
-        <button 
-          class="category-btn"
-          [class.active]="selectedCategory === category.id"
-          (click)="filterByCategory(category.id)">
-          {{ category.name }}
+      <label class="category-filter-label" for="country-filter">Filtre os posts por país</label>
+      <div class="category-select" [class.is-open]="categorySelectOpen">
+        <button
+          id="country-filter"
+          type="button"
+          class="category-select__trigger"
+          [attr.aria-expanded]="categorySelectOpen"
+          aria-haspopup="listbox"
+          (click)="toggleCategorySelect($event)">
+          <span>{{ selectedCategoryName }}</span>
+          <span class="category-select__chevron" aria-hidden="true">⌄</span>
         </button>
-      }
+
+        @if (categorySelectOpen) {
+          <div class="category-select__menu" (click)="$event.stopPropagation()">
+            <div class="category-select__search">
+              <span aria-hidden="true">⌕</span>
+              <input
+                type="search"
+                [(ngModel)]="categorySearch"
+                placeholder="Buscar país..."
+                aria-label="Buscar país">
+            </div>
+            <div class="category-select__options" role="listbox" aria-label="Países disponíveis">
+              <button
+                type="button"
+                class="category-select__option"
+                [class.is-selected]="selectedCategory === null"
+                (click)="filterByCategory(null)">
+                Todos os países
+              </button>
+              @for (category of filteredCategories; track category.id) {
+                <button
+                  type="button"
+                  class="category-select__option"
+                  [class.is-selected]="selectedCategory === category.id"
+                  (click)="filterByCategory(category.id)">
+                  {{ category.name }}
+                </button>
+              }
+              @if (filteredCategories.length === 0) {
+                <p class="category-select__empty">Nenhum país encontrado.</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
     </section>
 
     <!-- Loading State -->

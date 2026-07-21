@@ -88,7 +88,7 @@ export const DEFAULT_HEADER_CONTENT: SiteHeaderContent = {
 
 export const DEFAULT_CONTACT_CONTENT: SiteContactContent = {
   phone: '+55 (51) 3272.3377',
-  whatsapp: '5551327233770',
+  whatsapp: '555132723377',
   email: 'grupos@unitur.com.br',
   instagram: '',
   facebook: '',
@@ -97,6 +97,15 @@ export const DEFAULT_CONTACT_CONTENT: SiteContactContent = {
   cep: '90.010-300',
   city: 'Porto Alegre - RS'
 };
+
+/**
+ * Mantém o WhatsApp somente com dígitos e corrige o número legado que foi
+ * cadastrado com um zero excedente no final.
+ */
+export function normalizeWhatsAppNumber(value?: string): string {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits === '5551327233770' ? '555132723377' : digits;
+}
 
 export const DEFAULT_HOME_CONTENT: SiteHomeContent = {
   searchTitle: 'Encontre sua próxima aventura',

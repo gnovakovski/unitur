@@ -15,6 +15,7 @@ import {
   SiteFooterContent,
   SiteHeaderContent,
   SiteHomeContent,
+  normalizeWhatsAppNumber,
   slugFromHeaderRoute
 } from '../models/site-content.model';
 
@@ -124,7 +125,7 @@ export class SiteContentService {
       map(snapshot => {
         if (snapshot.exists()) {
           const data = this.firebaseService.normalizeDates(snapshot.data()) as SiteContactContent;
-          const merged = { ...DEFAULT_CONTACT_CONTENT, ...data };
+          const merged = this.normalizeContact({ ...DEFAULT_CONTACT_CONTENT, ...data });
           this.persistLocalContact(merged);
           this.contactSubject.next(merged);
           return merged;
@@ -145,11 +146,11 @@ export class SiteContentService {
   }
 
   saveContact(content: SiteContactContent): Observable<SiteContactContent> {
-    const payload: SiteContactContent = {
+    const payload = this.normalizeContact({
       ...DEFAULT_CONTACT_CONTENT,
       ...content,
       updatedAt: new Date()
-    };
+    });
 
     this.persistLocalContact(payload);
     this.contactSubject.next(payload);
@@ -420,7 +421,7 @@ export class SiteContentService {
     try {
       const raw = this.storage.getItem(this.contactLocalKey);
       if (!raw) return DEFAULT_CONTACT_CONTENT;
-      return { ...DEFAULT_CONTACT_CONTENT, ...JSON.parse(raw) };
+      return this.normalizeContact({ ...DEFAULT_CONTACT_CONTENT, ...JSON.parse(raw) });
     } catch {
       return DEFAULT_CONTACT_CONTENT;
     }
@@ -428,6 +429,10 @@ export class SiteContentService {
 
   private persistLocalContact(value: SiteContactContent): void {
     this.storage.setItem(this.contactLocalKey, JSON.stringify(value));
+  }
+
+  private normalizeContact(content: SiteContactContent): SiteContactContent {
+    return { ...content, whatsapp: normalizeWhatsAppNumber(content.whatsapp) };
   }
 
   private getLocalHome(): SiteHomeContent {
