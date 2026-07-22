@@ -53,8 +53,6 @@ export class BannerService {
 
     const newBanner: Banner = {
       id,
-      title: banner.title || '',
-      subtitle: banner.subtitle,
       imageUrl: banner.imageUrl || '',
       imageUrlMobile: banner.imageUrlMobile,
       link: banner.link,

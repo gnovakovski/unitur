@@ -1,5 +1,5 @@
 <!-- H1 semântico da página (visível só para leitores de tela / crawlers).
-     O carousel usa H2 para os títulos dos banners. -->
+     O carrossel exibe só a arte e o botão, sem textos. -->
 <h1 class="visually-hidden">Unitur — Agência de Viagens, Peregrinações e Roteiros</h1>
 
 <!-- Banner Carousel -->
@@ -19,24 +19,18 @@
               @if (slide.imageUrlMobile) {
                 <source media="(max-width: 768px)" [srcset]="slide.imageUrlMobile">
               }
-              <img [src]="slide.imageUrl" [alt]="slide.title || ('Destino ' + (i + 1))">
+              <img [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)">
             </picture>
-            <div class="carousel-overlay">
-              <div class="carousel-content">
-                @if (slide.title) {
-                  <!-- H2: o H1 da página é o título oculto no topo (1 H1 por página). -->
-                  <h2 class="carousel-title animate-fade-in">{{ slide.title }}</h2>
-                }
-                @if (slide.subtitle) {
-                  <p class="carousel-subtitle animate-fade-in-delay">{{ slide.subtitle }}</p>
-                }
-                @if (slide.link) {
+            @if (slide.link) {
+              <!-- Só o botão sobre a arte: sem sobreposição colorida e sem textos. -->
+              <div class="carousel-overlay">
+                <div class="carousel-content">
                   <a class="carousel-cta animate-fade-in-delay" [routerLink]="slide.link">
                     {{ slide.buttonText || 'Saiba mais' }}
                   </a>
-                }
+                </div>
               </div>
-            </div>
+            }
           </div>
         }
       </div>

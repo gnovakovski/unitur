@@ -62,8 +62,6 @@ interface HomeBannerSlide {
   imageUrl: string;
   /** Arte vertical opcional exibida em telas pequenas. */
   imageUrlMobile: string;
-  title: string;
-  subtitle: string;
   link?: string;
   buttonText?: string;
 }
@@ -359,8 +357,6 @@ export class HomeComponent implements OnInit, OnDestroy {
           id: String(banner.id),
           imageUrl: this.normalizeImage(banner.imageUrl),
           imageUrlMobile: banner.imageUrlMobile ? this.normalizeImage(banner.imageUrlMobile) : '',
-          title: banner.title || '',
-          subtitle: banner.subtitle || '',
           link: banner.link || '',
           buttonText: banner.buttonText || ''
         }));

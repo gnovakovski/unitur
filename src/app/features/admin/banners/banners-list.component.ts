@@ -91,12 +91,14 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
 
               <span class="banner-row__position">{{ $index + 1 }}</span>
 
-              <img class="banner-row__thumb" [src]="banner.imageUrl" [alt]="banner.title">
+              <img class="banner-row__thumb" [src]="banner.imageUrl" [alt]="'Banner ' + ($index + 1)">
 
               <div class="banner-row__info">
-                <strong>{{ banner.title }}</strong>
-                @if (banner.subtitle) {
-                  <span class="muted">{{ banner.subtitle }}</span>
+                <strong>Banner {{ $index + 1 }}</strong>
+                @if (banner.link) {
+                  <span class="muted">{{ banner.buttonText || 'Saiba mais' }} → {{ banner.link }}</span>
+                } @else {
+                  <span class="muted">Sem botão</span>
                 }
               </div>
 
@@ -106,7 +108,7 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
 
               <div class="banner-row__actions">
                 <button class="af-btn af-btn--ghost af-btn--sm" type="button" (click)="openForm(banner)">Editar</button>
-                <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="deleteBanner(banner)" [disabled]="deletingId === banner.id">
+                <button class="af-btn af-btn--danger af-btn--sm" type="button" (click)="deleteBanner(banner, $index)" [disabled]="deletingId === banner.id">
                   {{ deletingId === banner.id ? 'Excluindo...' : 'Excluir' }}
                 </button>
               </div>
@@ -136,16 +138,6 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
 
           <div class="af-grid af-grid--2">
             <div class="af-field af-field--span-2">
-              <label class="af-label">Título <span class="af-label__required">*</span></label>
-              <input class="af-control" formControlName="title" placeholder="Ex: Peregrinação Terra Santa">
-            </div>
-
-            <div class="af-field af-field--span-2">
-              <label class="af-label">Subtítulo <span class="af-label__optional">opcional</span></label>
-              <input class="af-control" formControlName="subtitle" placeholder="Texto secundário do banner">
-            </div>
-
-            <div class="af-field af-field--span-2">
               <label class="af-label">Status</label>
               <select class="af-control" formControlName="status">
                 <option value="active">Ativo</option>
@@ -163,7 +155,7 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
 
           <app-image-upload
             label="Imagem do banner (celular)"
-            helper="Arte vertical recomendada 1080×1350. Em telas pequenas o carrossel troca para esta imagem — o título, subtítulo e botão continuam os mesmos. Se ficar em branco, a arte de desktop é usada sem cortes."
+            helper="Arte vertical recomendada 1080×1350. Em telas pequenas o carrossel troca para esta imagem — o botão continua o mesmo. Se ficar em branco, a arte de desktop é usada sem cortes."
             aspectRatio="portrait"
             [cropRatio]="1080/1350"
             formControlName="imageUrlMobile">
@@ -245,8 +237,6 @@ export class BannersListComponent implements OnInit {
   routeOptions: Array<{ label: string; value: string; group: string }> = [];
 
   private readonly fieldLabels: Record<string, string> = {
-    title: 'Título',
-    subtitle: 'Subtítulo',
     imageUrl: 'Imagem (desktop)',
     imageUrlMobile: 'Imagem (celular)',
     status: 'Status',
@@ -262,8 +252,6 @@ export class BannersListComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.bannerForm = this.fb.group({
-      title: ['', [Validators.required]],
-      subtitle: [''],
       imageUrl: ['', [Validators.required]],
       imageUrlMobile: [''],
       status: ['active', [Validators.required]],
@@ -346,8 +334,6 @@ export class BannersListComponent implements OnInit {
     this.formOpen = true;
     this.editingBanner = banner || null;
     this.bannerForm.reset({
-      title: banner?.title || '',
-      subtitle: banner?.subtitle || '',
       imageUrl: banner?.imageUrl || '',
       imageUrlMobile: banner?.imageUrlMobile || '',
       status: banner?.status || 'active',
@@ -486,8 +472,8 @@ export class BannersListComponent implements OnInit {
     }
   }
 
-  deleteBanner(banner: Banner) {
-    if (!confirm(`Excluir o banner "${banner.title}"?`)) {
+  deleteBanner(banner: Banner, index: number) {
+    if (!confirm(`Excluir o banner ${index + 1}?`)) {
       return;
     }
 
