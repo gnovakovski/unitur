@@ -60,6 +60,8 @@ interface HomeTripSection {
 interface HomeBannerSlide {
   id: string;
   imageUrl: string;
+  /** Arte vertical opcional exibida em telas pequenas. */
+  imageUrlMobile: string;
   title: string;
   subtitle: string;
   link?: string;
@@ -80,7 +82,7 @@ interface HomeWorldCard {
   name: string;
   icon: string;
   image: string;
-  description: string;
+  description?: string;
 }
 
 interface HomeTestimonialCard {
@@ -235,6 +237,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     }, 5000);
   }
 
+  /**
+   * Em telas pequenas o carrossel só assume a proporção vertical quando existe pelo
+   * menos uma arte mobile cadastrada; caso contrário mantém a proporção larga.
+   */
+  get hasMobileBannerArt(): boolean {
+    return this.bannerSlides.some(slide => !!slide.imageUrlMobile);
+  }
+
   nextSlide() {
     if (this.bannerSlides.length === 0) {
       return;
@@ -348,6 +358,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         .map(banner => ({
           id: String(banner.id),
           imageUrl: this.normalizeImage(banner.imageUrl),
+          imageUrlMobile: banner.imageUrlMobile ? this.normalizeImage(banner.imageUrlMobile) : '',
           title: banner.title || '',
           subtitle: banner.subtitle || '',
           link: banner.link || '',
@@ -477,7 +488,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       if (existing) {
         existing.total += 1;
-        existing.description = `${existing.total} viagens cadastradas para ${existing.name}`;
         if (existing.image === this.fallbackTripImage && trip.mainImage) {
           existing.image = this.normalizeImage(trip.mainImage);
         }
@@ -488,7 +498,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         name: destination,
         icon: this.getDestinationIcon(destination),
         image: this.normalizeImage(trip.mainImage),
-        description: trip.shortDescription || trip.period || `Viagens cadastradas para ${destination}`,
+        // Sem frase genérica: se a viagem não tiver descrição, o card mostra só o nome do destino.
+        description: trip.shortDescription?.trim() || '',
         total: 1
       });
     });

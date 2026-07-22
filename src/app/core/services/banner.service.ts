@@ -56,6 +56,7 @@ export class BannerService {
       title: banner.title || '',
       subtitle: banner.subtitle,
       imageUrl: banner.imageUrl || '',
+      imageUrlMobile: banner.imageUrlMobile,
       link: banner.link,
       buttonText: banner.buttonText,
       order,

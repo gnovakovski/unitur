@@ -4,12 +4,23 @@
 
 <!-- Banner Carousel -->
 @if (bannerSlides.length > 0) {
-  <section class="banner-carousel">
+  <section class="banner-carousel" [class.has-mobile-art]="hasMobileBannerArt">
     <div class="carousel-container">
       <div class="carousel-slides" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
         @for (slide of bannerSlides; track slide.id; let i = $index) {
           <div class="carousel-slide">
-            <img [src]="slide.imageUrl" [alt]="slide.title || ('Destino ' + (i + 1))">
+            <!-- Fundo desfocado da própria arte: preenche a sobra quando a proporção da
+                 imagem não bate exatamente com a da tela, sem cortar nada do banner. -->
+            <div class="slide-backdrop" [style.background-image]="'url(' + slide.imageUrl + ')'"></div>
+            @if (slide.imageUrlMobile) {
+              <div class="slide-backdrop slide-backdrop--mobile" [style.background-image]="'url(' + slide.imageUrlMobile + ')'"></div>
+            }
+            <picture>
+              @if (slide.imageUrlMobile) {
+                <source media="(max-width: 768px)" [srcset]="slide.imageUrlMobile">
+              }
+              <img [src]="slide.imageUrl" [alt]="slide.title || ('Destino ' + (i + 1))">
+            </picture>
             <div class="carousel-overlay">
               <div class="carousel-content">
                 @if (slide.title) {
@@ -182,7 +193,9 @@
         <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)">
         <div class="continent-overlay">
           <h3>{{ continent.name }}</h3>
-          <p>{{ continent.description }}</p>
+          @if (continent.description) {
+            <p>{{ continent.description }}</p>
+          }
           <span class="btn-continent">Explorar</span>
         </div>
       </a>

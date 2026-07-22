@@ -132,6 +132,12 @@ $bg: #f7f8fb;
     max-width: 220px;
   }
 
+  // Preview da arte vertical usada no carrossel em telas pequenas.
+  &[data-ratio="portrait"] {
+    aspect-ratio: 4 / 5;
+    max-width: 260px;
+  }
+
   &[data-ratio="auto"] img {
     aspect-ratio: auto;
     height: auto;

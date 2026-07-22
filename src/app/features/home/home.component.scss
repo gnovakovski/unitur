@@ -90,9 +90,19 @@ $dark: #1a1a2e;
 .banner-carousel {
   position: relative;
   width: 100%;
-  height: 650px;
+  // A altura acompanha a proporção recomendada no upload (1920×720) em vez de um valor
+  // fixo em pixels — assim a arte aparece inteira em qualquer largura de tela.
+  aspect-ratio: 1920 / 720;
+  max-height: 900px;
   overflow: hidden;
-  @media (max-width: 768px) { height: 500px; }
+
+  // Em telas pequenas, quando existe arte vertical cadastrada, o bloco assume a
+  // proporção 4:5 da versão mobile.
+  @media (max-width: 768px) {
+    &.has-mobile-art { aspect-ratio: 4 / 5; max-height: none; }
+    // Sem arte mobile: mantém a arte larga inteira, com altura mínima para o texto.
+    &:not(.has-mobile-art) { aspect-ratio: 16 / 9; min-height: 340px; }
+  }
 }
 
 .carousel-container { position: relative; width: 100%; height: 100%; }
@@ -107,12 +117,44 @@ $dark: #1a1a2e;
   min-width: 100%;
   height: 100%;
   position: relative;
-  img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.85); }
+  overflow: hidden;
+
+  picture { display: contents; }
+
+  // `contain` garante que nada da arte seja cortado, independente do tamanho da tela.
+  img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: brightness(0.85);
+  }
+}
+
+// Preenche a sobra (quando a proporção da arte não bate com a da tela) com a própria
+// imagem ampliada e desfocada, evitando barras vazias sem recortar o banner.
+.slide-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  filter: brightness(0.6) blur(28px);
+  transform: scale(1.15);
+
+  // Vem depois do fundo desktop no DOM, então cobre-o quando visível.
+  &--mobile { display: none; }
+  @media (max-width: 768px) {
+    &--mobile { display: block; }
+  }
 }
 
 .carousel-overlay {
   position: absolute;
   inset: 0;
+  // Acima do fundo desfocado (0) e da arte (1) para o texto continuar legível.
+  z-index: 2;
   background: linear-gradient(135deg, rgba($blue, 0.6), rgba($orange, 0.5));
   display: flex;
   align-items: center;
@@ -1333,8 +1375,8 @@ $dark: #1a1a2e;
 // para celular não cobrir bem (alturas de imagem, fontes de hero, paddings).
 // ============================================================================
 @media (max-width: 480px) {
-  // Banner / hero
-  .banner-carousel { height: 380px; }
+  // Banner / hero — a altura vem da proporção da arte (ver .banner-carousel), aqui
+  // só ajustamos a tipografia sobreposta.
   .carousel-content { padding: 1.25rem; }
   .carousel-title { font-size: 1.9rem; margin-bottom: 1rem; }
   .carousel-subtitle { font-size: 1.05rem; margin-bottom: 1.5rem; }
@@ -1374,7 +1416,6 @@ $dark: #1a1a2e;
 }
 
 @media (max-width: 360px) {
-  .banner-carousel { height: 340px; }
   .carousel-title { font-size: 1.6rem; }
   .section-title { font-size: 1.45rem; }
   .card-content,

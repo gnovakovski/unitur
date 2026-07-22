@@ -155,10 +155,18 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
           </div>
 
           <app-image-upload
-            label="Imagem do banner *"
+            label="Imagem do banner (desktop) *"
             helper="Recomendado 1920×720. Será enviada ao Firebase Storage ao salvar."
             [cropRatio]="1920/720"
             formControlName="imageUrl">
+          </app-image-upload>
+
+          <app-image-upload
+            label="Imagem do banner (celular)"
+            helper="Arte vertical recomendada 1080×1350. Em telas pequenas o carrossel troca para esta imagem — o título, subtítulo e botão continuam os mesmos. Se ficar em branco, a arte de desktop é usada sem cortes."
+            aspectRatio="portrait"
+            [cropRatio]="1080/1350"
+            formControlName="imageUrlMobile">
           </app-image-upload>
 
           <div class="af-grid af-grid--2">
@@ -239,7 +247,8 @@ export class BannersListComponent implements OnInit {
   private readonly fieldLabels: Record<string, string> = {
     title: 'Título',
     subtitle: 'Subtítulo',
-    imageUrl: 'Imagem',
+    imageUrl: 'Imagem (desktop)',
+    imageUrlMobile: 'Imagem (celular)',
     status: 'Status',
     link: 'Link do botão',
     buttonText: 'Texto do botão'
@@ -256,6 +265,7 @@ export class BannersListComponent implements OnInit {
       title: ['', [Validators.required]],
       subtitle: [''],
       imageUrl: ['', [Validators.required]],
+      imageUrlMobile: [''],
       status: ['active', [Validators.required]],
       link: [''],
       buttonText: ['']
@@ -339,6 +349,7 @@ export class BannersListComponent implements OnInit {
       title: banner?.title || '',
       subtitle: banner?.subtitle || '',
       imageUrl: banner?.imageUrl || '',
+      imageUrlMobile: banner?.imageUrlMobile || '',
       status: banner?.status || 'active',
       link: banner?.link || '',
       buttonText: banner?.buttonText || ''
@@ -414,13 +425,16 @@ export class BannersListComponent implements OnInit {
     this.savingStep = 'Salvando banner...';
 
     try {
-      const { imageUrl, ...rest } = this.bannerForm.value;
+      const { imageUrl, imageUrlMobile, ...rest } = this.bannerForm.value;
       const imageFile = imageUrl instanceof File ? imageUrl : null;
-      const existingUrl = imageUrl instanceof File ? '' : String(imageUrl || '');
+      const mobileFile = imageUrlMobile instanceof File ? imageUrlMobile : null;
 
       const baseData: Partial<Banner> = {
         ...rest,
-        imageUrl: existingUrl
+        imageUrl: imageFile ? '' : String(imageUrl || ''),
+        // Arquivo novo entra em branco agora e recebe a URL após o upload; string vazia
+        // (imagem removida) precisa ser gravada para limpar a arte mobile antiga.
+        imageUrlMobile: mobileFile ? '' : String(imageUrlMobile || '')
       };
 
       const saved = this.editingBanner
@@ -429,13 +443,26 @@ export class BannersListComponent implements OnInit {
 
       const bannerIdToUse = saved?.id || this.editingBanner?.id;
 
-      if (imageFile && bannerIdToUse) {
-        this.savingStep = 'Enviando imagem para o Firebase Storage...';
+      if ((imageFile || mobileFile) && bannerIdToUse) {
+        this.savingStep = 'Enviando imagens para o Firebase Storage...';
         try {
-          const uploaded = await firstValueFrom(
-            this.uploadService.uploadToEntity(imageFile, 'banners', bannerIdToUse).pipe(timeout(45000))
-          );
-          await firstValueFrom(this.bannerService.updateBanner(bannerIdToUse, { imageUrl: uploaded.url }));
+          const urls: Partial<Banner> = {};
+
+          if (imageFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(imageFile, 'banners', bannerIdToUse).pipe(timeout(45000))
+            );
+            urls.imageUrl = uploaded.url;
+          }
+
+          if (mobileFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(mobileFile, 'banners', bannerIdToUse).pipe(timeout(45000))
+            );
+            urls.imageUrlMobile = uploaded.url;
+          }
+
+          await firstValueFrom(this.bannerService.updateBanner(bannerIdToUse, urls));
         } catch (uploadErr: any) {
           this.error = `Banner salvo, mas falhou o upload da imagem: ${uploadErr?.message || 'erro desconhecido'}.`;
           console.error('Upload error', uploadErr);

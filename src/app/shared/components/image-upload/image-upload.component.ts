@@ -23,7 +23,7 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
   @Input() helper = '';
   @Input() accept = 'image/jpeg,image/jpg,image/png,image/webp';
   @Input() maxSize = 5; // MB
-  @Input() aspectRatio: 'wide' | 'square' | 'auto' = 'wide';
+  @Input() aspectRatio: 'wide' | 'square' | 'portrait' | 'auto' = 'wide';
   @Input() compact = false;
   @Input() cropRatio?: number;
   @Input() enableCrop = true;
@@ -128,6 +128,7 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
     if (this.cropRatio) return this.cropRatio;
     if (this.aspectRatio === 'wide') return 16 / 9;
     if (this.aspectRatio === 'square') return 1;
+    if (this.aspectRatio === 'portrait') return 4 / 5;
     return undefined;
   }
 
