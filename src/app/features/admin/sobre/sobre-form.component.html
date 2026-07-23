@@ -334,8 +334,20 @@
             <input class="af-control" type="text" [(ngModel)]="about.ctaPrimaryLabel" name="ctaPrimaryLabel">
           </div>
           <div class="af-field">
+            <label class="af-label">Link do botão primário</label>
+            <input class="af-control" type="text" [(ngModel)]="about.ctaPrimaryLink" name="ctaPrimaryLink"
+                   placeholder="Ex.: /contato ou https://...">
+            <span class="af-hint">Deixe em branco para usar o WhatsApp padrão do site. Rota interna começa com "/" (ex.: /contato); links externos com "https://".</span>
+          </div>
+          <div class="af-field">
             <label class="af-label">Texto do botão secundário</label>
             <input class="af-control" type="text" [(ngModel)]="about.ctaSecondaryLabel" name="ctaSecondaryLabel">
+          </div>
+          <div class="af-field">
+            <label class="af-label">Link do botão secundário</label>
+            <input class="af-control" type="text" [(ngModel)]="about.ctaSecondaryLink" name="ctaSecondaryLink"
+                   placeholder="Ex.: /viagens ou https://...">
+            <span class="af-hint">Deixe em branco para apontar para a página de viagens (/viagens).</span>
           </div>
         </div>
       </div>

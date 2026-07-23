@@ -15,6 +15,11 @@ export interface Post {
   metaTitle?: string;
   metaDescription?: string;
   ogImage?: string;
+  // Metadados da migração do blog antigo (WordPress).
+  sourceId?: number;
+  sourceUrl?: string;
+  sourceCategoryIds?: number[];
+  sourceCategories?: string[];
   publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;

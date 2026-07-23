@@ -3,10 +3,11 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
 import { ToastHostComponent } from './shared/components/toast-host/toast-host.component';
+import { WhatsappFloatComponent } from './shared/components/whatsapp-float/whatsapp-float.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastHostComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastHostComponent, WhatsappFloatComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

@@ -13,7 +13,6 @@
     </button>
     
     <nav class="nav" [class.active]="menuOpen">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link" (click)="closeMenu()">Home</a>
       @for (link of links; track link.id) {
         <a [routerLink]="link.route" routerLinkActive="active" class="nav-link" (click)="closeMenu()">{{ link.label }}</a>
       }

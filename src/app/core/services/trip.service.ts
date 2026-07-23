@@ -147,6 +147,7 @@ export class TripService {
       itinerary: trip.itinerary,
       status: trip.status || 'active',
       featured: Boolean(trip.featured),
+      showOnHome: trip.showOnHome !== false,
       metaTitle: trip.metaTitle || '',
       metaDescription: trip.metaDescription || '',
       ogImage: trip.ogImage || '',

@@ -79,6 +79,15 @@
             <option value="draft">Rascunho</option>
           </select>
         </div>
+
+        <div class="af-field">
+          <label class="af-label">Aparecer na home</label>
+          <select class="af-control" formControlName="showOnHome">
+            <option [ngValue]="true">Sim, exibir na home</option>
+            <option [ngValue]="false">Não, apenas na listagem</option>
+          </select>
+          <span class="af-hint">A home mostra até 6 por categoria; o restante fica na página de viagens.</span>
+        </div>
       </div>
     </div>
 

@@ -171,6 +171,12 @@
         </article>
       }
     </div>
+
+    @if (section.hasMore) {
+      <div class="section-more">
+        <a class="btn-section-more" [routerLink]="section.route">Ver mais</a>
+      </div>
+    }
   </section>
 }
 

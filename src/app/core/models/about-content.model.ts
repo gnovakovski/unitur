@@ -42,6 +42,17 @@ export interface AboutPageContent {
   ctaSubtitle: string;
   ctaPrimaryLabel: string;
   ctaSecondaryLabel: string;
+  /**
+   * Destino do botão primário ("Fale Conosco"). Aceita rota interna (ex.:
+   * "/contato") ou URL externa (ex.: "https://..."). Vazio => usa o link
+   * do WhatsApp padrão do site (mesmo número do botão "Reservar agora").
+   */
+  ctaPrimaryLink: string;
+  /**
+   * Destino do botão secundário ("Ver Pacotes"). Rota interna ou URL externa.
+   * Vazio => "/viagens".
+   */
+  ctaSecondaryLink: string;
 }
 
 export interface SiteAboutContent {
@@ -119,6 +130,8 @@ export const DEFAULT_ABOUT_CONTENT: SiteAboutContent = {
     ctaTitle: 'Pronto para sua próxima aventura?',
     ctaSubtitle: 'Entre em contato conosco e descubra como podemos tornar sua viagem dos sonhos realidade.',
     ctaPrimaryLabel: 'Fale Conosco',
-    ctaSecondaryLabel: 'Ver Pacotes'
+    ctaSecondaryLabel: 'Ver Pacotes',
+    ctaPrimaryLink: '',
+    ctaSecondaryLink: '/viagens'
   }
 };

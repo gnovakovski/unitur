@@ -344,11 +344,15 @@ $soft: #f5f8fc;
 
 .btn-primary,
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 46px;
   padding: 0.8rem 1.4rem;
   border-radius: 24px;
   font: inherit;
   font-weight: 800;
+  text-decoration: none;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }

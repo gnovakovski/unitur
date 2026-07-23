@@ -67,7 +67,7 @@
     }
 
     <div class="viagens-grid">
-      @for (viagem of filtered; track viagem.title) {
+      @for (viagem of pagedViagens; track viagem.title) {
         <div class="viagem-card">
           <div class="card-image">
             <img [src]="viagem.image" [alt]="viagem.title" (error)="useFallbackImage($event)"
@@ -116,5 +116,35 @@
         </div>
       }
     </div>
+
+    @if (totalPages > 1) {
+      <nav class="pagination" aria-label="Paginação das viagens">
+        <button
+          type="button"
+          class="pagination__nav"
+          [disabled]="currentPage === 1"
+          (click)="goToPage(currentPage - 1)">
+          Anterior
+        </button>
+
+        @for (page of pageList; track page) {
+          <button
+            type="button"
+            class="pagination__page"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)">
+            {{ page }}
+          </button>
+        }
+
+        <button
+          type="button"
+          class="pagination__nav"
+          [disabled]="currentPage === totalPages"
+          (click)="goToPage(currentPage + 1)">
+          Próxima
+        </button>
+      </nav>
+    }
   </div>
 </section>

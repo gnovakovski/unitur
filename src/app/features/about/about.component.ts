@@ -1,14 +1,18 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ChangeDetectorRef, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { AboutContentService } from '../../core/services/about-content.service';
 import { AboutPageContent, DEFAULT_ABOUT_CONTENT } from '../../core/models/about-content.model';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
+import { SiteContentService } from '../../core/services/site-content.service';
+import { normalizeWhatsAppNumber } from '../../core/models/site-content.model';
+import { buildWhatsappLink } from '../../core/utils/whatsapp-message';
 
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './about.component.html',
   styleUrl: './about.component.scss'
 })
@@ -18,12 +22,39 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   aboutContent: AboutPageContent = JSON.parse(JSON.stringify(DEFAULT_ABOUT_CONTENT.about));
 
+  /** Número de WhatsApp padrão do site (usado quando o botão não tem link). */
+  private whatsappNumber = '';
+
   constructor(
     private elementRef: ElementRef,
     private aboutContentService: AboutContentService,
     private cdr: ChangeDetectorRef,
-    private seo: SeoService
+    private seo: SeoService,
+    private siteContentService: SiteContentService
   ) {}
+
+  /** Link do WhatsApp padrão (mesmo do botão "Reservar agora"). */
+  private get whatsappLink(): string {
+    return buildWhatsappLink(
+      this.whatsappNumber,
+      'Olá! Gostaria de mais informações sobre as viagens da Unitur.'
+    );
+  }
+
+  /** Destino do botão "Fale Conosco": link cadastrado ou WhatsApp padrão. */
+  get ctaPrimaryLink(): string {
+    return (this.aboutContent.ctaPrimaryLink || '').trim() || this.whatsappLink;
+  }
+
+  /** Destino do botão "Ver Pacotes": link cadastrado ou "/viagens". */
+  get ctaSecondaryLink(): string {
+    return (this.aboutContent.ctaSecondaryLink || '').trim() || '/viagens';
+  }
+
+  /** Um link é externo quando não começa com "/" (rota interna do Angular). */
+  isExternalLink(link: string): boolean {
+    return !!link && !link.startsWith('/');
+  }
 
   ngOnInit() {
     safeScrollToTop();
@@ -38,6 +69,13 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     });
     this.aboutContentService.load().subscribe();
+
+    // Número de WhatsApp do site, para o fallback do botão "Fale Conosco".
+    this.siteContentService.contact$.subscribe(contact => {
+      this.whatsappNumber = normalizeWhatsAppNumber(contact?.whatsapp);
+      this.cdr.detectChanges();
+    });
+    this.siteContentService.loadContact().subscribe();
   }
 
   ngAfterViewInit() {

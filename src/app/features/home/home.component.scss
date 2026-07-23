@@ -874,6 +874,36 @@ $dark: #1a1a2e;
   }
 }
 
+// ── "Ver mais" das seções de viagens ─────────────────────
+.section-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+  @media (max-width: 768px) { margin-top: 1.75rem; }
+}
+
+.btn-section-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0.7rem 1.75rem;
+  border-radius: 999px;
+  background: $blue;
+  color: $white;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 22px rgba($blue, 0.22);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    background: #24558f;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba($blue, 0.28);
+  }
+}
+
 // ── About ────────────────────────────────────────────────
 .about-section {
   padding: 6rem 3rem;

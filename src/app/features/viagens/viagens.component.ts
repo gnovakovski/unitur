@@ -63,6 +63,10 @@ export class ViagensComponent implements OnInit, OnDestroy {
   selectedCategory = 'Todas';
   /** Filtros (chips) montados a partir dos menus reais do header. */
   categories: CategoryFilter[] = [{ id: '', label: 'Todas' }];
+
+  /** Paginação: 15 viagens por página. */
+  readonly pageSize = 15;
+  currentPage = 1;
   private routeSub?: Subscription;
   private querySub?: Subscription;
   private filterDestination = '';
@@ -123,6 +127,8 @@ export class ViagensComponent implements OnInit, OnDestroy {
       this.filterEndDate = this.parseFilterDate(params.get('endDate'));
       this.searchStartLabel = this.formatFilterDateLabel(this.filterStartDate);
       this.searchEndLabel = this.formatFilterDateLabel(this.filterEndDate);
+      // Mudou o filtro de busca → volta para a primeira página.
+      this.currentPage = 1;
       this.cdr.detectChanges();
     });
     this.updateSelectedCategory();
@@ -150,10 +156,14 @@ export class ViagensComponent implements OnInit, OnDestroy {
   private updateSelectedCategory() {
     const path = this.route.snapshot.url.map(s => s.path).join('/');
     const lastSegment = this.route.snapshot.url[this.route.snapshot.url.length - 1]?.path || '';
+    const previousMenuId = this.selectedMenuId;
 
     if (!path || path === 'viagens') {
       this.selectedMenuId = '';
       this.selectedCategory = 'Todas';
+      if (this.selectedMenuId !== previousMenuId) {
+        this.currentPage = 1;
+      }
       this.applySeo();
       return;
     }
@@ -163,6 +173,9 @@ export class ViagensComponent implements OnInit, OnDestroy {
 
     this.selectedMenuId = link?.id || '';
     this.selectedCategory = link?.label || 'Todas';
+    if (this.selectedMenuId !== previousMenuId) {
+      this.currentPage = 1;
+    }
     this.applySeo();
   }
 
@@ -217,6 +230,34 @@ export class ViagensComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Total de páginas da listagem filtrada (mínimo 1). */
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
+  }
+
+  /** Fatia da página atual (15 itens). Clampa a página se a lista encolheu. */
+  get pagedViagens(): ViagemCard[] {
+    const page = Math.min(this.currentPage, this.totalPages);
+    const start = (page - 1) * this.pageSize;
+    return this.filtered.slice(start, start + this.pageSize);
+  }
+
+  /** Lista de números de página para os controles ([1, 2, 3, ...]). */
+  get pageList(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToPage(page: number) {
+    const clamped = Math.min(Math.max(1, page), this.totalPages);
+    if (clamped === this.currentPage) {
+      return;
+    }
+    this.currentPage = clamped;
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   /** minúsculas + sem acentos, para a busca casar "sao paulo" com "São Paulo". */
   private normalizeText(value?: string | null): string {
     return (value || '')
@@ -263,6 +304,9 @@ export class ViagensComponent implements OnInit, OnDestroy {
   }
 
   selectCategory(cat: CategoryFilter) {
+    if (cat.id !== this.selectedMenuId) {
+      this.currentPage = 1;
+    }
     this.selectedMenuId = cat.id;
     this.selectedCategory = cat.label;
   }

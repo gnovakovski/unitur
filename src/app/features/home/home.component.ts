@@ -55,6 +55,10 @@ interface HomeTripSection {
   /** Usa o estilo azul de badge "regular". */
   isRegular: boolean;
   trips: HomeTripCard[];
+  /** Rota da listagem completa desta categoria (botão "Ver mais"). */
+  route: string;
+  /** Há mais viagens nesta categoria do que as exibidas na home. */
+  hasMore: boolean;
 }
 
 interface HomeBannerSlide {
@@ -151,6 +155,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   /** Menu que recebe layout especial de curadoria (cards grandes alternados). */
   private readonly curadoriaMenuId = 'curadoria';
 
+  /** Máximo de viagens exibidas por categoria na home (resto vai no "Ver mais"). */
+  private readonly homeTripsPerSection = 6;
+
   continents: HomeWorldCard[] = [];
 
   curadoria: HomeCuradoriaCard[] = [];
@@ -185,7 +192,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private applySeo() {
     this.seo.setMeta({
-      title: 'Unitur Agência de Viagens e Turismo | Peregrinações e Roteiros',
+      title: 'Unitur | Agência de Viagens e Turismo',
       description: 'A Unitur é uma agência de viagens especializada em peregrinações e roteiros para grupos pelo Brasil e diversos destinos internacionais. Conheça nossas viagens.',
       canonicalPath: '/',
       type: 'website'
@@ -294,7 +301,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.activeTrips = response.data;
       this.buildTripSections();
       this.curadoria = this.activeTrips
-        .filter(trip => this.belongsToMenu(trip, this.curadoriaMenuId))
+        .filter(trip => this.belongsToMenu(trip, this.curadoriaMenuId) && trip.showOnHome !== false)
         .map(trip => this.mapCuradoriaCard(trip));
       this.continents = this.mapWorldCards(this.activeTrips);
 
@@ -318,8 +325,12 @@ export class HomeComponent implements OnInit, OnDestroy {
         // Peregrinação usa o papel "Guia Espiritual Convidado"; demais usam "Guia".
         const isPeregrinacao = menu.id === 'peregrinacao';
         const guideRole = isPeregrinacao ? 'Guia Espiritual Convidado' : 'Guia';
-        const trips = this.activeTrips
-          .filter(trip => this.belongsToMenu(trip, menu.id))
+        // Todas as viagens ativas da categoria (base do "Ver mais", que leva à
+        // listagem completa) e as que o admin marcou para aparecer na home.
+        const menuTrips = this.activeTrips.filter(trip => this.belongsToMenu(trip, menu.id));
+        const homeTrips = menuTrips.filter(trip => trip.showOnHome !== false);
+        const trips = homeTrips
+          .slice(0, this.homeTripsPerSection)
           .map(trip => this.mapTripCard(trip, guideRole));
 
         return {
@@ -327,7 +338,11 @@ export class HomeComponent implements OnInit, OnDestroy {
           title: menu.label,
           tagLabel: isPeregrinacao ? 'Peregrinação' : menu.label,
           isRegular: !isPeregrinacao,
-          trips
+          trips,
+          route: menu.route,
+          // "Ver mais" quando a listagem completa da categoria tem mais viagens
+          // do que as exibidas aqui na home.
+          hasMore: menuTrips.length > trips.length
         } as HomeTripSection;
       })
       .filter(section => section.trips.length > 0);

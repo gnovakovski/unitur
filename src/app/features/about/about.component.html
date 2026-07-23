@@ -106,8 +106,16 @@
       <h2>{{ aboutContent.ctaTitle }}</h2>
       <p>{{ aboutContent.ctaSubtitle }}</p>
       <div class="cta-buttons">
-        <button class="btn-primary">{{ aboutContent.ctaPrimaryLabel }}</button>
-        <button class="btn-secondary">{{ aboutContent.ctaSecondaryLabel }}</button>
+        @if (isExternalLink(ctaPrimaryLink)) {
+          <a class="btn-primary" [href]="ctaPrimaryLink" target="_blank" rel="noopener">{{ aboutContent.ctaPrimaryLabel }}</a>
+        } @else {
+          <a class="btn-primary" [routerLink]="ctaPrimaryLink">{{ aboutContent.ctaPrimaryLabel }}</a>
+        }
+        @if (isExternalLink(ctaSecondaryLink)) {
+          <a class="btn-secondary" [href]="ctaSecondaryLink" target="_blank" rel="noopener">{{ aboutContent.ctaSecondaryLabel }}</a>
+        } @else {
+          <a class="btn-secondary" [routerLink]="ctaSecondaryLink">{{ aboutContent.ctaSecondaryLabel }}</a>
+        }
       </div>
     </div>
   </div>

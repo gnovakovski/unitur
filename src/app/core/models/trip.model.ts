@@ -74,6 +74,12 @@ export interface Trip {
   itinerary?: string; // HTML ou Markdown
   status: 'active' | 'inactive' | 'draft';
   featured: boolean;
+  /**
+   * Controla se a viagem aparece nas seções da home. Ausente/undefined em
+   * viagens antigas é tratado como `true` (compat: continuam aparecendo).
+   * A home ainda limita a 6 por categoria; o restante fica só na listagem.
+   */
+  showOnHome?: boolean;
   // SEO (opcionais; fallback automático para title/shortDescription/mainImage)
   metaTitle?: string;
   metaDescription?: string;
