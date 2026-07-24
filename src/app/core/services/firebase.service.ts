@@ -3,6 +3,7 @@ import { initializeApp, FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { Firestore, getFirestore, initializeFirestore, Timestamp } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { Analytics, getAnalytics, logEvent, isSupported } from 'firebase/analytics';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -16,6 +17,7 @@ export class FirebaseService {
 
   private app: FirebaseApp | null = null;
   private firestoreDb: Firestore | null = null;
+  private analyticsInstance: Analytics | null = null;
 
   get auth(): Auth {
     return getAuth(this.getApp());
@@ -38,6 +40,21 @@ export class FirebaseService {
 
   get storage(): FirebaseStorage {
     return getStorage(this.getApp());
+  }
+
+  async getAnalytics(): Promise<Analytics | null> {
+    if (this.analyticsInstance) return this.analyticsInstance;
+    const supported = await isSupported();
+    if (!supported) return null;
+    this.analyticsInstance = getAnalytics(this.getApp());
+    return this.analyticsInstance;
+  }
+
+  async logPageView(path: string): Promise<void> {
+    const analytics = await this.getAnalytics();
+    if (analytics) {
+      logEvent(analytics, 'page_view', { page_path: path });
+    }
   }
 
   normalizeDates<T>(data: T): T {
