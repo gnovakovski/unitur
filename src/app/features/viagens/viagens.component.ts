@@ -325,7 +325,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
       catchError((err) => {
         console.error('Erro ao carregar viagens publicas', err);
         this.error = 'Não foi possível carregar as viagens cadastradas.';
-        return of({ data: [], total: 0, page: 1, limit: 100, totalPages: 1 });
+        return of({ data: [], total: 0, page: 1, limit: 100, totalPages: 1, hasNextPage: false });
       }),
       finalize(() => {
         this.loading = false;

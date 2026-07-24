@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable, from, map } from 'rxjs';
+import { Observable, catchError, from, map, of, shareReplay } from 'rxjs';
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { Category } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
+import { BrowserStorageService } from './browser-storage.service';
 
 export interface CategoryFilters {
   search?: string;
@@ -17,6 +18,7 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage: boolean;
 }
 
 @Injectable({
@@ -24,25 +26,56 @@ export interface PaginatedResponse<T> {
 })
 export class CategoryService {
   private readonly collectionName = 'categories';
+  private readonly cacheKey = 'unitur_categories_cache';
+  private categories$: Observable<Category[]> | null = null;
 
-  constructor(private firebaseService: FirebaseService) {}
-
-  getCategories(filters?: CategoryFilters): Observable<PaginatedResponse<Category>> {
-    return from(this.firebaseService.withTimeout(getDocs(query(
-      collection(this.firebaseService.firestore, this.collectionName),
-      orderBy('createdAt', 'desc')
-    )), 'Tempo esgotado ao carregar categorias do Firestore.')).pipe(
-      map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Category)),
-      map(categories => this.applyFilters(categories, filters))
-    );
-  }
+  constructor(
+    private firebaseService: FirebaseService,
+    private storage: BrowserStorageService
+  ) {}
 
   getAllCategories(): Observable<Category[]> {
-    return from(this.firebaseService.withTimeout(getDocs(query(
-      collection(this.firebaseService.firestore, this.collectionName),
-      orderBy('name', 'asc')
-    )), 'Tempo esgotado ao carregar categorias do Firestore.')).pipe(
-      map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Category))
+    if (!this.categories$) {
+      const cached = this.getLocalCategories();
+
+      const firestore$ = from(this.firebaseService.withTimeout(getDocs(query(
+        collection(this.firebaseService.firestore, this.collectionName),
+        orderBy('name', 'asc')
+      )), 'Tempo esgotado ao carregar categorias do Firestore.')).pipe(
+        map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Category)),
+        map(categories => {
+          this.storage.setItem(this.cacheKey, JSON.stringify(categories));
+          return categories;
+        }),
+        catchError(() => {
+          this.categories$ = null;
+          return of(cached);
+        })
+      );
+
+      // Warm-start: emit cached value immediately, then Firestore result
+      const source$ = cached.length > 0
+        ? new Observable<Category[]>(subscriber => {
+            subscriber.next(cached);
+            firestore$.subscribe({
+              next: v => subscriber.next(v),
+              error: e => subscriber.error(e),
+              complete: () => subscriber.complete()
+            });
+          })
+        : firestore$;
+
+      this.categories$ = source$.pipe(
+        shareReplay({ bufferSize: 1, refCount: false })
+      );
+    }
+
+    return this.categories$;
+  }
+
+  getCategories(filters?: CategoryFilters): Observable<PaginatedResponse<Category>> {
+    return this.getAllCategories().pipe(
+      map(categories => this.applyFilters(categories, filters))
     );
   }
 
@@ -78,7 +111,12 @@ export class CategoryService {
     return from(this.firebaseService.withTimeout(
       setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newCategory)).then(() => newCategory),
       'Tempo esgotado ao salvar categoria no Firestore.'
-    ));
+    )).pipe(
+      map(saved => {
+        this.invalidateCache();
+        return saved;
+      })
+    );
   }
 
   updateCategory(id: number, category: Partial<Category>): Observable<Category> {
@@ -93,14 +131,23 @@ export class CategoryService {
         ...updatedCategory
       } as Category)),
       'Tempo esgotado ao atualizar categoria no Firestore.'
-    ));
+    )).pipe(
+      map(saved => {
+        this.invalidateCache();
+        return saved;
+      })
+    );
   }
 
   deleteCategory(id: number): Observable<void> {
     return from(this.firebaseService.withTimeout(
       deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
       'Tempo esgotado ao excluir categoria no Firestore.'
-    ));
+    )).pipe(
+      map(() => {
+        this.invalidateCache();
+      })
+    );
   }
 
   generateSlug(name: string): string {
@@ -112,6 +159,21 @@ export class CategoryService {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
+  }
+
+  private invalidateCache(): void {
+    this.categories$ = null;
+    this.storage.removeItem(this.cacheKey);
+  }
+
+  private getLocalCategories(): Category[] {
+    try {
+      const raw = this.storage.getItem(this.cacheKey);
+      if (!raw) return [];
+      return (JSON.parse(raw) as Category[]).map(c => this.firebaseService.normalizeDates(c));
+    } catch {
+      return [];
+    }
   }
 
   private applyFilters(categories: Category[], filters?: CategoryFilters): PaginatedResponse<Category> {
@@ -134,13 +196,15 @@ export class CategoryService {
     const total = filteredCategories.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const start = (page - 1) * limit;
+    const pageData = filteredCategories.slice(start, start + limit);
 
     return {
-      data: filteredCategories.slice(start, start + limit),
+      data: pageData,
       total,
       page,
       limit,
-      totalPages
+      totalPages,
+      hasNextPage: pageData.length === limit && start + limit < total
     };
   }
 

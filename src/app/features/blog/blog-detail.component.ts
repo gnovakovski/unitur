@@ -131,7 +131,7 @@ export class BlogDetailComponent implements OnInit {
       limit: 4,
       status: 'published'
     }).pipe(
-      catchError(() => of({ data: [] as Post[], total: 0, page: 1, limit: 4, totalPages: 1 }))
+      catchError(() => of({ data: [] as Post[], total: 0, page: 1, limit: 4, totalPages: 1, hasNextPage: false }))
     ).subscribe(response => {
       this.relatedPosts = response.data.filter(p => p.id !== post.id).slice(0, 3);
       this.cdr.markForCheck();
@@ -146,7 +146,7 @@ export class BlogDetailComponent implements OnInit {
     }
 
     this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
-      catchError(() => of({ data: [] as Trip[], total: 0, page: 1, limit: 100, totalPages: 1 }))
+      catchError(() => of({ data: [] as Trip[], total: 0, page: 1, limit: 100, totalPages: 1, hasNextPage: false }))
     ).subscribe(response => {
       this.relatedTrips = response.data.filter(trip => ids.includes(Number(trip.id))).slice(0, 3);
       this.cdr.markForCheck();

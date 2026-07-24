@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
@@ -23,12 +23,17 @@ export class AboutContentService {
   private contentSubject = new BehaviorSubject<SiteAboutContent>(this.getLocal());
   content$ = this.contentSubject.asObservable();
 
+  // Cache do observable de leitura — evita múltiplos getDoc para o mesmo doc.
+  private load$: Observable<SiteAboutContent> | null = null;
+
   constructor(private firebaseService: FirebaseService) {}
 
   load(): Observable<SiteAboutContent> {
+    if (this.load$) return this.load$;
+
     const ref = doc(this.firebaseService.firestore, this.collectionName, this.docId);
 
-    return from(this.firebaseService.withTimeout(
+    this.load$ = from(this.firebaseService.withTimeout(
       getDoc(ref),
       'Tempo esgotado ao carregar conteúdo institucional.'
     )).pipe(
@@ -45,11 +50,15 @@ export class AboutContentService {
         return fallback;
       }),
       catchError(() => {
+        this.load$ = null;
         const fallback = this.getLocal();
         this.contentSubject.next(fallback);
         return of(fallback);
-      })
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+
+    return this.load$;
   }
 
   save(content: SiteAboutContent): Observable<SiteAboutContent> {
@@ -60,6 +69,8 @@ export class AboutContentService {
 
     this.persistLocal(payload);
     this.contentSubject.next(payload);
+    // Invalida o cache para que o próximo load() busque dados atualizados.
+    this.load$ = null;
 
     const ref = doc(this.firebaseService.firestore, this.collectionName, this.docId);
 

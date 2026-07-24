@@ -59,7 +59,7 @@ export class ViagensListComponent implements OnInit {
       catchError((err) => {
         console.error('Erro ao carregar viagens', err);
         this.error = err?.message || 'Erro ao carregar viagens. Verifique login e regras do Firestore.';
-        return of({ data: [], total: 0, page: 1, limit: 100, totalPages: 1 });
+        return of({ data: [], total: 0, page: 1, limit: 100, totalPages: 1, hasNextPage: false });
       }),
       finalize(() => {
         this.loading = false;

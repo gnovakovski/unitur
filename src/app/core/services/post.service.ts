@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { DocumentSnapshot, QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter, updateDoc } from 'firebase/firestore';
 import { Post } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
@@ -19,6 +19,7 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage: boolean;
 }
 
 @Injectable({
@@ -28,59 +29,115 @@ export class PostService {
   private readonly collectionName = 'posts';
   private readonly localPostsKey = 'unitur_admin_posts';
 
+  // Cursor para paginação server-side nas telas de admin.
+  private adminCursor: QueryDocumentSnapshot | null = null;
+  private lastFilterHash = '';
+
   constructor(
     private firebaseService: FirebaseService,
     private storage: BrowserStorageService
   ) {}
 
-  getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
-    // Sem orderBy() na query para evitar exclusão silenciosa de docs sem `createdAt`.
-    // Ordenação é feita cliente-side em dedupePosts().
-    const request = getDocs(collection(this.firebaseService.firestore, this.collectionName));
+  /** Reseta o cursor de paginação (chamar quando filtros mudam ou ao recarregar). */
+  resetPagination(): void {
+    this.adminCursor = null;
+    this.lastFilterHash = '';
+  }
 
-    const firestorePosts$ = from(this.firebaseService.withTimeout(request, 'Tempo esgotado ao carregar posts do Firestore.')).pipe(
-      map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post)),
-      tap(posts => {
+  private hashFilters(f: PostFilters): string {
+    const { page: _p, ...rest } = f as Record<string, unknown>;
+    return JSON.stringify(rest);
+  }
+  getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
+    const pageSize = filters?.limit ?? 10;
+    const filterHash = this.hashFilters(filters ?? {});
+
+    // Detecta mudança de filtro e reseta cursor automaticamente.
+    if (filterHash !== this.lastFilterHash) {
+      this.adminCursor = null;
+    }
+    this.lastFilterHash = filterHash;
+
+    // Monta a query com limit server-side + cursor quando disponível.
+    const constraints: Parameters<typeof query>[1][] = [limit(pageSize + 1)]; // +1 para detectar hasNextPage
+    if (this.adminCursor) {
+      constraints.push(startAfter(this.adminCursor));
+    }
+
+    const firestoreQuery = query(
+      collection(this.firebaseService.firestore, this.collectionName),
+      ...constraints
+    );
+
+    const firestorePosts$ = from(this.firebaseService.withTimeout(
+      getDocs(firestoreQuery),
+      'Tempo esgotado ao carregar posts do Firestore.'
+    )).pipe(
+      map(snapshot => {
+        const docs = snapshot.docs;
+        const hasNextPage = docs.length > pageSize;
+        const pageDocs = hasNextPage ? docs.slice(0, pageSize) : docs;
+
+        // Salva o último doc desta página como cursor para a próxima.
+        this.adminCursor = pageDocs.length > 0
+          ? (pageDocs[pageDocs.length - 1] as QueryDocumentSnapshot)
+          : null;
+
+        const posts = pageDocs.map(d => this.firebaseService.normalizeDates(d.data()) as Post);
+
+        // Atualiza cache local com os posts desta página.
         if (posts.length > 0) {
-          this.replaceLocalPosts(posts);
+          const cached = this.getLocalPosts();
+          const merged = this.dedupePosts([...cached, ...posts]);
+          this.storage.setItem(this.localPostsKey, JSON.stringify(merged));
         }
+
+        return { posts, hasNextPage };
       }),
-      catchError(() => of([] as Post[]))
+      catchError(() => of({ posts: [] as Post[], hasNextPage: false }))
     );
 
     return concat(
-      of(this.getLocalPosts()),
+      of({ posts: this.getLocalPosts(), hasNextPage: false }),
       firestorePosts$
     ).pipe(
-      map(posts => this.dedupePosts(posts)),
-      map(posts => this.applyFilters(posts, filters))
+      map(({ posts, hasNextPage }) => {
+        const filtered = this.applyClientFilters(posts, filters);
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        return {
+          data: filtered.slice(0, pageSize),
+          total,
+          page: filters?.page ?? 1,
+          limit: pageSize,
+          totalPages,
+          hasNextPage
+        } as PaginatedResponse<Post>;
+      })
     );
   }
 
   getPost(id: number): Observable<Post> {
+    const ref = doc(this.firebaseService.firestore, this.collectionName, String(id));
     return from(this.firebaseService.withTimeout(
-      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      getDoc(ref),
       'Tempo esgotado ao carregar post do Firestore.'
     )).pipe(
       map(snapshot => {
-        const item = snapshot.docs
-          .map(docSnap => this.firebaseService.normalizeDates(docSnap.data()) as Post)
-          .find(post => post.id === id) || this.getLocalPosts().find(post => post.id === id);
-
-        if (!item) {
-          throw new Error('Post não encontrado');
+        if (snapshot.exists()) {
+          const post = this.firebaseService.normalizeDates(snapshot.data()) as Post;
+          this.upsertLocalPost(post);
+          return post;
         }
-
-        return item;
-      })
-    ).pipe(
+        // Documento não existe no Firestore — tenta cache local.
+        const local = this.getLocalPosts().find(p => p.id === id);
+        if (local) return local;
+        throw new Error('Post não encontrado');
+      }),
       catchError(() => {
-        const localPost = this.getLocalPosts().find(post => post.id === id);
-        if (!localPost) {
-          throw new Error('Post não encontrado');
-        }
-
-        return of(localPost);
+        const local = this.getLocalPosts().find(p => p.id === id);
+        if (!local) throw new Error('Post não encontrado');
+        return of(local);
       })
     );
   }
@@ -200,40 +257,26 @@ export class PostService {
       .trim();
   }
 
-  private applyFilters(posts: Post[], filters?: PostFilters): PaginatedResponse<Post> {
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
-    let filteredPosts = [...posts];
+  private applyClientFilters(posts: Post[], filters?: PostFilters): Post[] {
+    let filtered = this.dedupePosts([...posts]);
 
     if (filters?.search) {
       const search = filters.search.toLowerCase();
-      filteredPosts = filteredPosts.filter(post =>
+      filtered = filtered.filter(post =>
         post.title.toLowerCase().includes(search) ||
         post.excerpt.toLowerCase().includes(search)
       );
     }
 
     if (filters?.categoryId) {
-      filteredPosts = filteredPosts.filter(post => post.categoryId === Number(filters.categoryId));
+      filtered = filtered.filter(post => post.categoryId === Number(filters.categoryId));
     }
 
     if (filters?.status) {
-      // Posts sem o campo `status` são considerados 'published' por padrão
-      // (compat com documentos cadastrados antes do campo existir).
-      filteredPosts = filteredPosts.filter(post => (post.status || 'published') === filters.status);
+      filtered = filtered.filter(post => (post.status || 'published') === filters.status);
     }
 
-    const total = filteredPosts.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const start = (page - 1) * limit;
-
-    return {
-      data: filteredPosts.slice(start, start + limit),
-      total,
-      page,
-      limit,
-      totalPages
-    };
+    return filtered;
   }
 
   private cleanUndefined<T extends object>(data: T): Record<string, unknown> {
