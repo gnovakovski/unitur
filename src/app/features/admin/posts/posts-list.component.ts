@@ -26,6 +26,7 @@ export class PostsListComponent implements OnInit {
   totalPages = 1;
   totalItems = 0;
   itemsPerPage = 10;
+  hasNextPage = false;
   
   // Filtros
   filterForm: FormGroup;
@@ -63,6 +64,8 @@ export class PostsListComponent implements OnInit {
       )
       .subscribe(() => {
         this.currentPage = 1;
+        // Reseta o cursor server-side quando os filtros mudam.
+        this.postService.resetPagination();
         this.loadPosts();
       });
   }
@@ -126,7 +129,8 @@ export class PostsListComponent implements OnInit {
           total: 0,
           page: this.currentPage,
           limit: this.itemsPerPage,
-          totalPages: 1
+          totalPages: 1,
+          hasNextPage: false
         });
       }),
       finalize(() => {
@@ -138,21 +142,27 @@ export class PostsListComponent implements OnInit {
         this.posts = response.data;
         this.totalItems = response.total;
         this.totalPages = response.totalPages;
+        this.hasNextPage = response.hasNextPage;
         this.cdr.detectChanges();
       }
     });
   }
 
   changePage(page: number) {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-      this.loadPosts();
+    if (page < 1) return;
+    if (page > this.currentPage && !this.hasNextPage) return;
+    // Voltando ao início: reseta o cursor para recomeçar do topo.
+    if (page === 1) {
+      this.postService.resetPagination();
     }
+    this.currentPage = page;
+    this.loadPosts();
   }
 
   clearFilters() {
     this.filterForm.reset();
     this.currentPage = 1;
+    this.postService.resetPagination();
     this.loadPosts();
   }
 

@@ -116,7 +116,8 @@ export class BlogListComponent implements OnInit {
         total: 0,
         page: this.currentPage,
         limit: this.itemsPerPage,
-        totalPages: 1
+        totalPages: 1,
+        hasNextPage: false
       })),
       finalize(() => {
         this.loading = false;

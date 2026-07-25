@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
+import { QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter } from 'firebase/firestore';
 import { Testimonial } from '../models/testimonial.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
@@ -11,6 +11,8 @@ export interface TestimonialFilters {
   rating?: number;
   page?: number;
   limit?: number;
+  /** Quando true, aplica paginação server-side com limit() + startAfter(). */
+  adminPagination?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -19,6 +21,7 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage: boolean;
 }
 
 @Injectable({
@@ -28,15 +31,36 @@ export class TestimonialService {
   private readonly collectionName = 'testimonials';
   private readonly localTestimonialsKey = 'unitur_admin_testimonials';
 
+  // Cursor para paginação server-side nas telas de admin.
+  private adminCursor: QueryDocumentSnapshot | null = null;
+  private lastFilterHash = '';
+
   constructor(
     private firebaseService: FirebaseService,
     private storage: BrowserStorageService
   ) {}
 
+  /** Reseta o cursor de paginação (chamar quando filtros mudam ou ao recarregar). */
+  resetPagination(): void {
+    this.adminCursor = null;
+    this.lastFilterHash = '';
+  }
+
+  private hashFilters(f: TestimonialFilters): string {
+    const { page: _p, ...rest } = f as Record<string, unknown>;
+    return JSON.stringify(rest);
+  }
   getTestimonials(filters?: TestimonialFilters): Observable<PaginatedResponse<Testimonial>> {
+    if (filters?.adminPagination) {
+      return this.getTestimonialsAdmin(filters);
+    }
+
+    // Chamadas públicas (home): full fetch com limit client-side.
+    const pageSize = filters?.limit ?? 10;
     const firestoreTestimonials$ = from(this.firebaseService.withTimeout(getDocs(query(
       collection(this.firebaseService.firestore, this.collectionName),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(pageSize)
     )), 'Tempo esgotado ao carregar depoimentos do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Testimonial)),
       tap(testimonials => {
@@ -56,30 +80,93 @@ export class TestimonialService {
     );
   }
 
-  getTestimonial(id: number): Observable<Testimonial> {
+  private getTestimonialsAdmin(filters: TestimonialFilters): Observable<PaginatedResponse<Testimonial>> {
+    const pageSize = filters.limit ?? 10;
+    const filterHash = this.hashFilters(filters);
+
+    if (filterHash !== this.lastFilterHash) {
+      this.adminCursor = null;
+    }
+    this.lastFilterHash = filterHash;
+
+    const constraints: Parameters<typeof query>[1][] = [
+      orderBy('createdAt', 'desc'),
+      limit(pageSize + 1)
+    ];
+    if (this.adminCursor) {
+      constraints.push(startAfter(this.adminCursor));
+    }
+
+    const firestoreQuery = query(
+      collection(this.firebaseService.firestore, this.collectionName),
+      ...constraints
+    );
+
     return from(this.firebaseService.withTimeout(
-      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      getDocs(firestoreQuery),
+      'Tempo esgotado ao carregar depoimentos do Firestore.'
+    )).pipe(
+      map(snapshot => {
+        const docs = snapshot.docs;
+        const hasNextPage = docs.length > pageSize;
+        const pageDocs = hasNextPage ? docs.slice(0, pageSize) : docs;
+
+        this.adminCursor = pageDocs.length > 0
+          ? (pageDocs[pageDocs.length - 1] as QueryDocumentSnapshot)
+          : null;
+
+        const testimonials = pageDocs.map(d => this.firebaseService.normalizeDates(d.data()) as Testimonial);
+
+        if (testimonials.length > 0) {
+          const cached = this.getLocalTestimonials();
+          const merged = this.dedupeTestimonials([...cached, ...testimonials]);
+          this.storage.setItem(this.localTestimonialsKey, JSON.stringify(merged));
+        }
+
+        const filtered = this.applyClientFilters(testimonials, filters);
+        return {
+          data: filtered.slice(0, pageSize),
+          total: filtered.length,
+          page: filters.page ?? 1,
+          limit: pageSize,
+          totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)),
+          hasNextPage
+        } as PaginatedResponse<Testimonial>;
+      }),
+      catchError(() => {
+        const local = this.applyClientFilters(this.getLocalTestimonials(), filters);
+        return of({
+          data: local.slice(0, pageSize),
+          total: local.length,
+          page: filters.page ?? 1,
+          limit: pageSize,
+          totalPages: Math.max(1, Math.ceil(local.length / pageSize)),
+          hasNextPage: false
+        } as PaginatedResponse<Testimonial>);
+      })
+    );
+  }
+
+  getTestimonial(id: number): Observable<Testimonial> {
+    const ref = doc(this.firebaseService.firestore, this.collectionName, String(id));
+    return from(this.firebaseService.withTimeout(
+      getDoc(ref),
       'Tempo esgotado ao carregar depoimento do Firestore.'
     )).pipe(
       map(snapshot => {
-        const testimonial = snapshot.docs
-          .map(item => this.firebaseService.normalizeDates(item.data()) as Testimonial)
-          .find(item => Number(item.id) === Number(id)) ||
-          this.getLocalTestimonials().find(item => Number(item.id) === Number(id));
-
-        if (!testimonial) {
-          throw new Error('Depoimento nao encontrado');
+        if (snapshot.exists()) {
+          const testimonial = this.firebaseService.normalizeDates(snapshot.data()) as Testimonial;
+          this.upsertLocalTestimonial(testimonial);
+          return testimonial;
         }
-
-        return testimonial;
+        const local = this.getLocalTestimonials().find(t => Number(t.id) === Number(id));
+        if (local) return local;
+        throw new Error('Depoimento nao encontrado');
       }),
       catchError(() => {
-        const localTestimonial = this.getLocalTestimonials().find(item => Number(item.id) === Number(id));
-        if (!localTestimonial) {
-          throw new Error('Depoimento nao encontrado');
-        }
-
-        return of(localTestimonial);
+        const local = this.getLocalTestimonials().find(t => Number(t.id) === Number(id));
+        if (!local) throw new Error('Depoimento nao encontrado');
+        return of(local);
       })
     );
   }
@@ -156,36 +243,42 @@ export class TestimonialService {
 
   private applyFilters(testimonials: Testimonial[], filters?: TestimonialFilters): PaginatedResponse<Testimonial> {
     const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
-    let filteredTestimonials = [...testimonials];
+    const lim = filters?.limit || 10;
+    const filtered = this.applyClientFilters(testimonials, filters);
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / lim));
+    const start = (page - 1) * lim;
+    const pageData = filtered.slice(start, start + lim);
+    return {
+      data: pageData,
+      total,
+      page,
+      limit: lim,
+      totalPages,
+      hasNextPage: pageData.length === lim && start + lim < total
+    };
+  }
+
+  private applyClientFilters(testimonials: Testimonial[], filters?: TestimonialFilters): Testimonial[] {
+    let filtered = [...testimonials];
 
     if (filters?.search) {
       const search = filters.search.toLowerCase();
-      filteredTestimonials = filteredTestimonials.filter(testimonial =>
-        testimonial.clientName.toLowerCase().includes(search) ||
-        testimonial.text.toLowerCase().includes(search)
+      filtered = filtered.filter(t =>
+        t.clientName.toLowerCase().includes(search) ||
+        t.text.toLowerCase().includes(search)
       );
     }
 
     if (filters?.status) {
-      filteredTestimonials = filteredTestimonials.filter(testimonial => testimonial.status === filters.status);
+      filtered = filtered.filter(t => t.status === filters.status);
     }
 
     if (filters?.rating) {
-      filteredTestimonials = filteredTestimonials.filter(testimonial => testimonial.rating === Number(filters.rating));
+      filtered = filtered.filter(t => t.rating === Number(filters.rating));
     }
 
-    const total = filteredTestimonials.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const start = (page - 1) * limit;
-
-    return {
-      data: filteredTestimonials.slice(start, start + limit),
-      total,
-      page,
-      limit,
-      totalPages
-    };
+    return filtered;
   }
 
   private cleanUndefined<T extends object>(data: T): Record<string, unknown> {

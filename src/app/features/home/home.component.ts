@@ -292,7 +292,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       total: 0,
       page: 1,
       limit: 100,
-      totalPages: 1
+      totalPages: 1,
+      hasNextPage: false
     };
 
     this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
@@ -389,7 +390,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       total: 0,
       page: 1,
       limit: 6,
-      totalPages: 1
+      totalPages: 1,
+      hasNextPage: false
     };
 
     this.testimonialService.getTestimonials({ status: 'approved', limit: 6 }).pipe(
@@ -407,7 +409,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       total: 0,
       page: 1,
       limit: 3,
-      totalPages: 1
+      totalPages: 1,
+      hasNextPage: false
     };
 
     this.postService.getPosts({ status: 'published', limit: 3 }).pipe(

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter } from 'firebase/firestore';
 import { Trip } from '../models/trip.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
@@ -12,6 +12,8 @@ export interface TripFilters {
   status?: 'active' | 'inactive' | 'draft';
   page?: number;
   limit?: number;
+  /** Quando true, aplica paginação server-side com limit() + startAfter(). */
+  adminPagination?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -20,6 +22,7 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage: boolean;
 }
 
 @Injectable({
@@ -29,17 +32,39 @@ export class TripService {
   private readonly collectionName = 'trips';
   private readonly localTripsKey = 'unitur_admin_trips';
 
+  // Cursor para paginação server-side nas telas de admin.
+  private adminCursor: QueryDocumentSnapshot | null = null;
+  private lastFilterHash = '';
+
   constructor(
     private firebaseService: FirebaseService,
     private storage: BrowserStorageService
   ) {}
 
+  /** Reseta o cursor de paginação (chamar quando filtros mudam ou ao recarregar). */
+  resetPagination(): void {
+    this.adminCursor = null;
+    this.lastFilterHash = '';
+  }
+
+  private hashFilters(f: TripFilters): string {
+    const { page: _p, ...rest } = f as Record<string, unknown>;
+    return JSON.stringify(rest);
+  }
   getTrips(filters?: TripFilters): Observable<PaginatedResponse<Trip>> {
-    // Não usamos orderBy() na query porque documentos sem o campo `createdAt`
-    // (ou com tipo incompatível) são silenciosamente excluídos pelo Firestore.
-    // Ordenação é feita cliente-side em sortTrips().
+    // Quando adminPagination=true, usa limit() + startAfter() server-side.
+    // Para chamadas públicas (home, viagens) mantém o comportamento original
+    // (full fetch + sort client-side) pois evitamos orderBy() — documentos sem
+    // `createdAt` seriam silenciosamente excluídos pelo Firestore.
+    if (filters?.adminPagination) {
+      return this.getTripsAdmin(filters);
+    }
+
+    const pageSize = filters?.limit ?? 100;
+    const constraints: Parameters<typeof query>[1][] = [limit(pageSize)];
+
     const firestoreTrips$ = from(this.firebaseService.withTimeout(getDocs(
-      collection(this.firebaseService.firestore, this.collectionName)
+      query(collection(this.firebaseService.firestore, this.collectionName), ...constraints)
     ), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip)),
       tap(trips => {
@@ -55,25 +80,110 @@ export class TripService {
       firestoreTrips$
     ).pipe(
       map(trips => this.sortTrips(trips)),
-      map(trips => this.applyFilters(trips, filters))
+      map(trips => {
+        const filtered = this.applyClientFilters(trips, filters);
+        const page = filters?.page ?? 1;
+        const ps = filters?.limit ?? 100;
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / ps));
+        const start = (page - 1) * ps;
+        const pageData = filtered.slice(start, start + ps);
+        return {
+          data: pageData,
+          total,
+          page,
+          limit: ps,
+          totalPages,
+          hasNextPage: pageData.length === ps && start + ps < total
+        } as PaginatedResponse<Trip>;
+      })
+    );
+  }
+
+  private getTripsAdmin(filters: TripFilters): Observable<PaginatedResponse<Trip>> {
+    const pageSize = filters.limit ?? 10;
+    const filterHash = this.hashFilters(filters);
+
+    if (filterHash !== this.lastFilterHash) {
+      this.adminCursor = null;
+    }
+    this.lastFilterHash = filterHash;
+
+    const constraints: Parameters<typeof query>[1][] = [limit(pageSize + 1)];
+    if (this.adminCursor) {
+      constraints.push(startAfter(this.adminCursor));
+    }
+
+    const firestoreQuery = query(
+      collection(this.firebaseService.firestore, this.collectionName),
+      ...constraints
+    );
+
+    return from(this.firebaseService.withTimeout(
+      getDocs(firestoreQuery),
+      'Tempo esgotado ao carregar viagens do Firestore.'
+    )).pipe(
+      map(snapshot => {
+        const docs = snapshot.docs;
+        const hasNextPage = docs.length > pageSize;
+        const pageDocs = hasNextPage ? docs.slice(0, pageSize) : docs;
+
+        this.adminCursor = pageDocs.length > 0
+          ? (pageDocs[pageDocs.length - 1] as QueryDocumentSnapshot)
+          : null;
+
+        const trips = pageDocs.map(d => this.firebaseService.normalizeDates(d.data()) as Trip);
+
+        if (trips.length > 0) {
+          const cached = this.getLocalTrips();
+          const merged = this.sortTrips([...cached, ...trips]);
+          this.storage.setItem(this.localTripsKey, JSON.stringify(merged));
+        }
+
+        const filtered = this.applyClientFilters(trips, filters);
+        return {
+          data: filtered.slice(0, pageSize),
+          total: filtered.length,
+          page: filters.page ?? 1,
+          limit: pageSize,
+          totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)),
+          hasNextPage
+        } as PaginatedResponse<Trip>;
+      }),
+      catchError(() => {
+        const local = this.applyClientFilters(this.sortTrips(this.getLocalTrips()), filters);
+        return of({
+          data: local.slice(0, pageSize),
+          total: local.length,
+          page: filters.page ?? 1,
+          limit: pageSize,
+          totalPages: Math.max(1, Math.ceil(local.length / pageSize)),
+          hasNextPage: false
+        } as PaginatedResponse<Trip>);
+      })
     );
   }
 
   getTrip(id: number): Observable<Trip> {
+    const ref = doc(this.firebaseService.firestore, this.collectionName, String(id));
     return from(this.firebaseService.withTimeout(
-      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
+      getDoc(ref),
       'Tempo esgotado ao carregar viagem do Firestore.'
     )).pipe(
       map(snapshot => {
-        const trip = snapshot.docs
-          .map(item => this.firebaseService.normalizeDates(item.data()) as Trip)
-          .find(item => item.id === id) || this.getLocalTrips().find(item => item.id === id);
-
-        if (!trip) {
-          throw new Error('Viagem não encontrada');
+        if (snapshot.exists()) {
+          const trip = this.firebaseService.normalizeDates(snapshot.data()) as Trip;
+          this.upsertLocalTrip(trip);
+          return trip;
         }
-
-        return trip;
+        const local = this.getLocalTrips().find(t => t.id === id);
+        if (local) return local;
+        throw new Error('Viagem não encontrada');
+      }),
+      catchError(() => {
+        const local = this.getLocalTrips().find(t => t.id === id);
+        if (!local) throw new Error('Viagem não encontrada');
+        return of(local);
       })
     );
   }
@@ -231,39 +341,26 @@ export class TripService {
     return false;
   }
 
-  private applyFilters(trips: Trip[], filters?: TripFilters): PaginatedResponse<Trip> {
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
-    let filteredTrips = [...trips];
+  private applyClientFilters(trips: Trip[], filters?: TripFilters): Trip[] {
+    let filtered = [...trips];
 
     if (filters?.search) {
       const search = filters.search.toLowerCase();
-      filteredTrips = filteredTrips.filter(trip =>
+      filtered = filtered.filter(trip =>
         trip.title.toLowerCase().includes(search) ||
         trip.destination.toLowerCase().includes(search)
       );
     }
 
     if (filters?.categoryId) {
-      filteredTrips = filteredTrips.filter(trip => trip.categoryId === Number(filters.categoryId));
+      filtered = filtered.filter(trip => trip.categoryId === Number(filters.categoryId));
     }
 
     if (filters?.status) {
-      // Viagens antigas sem o campo `status` são consideradas 'active' por padrão.
-      filteredTrips = filteredTrips.filter(trip => (trip.status || 'active') === filters.status);
+      filtered = filtered.filter(trip => (trip.status || 'active') === filters.status);
     }
 
-    const total = filteredTrips.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const start = (page - 1) * limit;
-
-    return {
-      data: filteredTrips.slice(start, start + limit),
-      total,
-      page,
-      limit,
-      totalPages
-    };
+    return filtered;
   }
 
   private sortTrips(trips: Trip[]): Trip[] {
