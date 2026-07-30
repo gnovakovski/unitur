@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
+import { Observable, catchError, concat, from, map, of, shareReplay, tap } from 'rxjs';
 import { DocumentSnapshot, QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter, updateDoc } from 'firebase/firestore';
 import { Post } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
@@ -11,6 +11,13 @@ export interface PostFilters {
   status?: 'draft' | 'published';
   page?: number;
   limit?: number;
+  /**
+   * Quando true, aplica paginação server-side com limit() + startAfter() —
+   * comportamento das telas de admin, que só andam para frente e voltam ao topo.
+   * Nas telas públicas (blog) fica false: lá o `limit` é o tamanho da página, e
+   * usá-lo como janela de leitura truncaria a listagem numa página só.
+   */
+  adminPagination?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -28,6 +35,19 @@ export interface PaginatedResponse<T> {
 export class PostService {
   private readonly collectionName = 'posts';
   private readonly localPostsKey = 'unitur_admin_posts';
+  /**
+   * Teto de documentos lidos na listagem pública. Precisa ser maior que a coleção
+   * inteira (hoje ~353 posts), senão o blog trunca e perde as páginas do fim.
+   * Se for atingido, o serviço avisa no console em vez de truncar em silêncio.
+   */
+  private readonly publicFetchLimit = 2000;
+
+  /**
+   * Leitura da coleção memoizada por sessão. Sem isso, cada troca de página do
+   * blog (e cada filtro de categoria) releria os ~353 documentos no Firestore.
+   * Invalidada por resetPagination() e por qualquer escrita.
+   */
+  private allPosts$?: Observable<Post[]>;
 
   // Cursor para paginação server-side nas telas de admin.
   private adminCursor: QueryDocumentSnapshot | null = null;
@@ -42,6 +62,12 @@ export class PostService {
   resetPagination(): void {
     this.adminCursor = null;
     this.lastFilterHash = '';
+    this.invalidateCache();
+  }
+
+  /** Descarta a leitura memoizada da coleção — a próxima listagem relê o Firestore. */
+  private invalidateCache(): void {
+    this.allPosts$ = undefined;
   }
 
   private hashFilters(f: PostFilters): string {
@@ -49,6 +75,85 @@ export class PostService {
     return JSON.stringify(rest);
   }
   getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
+    // Cursor server-side só no admin. Para o blog, `limit` é o tamanho da página
+    // (9) e não a janela de leitura — ver getPostsPublic().
+    if (!filters?.adminPagination) {
+      return this.getPostsPublic(filters);
+    }
+
+    return this.getPostsAdmin(filters);
+  }
+
+  /**
+   * Listagem pública (blog, home, relacionados): filtra e pagina no cliente sobre
+   * a coleção inteira, para `total` e `totalPages` refletirem TODOS os posts
+   * publicados — e não apenas os documentos da página atual, que era o bug em que
+   * o blog mostrava 9 posts e nenhuma paginação.
+   */
+  private getPostsPublic(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
+    const pageSize = filters?.limit ?? 10;
+    const page = Math.max(1, Number(filters?.page) || 1);
+
+    return concat(
+      of(this.getLocalPosts()),
+      this.loadAllPosts()
+    ).pipe(
+      map(posts => {
+        const filtered = this.applyClientFilters(posts, filters);
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const start = (page - 1) * pageSize;
+
+        return {
+          data: filtered.slice(start, start + pageSize),
+          total,
+          page,
+          limit: pageSize,
+          totalPages,
+          hasNextPage: page < totalPages
+        } as PaginatedResponse<Post>;
+      })
+    );
+  }
+
+  /**
+   * Sem orderBy() na query, de propósito: o Firestore excluiria silenciosamente
+   * documentos sem `createdAt` (vários posts vieram da importação do WordPress).
+   * A ordenação por data, mais recentes primeiro, é feita no cliente por dedupePosts().
+   */
+  private loadAllPosts(): Observable<Post[]> {
+    if (this.allPosts$) return this.allPosts$;
+
+    this.allPosts$ = from(this.firebaseService.withTimeout(
+      getDocs(query(
+        collection(this.firebaseService.firestore, this.collectionName),
+        limit(this.publicFetchLimit)
+      )),
+      'Tempo esgotado ao carregar posts do Firestore.'
+    )).pipe(
+      map(snapshot => {
+        if (snapshot.size >= this.publicFetchLimit) {
+          console.warn(
+            `[PostService] Teto de ${this.publicFetchLimit} posts lidos atingido — ` +
+            'a listagem do blog pode estar truncada. Aumente publicFetchLimit ou ' +
+            'migre a listagem para paginação server-side.'
+          );
+        }
+        return snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post);
+      }),
+      tap(posts => {
+        if (posts.length > 0) {
+          this.replaceLocalPosts(posts);
+        }
+      }),
+      catchError(() => of([] as Post[])),
+      shareReplay(1)
+    );
+
+    return this.allPosts$;
+  }
+
+  private getPostsAdmin(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
     const pageSize = filters?.limit ?? 10;
     const filterHash = this.hashFilters(filters ?? {});
 
@@ -203,6 +308,7 @@ export class PostService {
     };
 
     this.upsertLocalPost(newPost);
+    this.invalidateCache();
 
     void this.firebaseService.withTimeout(
       setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)),
@@ -226,6 +332,7 @@ export class PostService {
     } as Post;
 
     this.upsertLocalPost(localPost);
+    this.invalidateCache();
 
     void this.firebaseService.withTimeout(
       updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedPost)),
@@ -237,6 +344,7 @@ export class PostService {
 
   deletePost(id: number): Observable<void> {
     this.removeLocalPost(id);
+    this.invalidateCache();
 
     void this.firebaseService.withTimeout(
       deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),

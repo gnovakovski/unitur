@@ -100,6 +100,8 @@ export class PostsListComponent implements OnInit {
     const filters: PostFilters = {
       page: this.currentPage,
       limit: this.itemsPerPage,
+      // Paginação server-side por cursor (só avança / volta ao topo).
+      adminPagination: true,
       ...this.filterForm.value
     };
 
