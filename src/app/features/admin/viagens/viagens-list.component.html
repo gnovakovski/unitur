@@ -119,7 +119,12 @@
               </td>
               <td class="nowrap">{{ trip.period || formatDate(trip.startDate) }}</td>
               <td class="nowrap">{{ trip.duration }} dias</td>
-              <td class="nowrap"><strong class="price">{{ formatPrice(trip.price) }}</strong></td>
+              <td class="nowrap">
+                <strong class="price">{{ formatPrice(trip) }}</strong>
+                @if (formatForeignPrice(trip); as foreign) {
+                  <small class="price-foreign">{{ foreign }}</small>
+                }
+              </td>
               <td>
                 <span class="status-pill" [attr.data-status]="trip.status">
                   {{ getStatusLabel(trip.status) }}

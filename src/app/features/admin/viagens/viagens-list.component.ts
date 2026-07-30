@@ -7,6 +7,8 @@ import { Trip } from '../../../core/models/trip.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { TripService } from '../../../core/services/trip.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { formatTripForeign } from '../../../core/utils/trip-pricing';
 
 @Component({
   selector: 'app-viagens-list',
@@ -29,6 +31,7 @@ export class ViagensListComponent implements OnInit {
     private authService: AuthService,
     private permissionService: PermissionService,
     private tripService: TripService,
+    private exchangeRateService: ExchangeRateService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -40,6 +43,8 @@ export class ViagensListComponent implements OnInit {
   ngOnInit() {
     if (this.canViagens) {
       this.loadTrips();
+      // Cotações atualizadas para a coluna de preço refletir o câmbio de agora.
+      this.exchangeRateService.loadRates().subscribe(() => this.cdr.detectChanges());
     }
   }
 
@@ -147,10 +152,20 @@ export class ViagensListComponent implements OnInit {
     return labels[status || 'active'];
   }
 
-  formatPrice(value: number | string | undefined): string {
-    const n = Number(value);
-    if (!n || Number.isNaN(n)) return '—';
-    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  /**
+   * Preço em reais com a cotação atual — o mesmo número que o site e o
+   * formulário mostram (ver `computeTripPrice`), e não o `price` gravado, que
+   * ficou congelado no câmbio do dia em que a viagem foi salva.
+   */
+  formatPrice(trip: Trip): string {
+    const { brl } = this.exchangeRateService.resolveTripPriceSnapshot(trip);
+    if (!brl) return '—';
+    return brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  /** "US$ 4.990,00" — valor cadastrado, exibido abaixo do preço em reais. */
+  formatForeignPrice(trip: Trip): string {
+    return formatTripForeign(this.exchangeRateService.resolveTripPriceSnapshot(trip));
   }
 
   formatDate(date: Date | string) {

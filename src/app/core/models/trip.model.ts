@@ -49,9 +49,15 @@ export interface Trip {
    * (ver `whatsappLink` em product-detail).
    */
   whatsappMessage?: string;
+  /**
+   * Valor na moeda estrangeira — é a FONTE DE VERDADE do preço quando existe.
+   * O `price` em reais é sempre derivado dele com a cotação atual na hora de
+   * exibir (ver `computeTripPrice`), para admin e site nunca divergirem.
+   */
   foreignPrice?: number | string;
   foreignCurrency?: string;
-  foreignExchangeRate?: number;
+  /** Cotação usada no último save. Só fallback, quando não há cotação atual. */
+  foreignExchangeRate?: number | null;
   availableSpots: number;
   showAvailableSpots?: boolean;
   spiritualGuide?: string;

@@ -10,6 +10,7 @@ import {
 } from 'rxjs';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ForeignCurrencyCode, registerCurrencySymbol } from '../utils/currency-format';
+import { ResolvedTripPrice, TripPriceFields, computeTripPrice } from '../utils/trip-pricing';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
 
@@ -77,15 +78,32 @@ export class ExchangeRateService {
     return this.ratesSubject.value.currencies.slice();
   }
 
-  convertFromBRL(brlValue: number, currency: ForeignCurrencyCode): Observable<{ value: number | null; rate: number | null }> {
+  /**
+   * Resolve o preço exibido de uma viagem (R$ + moeda estrangeira) com a cotação
+   * já carregada do Firestore. É a forma correta de ler preço de viagem em
+   * qualquer tela — nunca derive o valor estrangeiro a partir do R$ gravado.
+   */
+  resolveTripPrice(trip: TripPriceFields): Observable<ResolvedTripPrice> {
+    const currency = String(trip.foreignCurrency || '').trim();
+
+    if (!currency) {
+      return of(computeTripPrice(trip, null));
+    }
+
     return this.getCurrencyRate(currency).pipe(
-      map(({ value: rate }) => {
-        if (!rate || rate <= 0 || !brlValue || brlValue <= 0) {
-          return { value: null, rate: null };
-        }
-        return { value: brlValue / rate, rate };
-      })
+      map(({ value: rate }) => computeTripPrice(trip, rate))
     );
+  }
+
+  /**
+   * Versão síncrona, usando as cotações em cache (localStorage). Serve para
+   * pintar o preço já no primeiro render, sem esperar o Firestore; o valor
+   * definitivo chega depois por `resolveTripPrice`.
+   */
+  resolveTripPriceSnapshot(trip: TripPriceFields): ResolvedTripPrice {
+    const currency = String(trip.foreignCurrency || '').trim();
+    const rate = currency ? this.getCurrencyRateSnapshot(currency).value : null;
+    return computeTripPrice(trip, rate);
   }
 
   loadRates(): Observable<ExchangeRatesContent> {

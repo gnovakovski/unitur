@@ -10,7 +10,7 @@ import { TagService } from '../../../core/services/tag.service';
 import { TagBadge, resolveTagBadge, tagTextColor } from '../../../core/utils/tag-badge';
 import { UploadService } from '../../../core/services/upload.service';
 import { CurrencyEntry, ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { ForeignCurrencyCode, formatForeignCurrency, getCurrencyCode, parseForeignAmount } from '../../../core/utils/currency-format';
+import { ForeignCurrencyCode, detectCurrencyCode, formatForeignCurrency, parseForeignAmount } from '../../../core/utils/currency-format';
 import { tripScope } from '../../../core/utils/trip-scope';
 import { defaultWhatsappMessage } from '../../../core/utils/whatsapp-message';
 import { SiteContentService, MenuOption } from '../../../core/services/site-content.service';
@@ -272,6 +272,10 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       next: trip => {
         const menuIds = this.resolveMenuIds(trip);
         this.selectedMenuIds = new Set(menuIds);
+        // Sem moeda identificada o valor estrangeiro não é conversível, então o
+        // campo fica vazio e o preço em reais volta a ser manual — melhor do que
+        // assumir dólar e recalcular o preço errado no primeiro save.
+        const foreignCurrency = trip.foreignCurrency || this.detectCurrency(trip.foreignPrice);
         this.tripForm.patchValue({
           title: trip.title,
           tripType: trip.tripType || 'regular',
@@ -285,8 +289,10 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           tagId: trip.tagId ?? null,
           priceTagline: trip.priceTagline ?? 'Aéreo e apartamento duplo, a partir de:',
           whatsappMessage: trip.whatsappMessage || '',
-          foreignCurrency: trip.foreignCurrency || this.detectCurrency(trip.foreignPrice),
-          foreignPrice: trip.foreignPrice ? formatForeignCurrency(trip.foreignPrice, trip.foreignCurrency || this.detectCurrency(trip.foreignPrice)) : '',
+          foreignCurrency,
+          foreignPrice: foreignCurrency && trip.foreignPrice
+            ? formatForeignCurrency(trip.foreignPrice, foreignCurrency)
+            : '',
           status: trip.status,
           showOnHome: trip.showOnHome !== false,
           spiritualGuide: trip.spiritualGuide || '',
@@ -310,7 +316,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         this.itineraryDays = this.parseItineraryDays(trip.itinerary || '');
         this.paymentBlocks = this.parsePaymentBlocks(trip.paymentMethods);
         this.tripForm.markAsPristine();
-        this.lastExchangeRate = trip.foreignExchangeRate;
+        this.lastExchangeRate = trip.foreignExchangeRate ?? undefined;
         this.updateConvertedPrice();
         this.cdr.markForCheck();
       },
@@ -338,6 +344,18 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       } catch (rateErr) {
         console.warn('Câmbio indisponível, prosseguindo sem atualizar conversão.', rateErr);
       }
+
+      // O recálculo acima roda depois da validação inicial e pode limpar o preço
+      // (cotação apagada/zerada enquanto o form estava aberto). Sem esta segunda
+      // checagem a viagem era gravada com preço 0 e o site mostrava "Consulte".
+      if (this.tripForm.invalid) {
+        this.tripForm.markAllAsTouched();
+        this.error = 'Não foi possível calcular o preço em reais. Confira a cotação da moeda em "Cotações de câmbio" e tente novamente.';
+        this.markSaving(false, false);
+        this.cdr.markForCheck();
+        return;
+      }
+
       const value = this.tripForm.getRawValue();
       const {
         includedText,
@@ -377,7 +395,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         tagId: baseValue.tagId ?? null,
         mainImage: existingMainImage,
         foreignPrice: baseValue.foreignCurrency ? (parseForeignAmount(baseValue.foreignPrice) ?? '') : '',
-        foreignExchangeRate: baseValue.foreignCurrency ? this.lastExchangeRate : undefined,
+        // `null` e não `undefined`: o update usa merge, então undefined seria
+        // removido do payload e a cotação antiga continuaria gravada no doc.
+        foreignExchangeRate: baseValue.foreignCurrency ? (this.lastExchangeRate ?? null) : null,
         destination: value.country,
         categoryId: 0,
         startDate,
@@ -683,8 +703,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     const applyRate = (rate: number | null) => {
       if (!rate || rate <= 0) {
         priceControl?.setValue('', { emitEvent: false });
-        this.exchangeRateText = `Cadastre a cotação do ${currency} em "Cotações de câmbio" na lista de viagens.`;
+        this.exchangeRateText = `Cadastre a cotação do ${currency} em "Cotações de câmbio", no menu lateral.`;
         this.lastExchangeRate = undefined;
+        this.cdr.markForCheck();
         return;
       }
 
@@ -692,6 +713,8 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       this.lastExchangeRate = rate;
       priceControl?.setValue(Number(brlValue.toFixed(2)), { emitEvent: false });
       this.exchangeRateText = `Câmbio usado: 1 ${currency} = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      // App é zoneless: sem isto o preço calculado só repinta no próximo evento.
+      this.cdr.markForCheck();
     };
 
     if (waitForResult) {
@@ -703,12 +726,18 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     this.exchangeRateService.getCurrencyRate(currency).subscribe(rate => applyRate(rate.value));
   }
 
+  /**
+   * Descobre a moeda de uma viagem antiga gravada sem `foreignCurrency`. Só
+   * infere quando o próprio valor traz o símbolo/código (ex.: "US$ 4.990,00");
+   * para um número puro devolve '' — não dá para adivinhar, e chutar dólar
+   * recalcularia o preço em reais em cima de uma cotação que não é a daquela viagem.
+   */
   private detectCurrency(value?: number | string): ForeignCurrencyCode | '' {
     if (!value) {
       return '';
     }
 
-    return getCurrencyCode(value);
+    return detectCurrencyCode(value);
   }
 
   private formatDateInput(date?: Date): string {

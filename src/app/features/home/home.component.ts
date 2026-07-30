@@ -13,7 +13,7 @@ import { TestimonialService } from '../../core/services/testimonial.service';
 import { BannerService } from '../../core/services/banner.service';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { ForeignCurrencyCode, formatForeignAmount, parseForeignAmount } from '../../core/utils/currency-format';
+import { ResolvedTripPrice, formatTripBRL, formatTripForeign } from '../../core/utils/trip-pricing';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AboutContentService } from '../../core/services/about-content.service';
 import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about-content.model';
@@ -447,7 +447,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       imagePosition: trip.mainImagePosition || '50% 50%',
       imageFit: trip.mainImageFit || 'cover',
       imageRotation: Number(trip.mainImageRotation || 0),
-      price: trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte',
+      price: 'Consulte',
       foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
@@ -455,18 +455,25 @@ export class HomeComponent implements OnInit, OnDestroy {
       guideRole,
       coordinator: (trip.coordinator || '').trim()
     };
-    this.attachForeignPrice(card, trip);
+    this.attachPrices(card, trip);
     return card;
   }
 
-  private attachForeignPrice(card: { foreignPrice?: string }, trip: Trip) {
-    const currency = trip.foreignCurrency as ForeignCurrencyCode | '' | undefined;
-    if (!currency || !trip.price || Number(trip.price) <= 0) return;
-    this.exchangeRateService.convertFromBRL(Number(trip.price), currency).subscribe(({ value }) => {
-      if (value && value > 0) {
-        card.foreignPrice = formatForeignAmount(value, currency);
-        this.cdr.detectChanges();
-      }
+  /**
+   * Preenche R$ e valor em moeda estrangeira a partir do que está cadastrado na
+   * viagem (ver `computeTripPrice`). Pinta na hora com as cotações em cache e
+   * corrige quando as do Firestore chegam.
+   */
+  private attachPrices(card: { price: string; foreignPrice?: string }, trip: Trip) {
+    const apply = (resolved: ResolvedTripPrice) => {
+      card.price = formatTripBRL(resolved.brl);
+      card.foreignPrice = formatTripForeign(resolved);
+    };
+
+    apply(this.exchangeRateService.resolveTripPriceSnapshot(trip));
+    this.exchangeRateService.resolveTripPrice(trip).subscribe(resolved => {
+      apply(resolved);
+      this.cdr.markForCheck();
     });
   }
 

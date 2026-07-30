@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
 import { TripService } from '../../core/services/trip.service';
-import { ForeignCurrencyCode, formatForeignAmount } from '../../core/utils/currency-format';
+import { ResolvedTripPrice, formatTripBRL, formatTripForeign } from '../../core/utils/trip-pricing';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
@@ -308,6 +308,7 @@ export class ProductDetailComponent implements OnInit {
     const canonicalPath = tripCanonicalPath(trip);
     const scopeLabel = tripScope(trip) === 'nacional' ? 'Roteiros Nacionais' : 'Roteiros Internacionais';
     const scopePath = tripScope(trip) === 'nacional' ? '/roteiros-nacionais/' : '/roteiros-internacionais/';
+    const priceBRL = this.exchangeRateService.resolveTripPriceSnapshot(trip).brl;
 
     this.seo.setMeta({ title, description, image, canonicalPath, type: 'product' });
 
@@ -319,11 +320,13 @@ export class ProductDetailComponent implements OnInit {
       image: this.seo.absoluteUrl(image),
       url: this.seo.absoluteUrl(canonicalPath),
       brand: { '@type': 'Brand', name: 'Unitur' },
-      ...(trip.price && Number(trip.price) > 0
+      // Mesmo preço exibido no painel de reserva (derivado da cotação atual),
+      // para o rich result do Google não divergir da página.
+      ...(priceBRL > 0
         ? {
             offers: {
               '@type': 'Offer',
-              price: Number(trip.price),
+              price: priceBRL,
               priceCurrency: 'BRL',
               availability: 'https://schema.org/InStock',
               url: this.seo.absoluteUrl(canonicalPath)
@@ -350,7 +353,6 @@ export class ProductDetailComponent implements OnInit {
   private mapFirestoreTrip(trip: Trip): ProductTrip {
     const destination = trip.country || trip.destination || 'A definir';
     const duration = trip.duration ? `${trip.duration} dias` : 'A definir';
-    const price = trip.price ? `R$${Number(trip.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Consulte';
     const summary = trip.shortDescription || trip.description || 'Roteiro organizado pela Unitur com acompanhamento e suporte em todas as etapas.';
 
     const mapped: ProductTrip = {
@@ -361,7 +363,7 @@ export class ProductDetailComponent implements OnInit {
       destination,
       date: trip.period || this.formatPeriod(trip.startDate),
       duration,
-      price,
+      price: 'Consulte',
       priceTagline: trip.priceTagline !== undefined ? trip.priceTagline : 'Aéreo e apartamento duplo, a partir de:',
       whatsappMessage: trip.whatsappMessage || '',
       foreignPrice: '',
@@ -387,18 +389,26 @@ export class ProductDetailComponent implements OnInit {
       paymentMethods: this.normalizePaymentMethods(trip.paymentMethods),
       cancellationPolicy: trip.cancellationPolicy || this.defaultCancellationPolicy()
     };
-    this.attachForeignPrice(mapped, trip);
+    this.attachPrices(mapped, trip);
     return mapped;
   }
 
-  private attachForeignPrice(card: ProductTrip, trip: Trip) {
-    const currency = trip.foreignCurrency as ForeignCurrencyCode | '' | undefined;
-    if (!currency || !trip.price || Number(trip.price) <= 0) return;
-    this.exchangeRateService.convertFromBRL(Number(trip.price), currency).subscribe(({ value }) => {
-      if (value && value > 0) {
-        card.foreignPrice = formatForeignAmount(value, currency);
-        this.cdr.detectChanges();
-      }
+  /**
+   * Preenche R$ e valor em moeda estrangeira a partir do que está cadastrado na
+   * viagem (ver `computeTripPrice`). Pinta na hora com as cotações em cache e
+   * corrige — inclusive o preço do JSON-LD — quando as do Firestore chegam.
+   */
+  private attachPrices(card: ProductTrip, trip: Trip) {
+    const apply = (resolved: ResolvedTripPrice) => {
+      card.price = formatTripBRL(resolved.brl);
+      card.foreignPrice = formatTripForeign(resolved);
+    };
+
+    apply(this.exchangeRateService.resolveTripPriceSnapshot(trip));
+    this.exchangeRateService.resolveTripPrice(trip).subscribe(resolved => {
+      apply(resolved);
+      this.applyTripSeo(trip);
+      this.cdr.markForCheck();
     });
   }
 

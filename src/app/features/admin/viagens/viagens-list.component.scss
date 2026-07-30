@@ -107,6 +107,7 @@ table {
   .muted { color: $af-muted; }
   .nowrap { white-space: nowrap; color: $af-text; font-size: 0.9rem; }
   .price { color: $af-dark; font-weight: 700; }
+  .price-foreign { display: block; color: $af-muted; font-size: 0.75rem; font-weight: 600; }
 }
 
 .trip-cell {

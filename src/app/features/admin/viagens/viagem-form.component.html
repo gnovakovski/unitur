@@ -164,7 +164,7 @@
             }
           </select>
           @if (availableCurrencies.length === 0) {
-            <span class="af-hint">Cadastre moedas em "Cotações de câmbio" na lista de viagens.</span>
+            <span class="af-hint">Cadastre moedas em "Cotações de câmbio", no menu lateral.</span>
           }
         </div>
 
@@ -187,7 +187,10 @@
               <span class="af-input-group__addon">R$</span>
               <input class="af-control" type="text" [value]="formattedPrice" readonly placeholder="0,00" aria-label="Preço base em reais">
             </div>
-            <span class="af-hint">Valor em reais calculado a partir da cotação da moeda estrangeira.</span>
+            <span class="af-hint">
+              Calculado a partir da cotação atual. É exatamente este par de valores que aparece no site —
+              se a cotação mudar em "Cotações de câmbio", o preço em reais acompanha sozinho, sem precisar reeditar a viagem.
+            </span>
           </div>
         } @else {
           <div class="af-field">

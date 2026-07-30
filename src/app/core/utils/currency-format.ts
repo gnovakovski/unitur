@@ -74,14 +74,32 @@ export function formatForeignCurrency(value?: number | string, currency?: Foreig
 }
 
 export function getCurrencyCode(value: number | string): ForeignCurrencyCode {
-  if (typeof value === 'number') {
-    return 'USD';
-  }
-
-  const text = value.trim();
-  return currencyPatterns.find(currency => currency.patterns.some(pattern => pattern.test(text)))?.code || 'USD';
+  return detectCurrencyCode(value) || 'USD';
 }
 
+/**
+ * Igual a `getCurrencyCode`, mas devolve '' quando o valor não traz símbolo nem
+ * código de moeda. Use esta quando assumir dólar por engano teria efeito colateral
+ * (ex.: recalcular o preço em reais de uma viagem antiga gravada só com número).
+ */
+export function detectCurrencyCode(value: number | string): ForeignCurrencyCode | '' {
+  if (typeof value === 'number') {
+    return '';
+  }
+
+  const text = String(value || '').trim();
+  return currencyPatterns.find(currency => currency.patterns.some(pattern => pattern.test(text)))?.code || '';
+}
+
+/**
+ * Lê um valor monetário digitado, aceitando pt-BR ("1.500,00") e en ("1,500.00").
+ *
+ * Regras:
+ *  - com os dois separadores, o último é o decimal e o outro é milhar;
+ *  - com um separador repetido ("12.345.678"), tudo é milhar;
+ *  - com um separador único, só vale como decimal se sobrarem 1 ou 2 casas —
+ *    "1.500" e "4,990" são milhar, porque preço não tem 3 casas decimais.
+ */
 function parseCurrencyAmount(value: string): number | null {
   const numericText = value.replace(/[^\d.,-]/g, '');
 
@@ -89,15 +107,34 @@ function parseCurrencyAmount(value: string): number | null {
     return null;
   }
 
+  const commas = (numericText.match(/,/g) || []).length;
+  const dots = (numericText.match(/\./g) || []).length;
   const lastComma = numericText.lastIndexOf(',');
   const lastDot = numericText.lastIndexOf('.');
-  const decimalSeparator = lastComma > lastDot ? ',' : '.';
-  const normalized = numericText
-    .replace(new RegExp(`\\${decimalSeparator === ',' ? '.' : ','}`, 'g'), '')
-    .replace(decimalSeparator, '.');
+
+  let decimalSeparator = '';
+  if (commas > 0 && dots > 0) {
+    decimalSeparator = lastComma > lastDot ? ',' : '.';
+  } else if (commas === 1 || dots === 1) {
+    const decimals = numericText.length - Math.max(lastComma, lastDot) - 1;
+    if (decimals > 0 && decimals <= 2) {
+      decimalSeparator = commas === 1 ? ',' : '.';
+    }
+  }
+
+  const normalized = decimalSeparator
+    ? numericText
+        .split(decimalSeparator === ',' ? '.' : ',').join('')
+        .split(decimalSeparator).join('.')
+    : numericText.replace(/[.,]/g, '');
+
+  if (!/\d/.test(normalized)) {
+    return null;
+  }
+
   const amount = Number(normalized);
 
-  return Number.isNaN(amount) ? null : amount;
+  return Number.isFinite(amount) ? amount : null;
 }
 
 function normalizeCurrencyPrefix(value: string, symbol: string): string {
