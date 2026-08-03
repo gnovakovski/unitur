@@ -364,7 +364,18 @@ export class TripService {
   }
 
   private sortTrips(trips: Trip[]): Trip[] {
-    return this.dedupeTrips(trips).sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
+    const now = Date.now();
+    return this.dedupeTrips(trips).sort((a, b) => {
+      const dateA = this.getTime(a.startDate) || this.getTime(a.createdAt);
+      const dateB = this.getTime(b.startDate) || this.getTime(b.createdAt);
+      // Upcoming trips first (closest to today), past trips after
+      const aIsPast = dateA < now;
+      const bIsPast = dateB < now;
+      if (aIsPast !== bIsPast) return aIsPast ? 1 : -1;
+      return aIsPast
+        ? dateB - dateA   // both past: most recent first
+        : dateA - dateB;  // both upcoming: soonest first
+    });
   }
 
   private dedupeTrips(trips: Trip[]): Trip[] {
