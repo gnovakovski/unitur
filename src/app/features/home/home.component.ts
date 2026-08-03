@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, NgZone, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -132,6 +132,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private exchangeRateService: ExchangeRateService,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
     private seo: SeoService,
     private tagService: TagService
   ) {}
@@ -237,9 +238,19 @@ export class HomeComponent implements OnInit, OnDestroy {
   startSlideShow() {
     // O autoplay do carousel é puramente visual; não roda no SSR.
     if (!this.isBrowser) return;
-    this.slideInterval = setInterval(() => {
-      this.nextSlide();
-    }, 5000);
+    if (this.slideInterval) {
+      clearInterval(this.slideInterval);
+    }
+    // Roda fora da zona do Angular para não disparar change detection a cada tick,
+    // mas força detecção manualmente ao avançar o slide.
+    this.ngZone.runOutsideAngular(() => {
+      this.slideInterval = setInterval(() => {
+        this.ngZone.run(() => {
+          this.currentSlide = (this.currentSlide + 1) % this.bannerSlides.length;
+          this.cdr.detectChanges();
+        });
+      }, 5000);
+    });
   }
 
   /**
@@ -251,23 +262,20 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   nextSlide() {
-    if (this.bannerSlides.length === 0) {
-      return;
-    }
-
+    if (this.bannerSlides.length === 0) return;
     this.currentSlide = (this.currentSlide + 1) % this.bannerSlides.length;
+    this.startSlideShow();
   }
 
   prevSlide() {
-    if (this.bannerSlides.length === 0) {
-      return;
-    }
-
+    if (this.bannerSlides.length === 0) return;
     this.currentSlide = this.currentSlide === 0 ? this.bannerSlides.length - 1 : this.currentSlide - 1;
+    this.startSlideShow();
   }
 
   goToSlide(index: number) {
     this.currentSlide = index;
+    this.startSlideShow();
   }
 
   useFallbackImage(event: Event) {
