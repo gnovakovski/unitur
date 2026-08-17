@@ -19,6 +19,18 @@
       </div>
       <h1>{{ trip.title }}</h1>
       <p>{{ trip.summary }}</p>
+      @if (showHeroTripDate) {
+        <div class="hero-trip-date" aria-label="Data e período da viagem">
+          <span>
+            <strong>Data da viagem</strong>
+            {{ trip.date }}
+          </span>
+          <span>
+            <strong>Período</strong>
+            {{ trip.duration }}
+          </span>
+        </div>
+      }
       @if (trip.showSpots !== false) {
         <div class="hero-meta">
           <span>{{ trip.spots }}</span>

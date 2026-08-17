@@ -115,6 +115,34 @@ $dark: #1a1a2e;
   }
 }
 
+.hero-trip-date {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+
+  span {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 150px;
+    padding: 0.75rem 1rem;
+    background: rgba($white, 0.14);
+    border: 1px solid rgba($white, 0.22);
+    border-radius: 16px;
+    color: rgba($white, 0.94);
+    font-size: 1rem;
+    font-weight: 800;
+    backdrop-filter: blur(6px);
+  }
+
+  strong {
+    color: rgba($white, 0.72);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+}
+
 .product-page {
   background:
     linear-gradient(180deg, #f8f9fa 0%, $white 45%),
@@ -501,6 +529,7 @@ $dark: #1a1a2e;
   }
 
   .hero-meta span,
+  .hero-trip-date span,
   .back-link {
     font-size: 0.85rem;
     padding: 0.5rem 0.8rem;
