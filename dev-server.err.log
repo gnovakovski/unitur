@@ -1,0 +1,509 @@
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/banners/banners-list.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/categorias/categorias-list.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/conteudo/cabecalho-form.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/conteudo/contato-form.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/conteudo/conteudo-hub.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/conteudo/home-form.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/depoimentos/depoimentos-list.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/moeda/moeda.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/posts/post-form.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/posts/posts-list.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/sobre/sobre-form.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/usuarios/usuarios-list.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/viagens/viagem-form.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/admin/viagens/viagens-list.component.scss:1:8:
+[37m      1 │ @import [32m[37m'../shared/admin-forms.scss';
+        ╵         [32m^[0m
+
+
+  Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:182:53:
+[37m      182 │ ...transform: translateY(-2px); background: [32m[37mlighten($orange, 6%); }
+          ╵                                             [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:182:53:
+[37m      182 │ ...transform: translateY(-2px); background: [32m[37mlighten($orange, 6%); }
+          ╵                                             [32m^[0m
+
+
+  lighten() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: 14.5023696682%)
+  color.adjust($color, $lightness: 6%)
+  
+  More info: [4mhttps://sass-lang.com/d/color-functions[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:303:45:
+[37m      303 │   background: linear-gradient(135deg, $blue, [32m[37mdarken($blue, 10%));
+          ╵                                              [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:303:45:
+[37m      303 │   background: linear-gradient(135deg, $blue, [32m[37mdarken($blue, 10%));
+          ╵                                              [32m^[0m
+
+
+  darken() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: -20.1581027668%)
+  color.adjust($color, $lightness: -10%)
+  
+  More info: [4mhttps://sass-lang.com/d/color-functions[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:534:24:
+[37m      534 │   &:hover { background: [32m[37mlighten($orange, 8%); }
+          ╵                         [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:534:24:
+[37m      534 │   &:hover { background: [32m[37mlighten($orange, 8%); }
+          ╵                         [32m^[0m
+
+
+  lighten() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: 19.336492891%)
+  color.adjust($color, $lightness: 8%)
+  
+  More info: [4mhttps://sass-lang.com/d/color-functions[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:949:24:
+[37m      949 │   &:hover { background: [32m[37mdarken($blue, 10%); transform: translateY...
+          ╵                         [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/home/home.component.scss:949:24:
+[37m      949 │   &:hover { background: [32m[37mdarken($blue, 10%); transform: translateY...
+          ╵                         [32m^[0m
+
+
+  darken() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: -20.1581027668%)
+  color.adjust($color, $lightness: -10%)
+  
+  More info: [4mhttps://sass-lang.com/d/color-functions[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/viagens/viagens.component.scss:6:45:
+[37m      6 │   background: linear-gradient(135deg, $blue, [32m[37mdarken($blue, 15%));
+        ╵                                              [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/viagens/viagens.component.scss:6:45:
+[37m      6 │   background: linear-gradient(135deg, $blue, [32m[37mdarken($blue, 15%));
+        ╵                                              [32m^[0m
+
+
+  darken() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: -30.2371541502%)
+  color.adjust($color, $lightness: -15%)
+  
+  More info: [4mhttps://sass-lang.com/d/color-functions[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/viagens/viagens.component.scss:129:18:
+[37m      129 │       background: [32m[37mdarken($orange, 8%);
+          ╵                   [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/viagens/viagens.component.scss:129:18:
+[37m      129 │       background: [32m[37mdarken($orange, 8%);
+          ╵                   [32m^[0m
+
+
+  darken() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: -13.6454849498%)
+  color.adjust($color, $lightness: -8%)
+  
+  More info: [4mhttps://sass-lang.com/d/color-functions[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/viagens/viagens.component.scss:366:16:
+[37m      366 │     background: [32m[37mdarken($orange, 10%);
+          ╵                 [32m^[0m
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use color.adjust instead.
+  
+  More info and automated migrator: [4mhttps://sass-lang.com/d/import[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDeprecation[0m [1m[35m[plugin angular-sass][0m
+
+    src/app/features/viagens/viagens.component.scss:366:16:
+[37m      366 │     background: [32m[37mdarken($orange, 10%);
+          ╵                 [32m^[0m
+
+
+  darken() is deprecated. Suggestions:
+  
+  color.scale($color, $lightness: -17.0568561873%)
+  color.adjust($color, $lightness: -10%)
+  
+  More info: [4mhttps://sass-lang.com/d/c[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "src/styles.scss"[0m
+
+    angular:styles/global:styles:1:8:
+[37m      1 │ @import [32m'src/styles.scss'[37m;
+        ╵         [32m~~~~~~~~~~~~~~~~~[0m
+
+  You can mark the path "src/styles.scss" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\app\\features\\product\\product-detail.component.scss"[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\main.ts"[0m
+
+
+[31mX [1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'showHeroTripDate' does not exist on type 'ProductDetailComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/product/product-detail.component.html:22:11:
+[37m      22 │       @if ([32mshowHeroTripDate[37m) {
+         ╵            [32m~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ProductDetailComponent.
+
+    src/app/features/product/product-detail.component.ts:57:15:
+[37m      57 │   templateUrl: [32m'./product-detail.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "src/styles.scss"[0m
+
+    angular:styles/global:styles:1:8:
+[37m      1 │ @import [32m'src/styles.scss'[37m;
+        ╵         [32m~~~~~~~~~~~~~~~~~[0m
+
+  You can mark the path "src/styles.scss" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\app\\features\\product\\product-detail.component.scss"[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\main.ts"[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "src/styles.scss"[0m
+
+    angular:styles/global:styles:1:8:
+[37m      1 │ @import [32m'src/styles.scss'[37m;
+        ╵         [32m~~~~~~~~~~~~~~~~~[0m
+
+  You can mark the path "src/styles.scss" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\app\\features\\product\\product-detail.component.scss"[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\main.ts"[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "src/styles.scss"[0m
+
+    angular:styles/global:styles:1:8:
+[37m      1 │ @import [32m'src/styles.scss'[37m;
+        ╵         [32m~~~~~~~~~~~~~~~~~[0m
+
+  You can mark the path "src/styles.scss" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\app\\features\\product\\product-detail.component.scss"[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\main.ts"[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "src/styles.scss"[0m
+
+    angular:styles/global:styles:1:8:
+[37m      1 │ @import [32m'src/styles.scss'[37m;
+        ╵         [32m~~~~~~~~~~~~~~~~~[0m
+
+  You can mark the path "src/styles.scss" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\app\\features\\product\\product-detail.component.scss"[0m [1m[35m[plugin angular-compiler][0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\main.ts"[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "src/styles.scss"[0m
+
+    angular:styles/global:styles:1:8:
+[37m      1 │ @import [32m'src/styles.scss'[37m;
+        ╵         [32m~~~~~~~~~~~~~~~~~[0m
+
+  You can mark the path "src/styles.scss" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCannot read directory "../..": Acesso negado.[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "C:\\Users\\DOM\\Documents\\unitur\\src\\main.ts"[0m
+
+[39m[22m

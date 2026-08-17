@@ -155,6 +155,29 @@ export class PostService {
 
   private getPostsAdmin(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
     const pageSize = filters?.limit ?? 10;
+    const page = Math.max(1, Number(filters?.page) || 1);
+    const hasClientFilter = Boolean(filters?.search || filters?.categoryId || filters?.status);
+
+    if (hasClientFilter) {
+      return this.loadAllPosts().pipe(
+        map(posts => {
+          const filtered = this.applyClientFilters(posts, filters);
+          const total = filtered.length;
+          const totalPages = Math.max(1, Math.ceil(total / pageSize));
+          const start = (page - 1) * pageSize;
+
+          return {
+            data: filtered.slice(start, start + pageSize),
+            total,
+            page,
+            limit: pageSize,
+            totalPages,
+            hasNextPage: page < totalPages
+          } as PaginatedResponse<Post>;
+        })
+      );
+    }
+
     const filterHash = this.hashFilters(filters ?? {});
 
     // Detecta mudança de filtro e reseta cursor automaticamente.
@@ -213,7 +236,7 @@ export class PostService {
         return {
           data: filtered.slice(0, pageSize),
           total,
-          page: filters?.page ?? 1,
+          page,
           limit: pageSize,
           totalPages,
           hasNextPage
@@ -369,10 +392,10 @@ export class PostService {
     let filtered = this.dedupePosts([...posts]);
 
     if (filters?.search) {
-      const search = filters.search.toLowerCase();
+      const search = this.normalizeSearch(filters.search);
       filtered = filtered.filter(post =>
-        post.title.toLowerCase().includes(search) ||
-        post.excerpt.toLowerCase().includes(search)
+        this.normalizeSearch(post.title).includes(search) ||
+        this.normalizeSearch(post.excerpt).includes(search)
       );
     }
 
@@ -385,6 +408,14 @@ export class PostService {
     }
 
     return filtered;
+  }
+
+  private normalizeSearch(value?: string): string {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
   }
 
   private cleanUndefined<T extends object>(data: T): Record<string, unknown> {

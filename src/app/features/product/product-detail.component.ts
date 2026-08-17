@@ -89,6 +89,15 @@ export class ProductDetailComponent implements OnInit {
     return resolveTagBadge(this.trip?.tagId, this.tags);
   }
 
+  get showHeroTripDate(): boolean {
+    const key = `${this.trip?.slug || ''} ${this.trip?.title || ''}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return key.includes('arquidiocese-de-porto-alegre') && key.includes('padre-carlinhos');
+  }
+
   /**
    * Salvaguarda contra "página não encontrada": se o slug não é uma viagem mas
    * casa com um menu do cabeçalho, renderiza a listagem daquele menu. Cobre o
