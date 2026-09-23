@@ -36,6 +36,18 @@
         <option value="draft">Rascunho</option>
       </select>
 
+      <select formControlName="sortBy" class="af-control" aria-label="Ordenar posts por">
+        <option value="publishedAt">Data de publicação</option>
+        <option value="createdAt">Data de cadastro</option>
+        <option value="updatedAt">Última alteração</option>
+        <option value="title">Título</option>
+      </select>
+
+      <select formControlName="sortDirection" class="af-control" aria-label="Direção da ordenação">
+        <option value="desc">Mais recentes / Z–A</option>
+        <option value="asc">Mais antigos / A–Z</option>
+      </select>
+
       <button type="button" (click)="clearFilters()" class="af-btn af-btn--secondary">
         Limpar
       </button>
@@ -65,7 +77,7 @@
             <tr>
               <th>Post</th>
               <th>Categoria</th>
-              <th>Data</th>
+              <th>Publicação</th>
               <th>Status</th>
               <th>Ações</th>
             </tr>
@@ -103,7 +115,7 @@
                     <span class="muted">—</span>
                   }
                 </td>
-                <td class="nowrap">{{ formatDate(post.createdAt) }}</td>
+                <td class="nowrap">{{ formatDate(publicationDate(post)) }}</td>
                 <td>
                   <span class="status-pill" [attr.data-status]="post.status">
                     {{ getStatusLabel(post.status) }}

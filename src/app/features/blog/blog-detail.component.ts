@@ -161,6 +161,27 @@ export class BlogDetailComponent implements OnInit {
     });
   }
 
+  /** Mantém quebras de parágrafo de conteúdos antigos salvos como texto puro. */
+  renderPostContent(content: string): string {
+    const value = String(content || '').trim();
+    if (!value) return '';
+    if (/<[a-z][\s\S]*>/i.test(value)) return value;
+
+    return value
+      .split(/\r?\n\r?\n/)
+      .map(paragraph => `<p>${this.escapeHtml(paragraph).replace(/\r?\n/g, '<br>')}</p>`)
+      .join('');
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   shareOnFacebook() {
     const url = encodeURIComponent(window.location.href);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');

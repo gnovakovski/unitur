@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, shareReplay, tap } from 'rxjs';
-import { DocumentSnapshot, QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc } from 'firebase/firestore';
 import { Post } from '../models/post.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
@@ -11,11 +11,11 @@ export interface PostFilters {
   status?: 'draft' | 'published';
   page?: number;
   limit?: number;
+  sortBy?: 'publishedAt' | 'createdAt' | 'updatedAt' | 'title';
+  sortDirection?: 'asc' | 'desc';
   /**
-   * Quando true, aplica paginação server-side com limit() + startAfter() —
-   * comportamento das telas de admin, que só andam para frente e voltam ao topo.
-   * Nas telas públicas (blog) fica false: lá o `limit` é o tamanho da página, e
-   * usá-lo como janela de leitura truncaria a listagem numa página só.
+   * Quando true, pagina a coleção memoizada no fluxo administrativo. Isso permite
+   * busca e ordenação globais sem depender da ordem arbitrária do Firestore.
    */
   adminPagination?: boolean;
 }
@@ -45,23 +45,17 @@ export class PostService {
   /**
    * Leitura da coleção memoizada por sessão. Sem isso, cada troca de página do
    * blog (e cada filtro de categoria) releria os ~353 documentos no Firestore.
-   * Invalidada por resetPagination() e por qualquer escrita.
+   * Invalidada quando há escrita ou quando um recarregamento explícito é pedido.
    */
   private allPosts$?: Observable<Post[]>;
-
-  // Cursor para paginação server-side nas telas de admin.
-  private adminCursor: QueryDocumentSnapshot | null = null;
-  private lastFilterHash = '';
 
   constructor(
     private firebaseService: FirebaseService,
     private storage: BrowserStorageService
   ) {}
 
-  /** Reseta o cursor de paginação (chamar quando filtros mudam ou ao recarregar). */
+  /** Força a próxima listagem a reler o Firestore. */
   resetPagination(): void {
-    this.adminCursor = null;
-    this.lastFilterHash = '';
     this.invalidateCache();
   }
 
@@ -70,13 +64,9 @@ export class PostService {
     this.allPosts$ = undefined;
   }
 
-  private hashFilters(f: PostFilters): string {
-    const { page: _p, ...rest } = f as Record<string, unknown>;
-    return JSON.stringify(rest);
-  }
   getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
-    // Cursor server-side só no admin. Para o blog, `limit` é o tamanho da página
-    // (9) e não a janela de leitura — ver getPostsPublic().
+    // O admin e o blog usam a mesma coleção memoizada, mas mantêm fluxos
+    // separados para que cada tela controle sua paginação.
     if (!filters?.adminPagination) {
       return this.getPostsPublic(filters);
     }
@@ -96,7 +86,7 @@ export class PostService {
 
     return concat(
       of(this.getLocalPosts()),
-      this.loadAllPosts()
+      this.loadAllPosts().pipe(catchError(() => of(this.getLocalPosts())))
     ).pipe(
       map(posts => {
         const filtered = this.applyClientFilters(posts, filters);
@@ -139,14 +129,13 @@ export class PostService {
             'migre a listagem para paginação server-side.'
           );
         }
-        return snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post);
+        return snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data()));
       }),
       tap(posts => {
         if (posts.length > 0) {
           this.replaceLocalPosts(posts);
         }
       }),
-      catchError(() => of([] as Post[])),
       shareReplay(1)
     );
 
@@ -156,90 +145,25 @@ export class PostService {
   private getPostsAdmin(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
     const pageSize = filters?.limit ?? 10;
     const page = Math.max(1, Number(filters?.page) || 1);
-    const hasClientFilter = Boolean(filters?.search || filters?.categoryId || filters?.status);
 
-    if (hasClientFilter) {
-      return this.loadAllPosts().pipe(
-        map(posts => {
-          const filtered = this.applyClientFilters(posts, filters);
-          const total = filtered.length;
-          const totalPages = Math.max(1, Math.ceil(total / pageSize));
-          const start = (page - 1) * pageSize;
-
-          return {
-            data: filtered.slice(start, start + pageSize),
-            total,
-            page,
-            limit: pageSize,
-            totalPages,
-            hasNextPage: page < totalPages
-          } as PaginatedResponse<Post>;
-        })
-      );
-    }
-
-    const filterHash = this.hashFilters(filters ?? {});
-
-    // Detecta mudança de filtro e reseta cursor automaticamente.
-    if (filterHash !== this.lastFilterHash) {
-      this.adminCursor = null;
-    }
-    this.lastFilterHash = filterHash;
-
-    // Monta a query com limit server-side + cursor quando disponível.
-    const constraints: Parameters<typeof query>[1][] = [limit(pageSize + 1)]; // +1 para detectar hasNextPage
-    if (this.adminCursor) {
-      constraints.push(startAfter(this.adminCursor));
-    }
-
-    const firestoreQuery = query(
-      collection(this.firebaseService.firestore, this.collectionName),
-      ...constraints
-    );
-
-    const firestorePosts$ = from(this.firebaseService.withTimeout(
-      getDocs(firestoreQuery),
-      'Tempo esgotado ao carregar posts do Firestore.'
-    )).pipe(
-      map(snapshot => {
-        const docs = snapshot.docs;
-        const hasNextPage = docs.length > pageSize;
-        const pageDocs = hasNextPage ? docs.slice(0, pageSize) : docs;
-
-        // Salva o último doc desta página como cursor para a próxima.
-        this.adminCursor = pageDocs.length > 0
-          ? (pageDocs[pageDocs.length - 1] as QueryDocumentSnapshot)
-          : null;
-
-        const posts = pageDocs.map(d => this.firebaseService.normalizeDates(d.data()) as Post);
-
-        // Atualiza cache local com os posts desta página.
-        if (posts.length > 0) {
-          const cached = this.getLocalPosts();
-          const merged = this.dedupePosts([...cached, ...posts]);
-          this.storage.setItem(this.localPostsKey, JSON.stringify(merged));
-        }
-
-        return { posts, hasNextPage };
-      }),
-      catchError(() => of({ posts: [] as Post[], hasNextPage: false }))
-    );
-
-    return concat(
-      of({ posts: this.getLocalPosts(), hasNextPage: false }),
-      firestorePosts$
-    ).pipe(
-      map(({ posts, hasNextPage }) => {
+    // A gestão precisa enxergar o conjunto completo para ordenar de forma
+    // determinística por data/título. A leitura é memoizada por sessão, então
+    // filtros, ordenação e paginação não geram novas leituras no Firestore.
+    return this.loadAllPosts().pipe(
+      map(posts => {
         const filtered = this.applyClientFilters(posts, filters);
         const total = filtered.length;
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const start = (safePage - 1) * pageSize;
+
         return {
-          data: filtered.slice(0, pageSize),
+          data: filtered.slice(start, start + pageSize),
           total,
-          page,
+          page: safePage,
           limit: pageSize,
           totalPages,
-          hasNextPage
+          hasNextPage: safePage < totalPages
         } as PaginatedResponse<Post>;
       })
     );
@@ -253,17 +177,17 @@ export class PostService {
     )).pipe(
       map(snapshot => {
         if (snapshot.exists()) {
-          const post = this.firebaseService.normalizeDates(snapshot.data()) as Post;
+          const post = this.mapFirestorePost(snapshot.id, snapshot.data());
           this.upsertLocalPost(post);
           return post;
         }
         // Documento não existe no Firestore — tenta cache local.
-        const local = this.getLocalPosts().find(p => p.id === id);
+        const local = this.getLocalPosts().find(p => Number(p.id) === Number(id));
         if (local) return local;
         throw new Error('Post não encontrado');
       }),
       catchError(() => {
-        const local = this.getLocalPosts().find(p => p.id === id);
+        const local = this.getLocalPosts().find(p => Number(p.id) === Number(id));
         if (!local) throw new Error('Post não encontrado');
         return of(local);
       })
@@ -278,7 +202,7 @@ export class PostService {
       'Tempo esgotado ao carregar post do Firestore.'
     )).pipe(
       map(snapshot => {
-        const posts = snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Post);
+        const posts = snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data()));
         const candidates = this.dedupePosts([...posts, ...this.getLocalPosts()]);
         const post = candidates.find(item => this.matchesSlug(item, normalized));
 
@@ -324,57 +248,60 @@ export class PostService {
       metaTitle: post.metaTitle || '',
       metaDescription: post.metaDescription || '',
       ogImage: post.ogImage || '',
-      publishedAt: post.status === 'published' ? now : undefined,
+      publishedAt: post.status === 'published' ? (post.publishedAt || now) : undefined,
       createdAt: now,
       updatedAt: now,
       author: post.author || { id: 1, name: 'Administrador' }
     };
 
-    this.upsertLocalPost(newPost);
-    this.invalidateCache();
-
-    void this.firebaseService.withTimeout(
-      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)),
+    return from(this.firebaseService.withTimeout(
+      setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newPost)).then(() => newPost),
       'Tempo esgotado ao salvar post no Firestore.'
-    ).catch(err => console.warn('Post salvo localmente, mas nao foi possivel persistir no Firestore.', err));
-
-    return of(newPost);
+    )).pipe(tap(saved => {
+      this.upsertLocalPost(saved);
+      this.invalidateCache();
+    }));
   }
 
   updatePost(id: number, post: Partial<Post>): Observable<Post> {
+    const existing = this.getLocalPosts().find(item => Number(item.id) === Number(id));
+    const publishedAt = post.status === 'published'
+      ? (post.publishedAt || existing?.publishedAt || new Date())
+      : (post.publishedAt || existing?.publishedAt);
     const updatedPost = {
       ...post,
       categoryId: post.categoryId ? Number(post.categoryId) : post.categoryId,
+      publishedAt,
       updatedAt: new Date()
     };
 
     const localPost = {
-      ...(this.getLocalPosts().find(item => item.id === id) || {}),
+      ...(existing || {}),
       id,
       ...updatedPost
     } as Post;
 
-    this.upsertLocalPost(localPost);
-    this.invalidateCache();
-
-    void this.firebaseService.withTimeout(
-      updateDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(updatedPost)),
+    return from(this.firebaseService.withTimeout(
+      setDoc(
+        doc(this.firebaseService.firestore, this.collectionName, String(id)),
+        this.cleanUndefined({ id, ...updatedPost }),
+        { merge: true }
+      ).then(() => localPost),
       'Tempo esgotado ao atualizar post no Firestore.'
-    ).catch(err => console.warn('Post atualizado localmente, mas nao foi possivel persistir no Firestore.', err));
-
-    return of(localPost);
+    )).pipe(tap(saved => {
+      this.upsertLocalPost(saved);
+      this.invalidateCache();
+    }));
   }
 
   deletePost(id: number): Observable<void> {
-    this.removeLocalPost(id);
-    this.invalidateCache();
-
-    void this.firebaseService.withTimeout(
+    return from(this.firebaseService.withTimeout(
       deleteDoc(doc(this.firebaseService.firestore, this.collectionName, String(id))),
       'Tempo esgotado ao excluir post no Firestore.'
-    ).catch(err => console.warn('Post removido localmente, mas nao foi possivel excluir no Firestore.', err));
-
-    return of(undefined);
+    )).pipe(tap(() => {
+      this.removeLocalPost(id);
+      this.invalidateCache();
+    }));
   }
 
   generateSlug(title: string): string {
@@ -407,7 +334,7 @@ export class PostService {
       filtered = filtered.filter(post => (post.status || 'published') === filters.status);
     }
 
-    return filtered;
+    return this.sortPosts(filtered, filters?.sortBy, filters?.sortDirection);
   }
 
   private normalizeSearch(value?: string): string {
@@ -465,7 +392,37 @@ export class PostService {
 
       result.push(post);
       return result;
-    }, [] as Post[]).sort((a, b) => this.getTime(b.createdAt) - this.getTime(a.createdAt));
+    }, [] as Post[]);
+  }
+
+  private mapFirestorePost(documentId: string, data: Record<string, unknown>): Post {
+    const normalized = this.firebaseService.normalizeDates(data) as unknown as Post;
+    const numericDocumentId = Number(documentId);
+    return {
+      ...normalized,
+      id: Number.isFinite(Number(normalized.id))
+        ? Number(normalized.id)
+        : numericDocumentId
+    };
+  }
+
+  private sortPosts(
+    posts: Post[],
+    sortBy: PostFilters['sortBy'] = 'publishedAt',
+    direction: PostFilters['sortDirection'] = 'desc'
+  ): Post[] {
+    const factor = direction === 'asc' ? 1 : -1;
+    return [...posts].sort((a, b) => {
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' }) * factor;
+      }
+
+      const field = sortBy || 'publishedAt';
+      const dateA = this.getTime(a[field]) || this.getTime(a.createdAt);
+      const dateB = this.getTime(b[field]) || this.getTime(b.createdAt);
+      const difference = (dateA - dateB) * factor;
+      return difference || a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' });
+    });
   }
 
   private getTime(date?: Date): number {
