@@ -9,6 +9,7 @@ import { UploadService } from '../../../core/services/upload.service';
 import { Post, Category } from '../../../core/models/post.model';
 import { Trip } from '../../../core/models/trip.model';
 import { ImageUploadComponent } from '../../../shared/components/image-upload/image-upload.component';
+import { RichTextEditorComponent } from '../../../shared/components/rich-text-editor/rich-text-editor.component';
 import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
 import { UnsavedChangesModalComponent } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
 import { UnsavedFormBase } from '../../../shared/components/unsaved-changes-modal/unsaved-form.base';
@@ -17,7 +18,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 @Component({
   selector: 'app-post-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent, SavingOverlayComponent, UnsavedChangesModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent, RichTextEditorComponent, SavingOverlayComponent, UnsavedChangesModalComponent],
   templateUrl: './post-form.component.html',
   styleUrl: './post-form.component.scss'
 })
@@ -30,8 +31,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     excerpt: 'Resumo',
     content: 'Conteúdo',
     featuredImage: 'Imagem destacada',
-    contentImageUpload: 'Imagem do conteúdo',
-    contentImagesText: 'URLs de imagens',
+    publishedAt: 'Data de publicação',
     categoryId: 'Categoria',
     tags: 'Tags',
     relatedTrips: 'Viagens relacionadas',
@@ -52,6 +52,8 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
   error: string | null = null;
   isEditMode = false;
   postId: number | null = null;
+  readonly draftMediaId = `draft-${Date.now()}`;
+  mediaUploading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -70,12 +72,12 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
       excerpt: ['', [Validators.required, Validators.maxLength(200)]],
       content: ['', [Validators.required, Validators.minLength(50)]],
       featuredImage: [''],
-      contentImageUpload: [''],
-      contentImagesText: [''],
+      contentImages: [[]],
       categoryId: ['', [Validators.required]],
       tags: [''],
       relatedTrips: [[]],
       status: ['draft', [Validators.required]],
+      publishedAt: [''],
       // SEO (opcionais; vazio => fallback automático para title/excerpt/imagem)
       metaTitle: ['', [Validators.maxLength(70)]],
       metaDescription: ['', [Validators.maxLength(160)]],
@@ -107,13 +109,14 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
           title: post.title,
           slug: post.slug,
           excerpt: post.excerpt,
-          content: post.content,
+          content: this.mergeLegacyImagesIntoContent(post.content || '', post.contentImages || []),
           featuredImage: post.featuredImage || '',
-          contentImagesText: (post.contentImages || []).join('\n'),
+          contentImages: [],
           categoryId: post.categoryId,
-          tags: post.tags.join(', '),
+          tags: (post.tags || []).join(', '),
           relatedTrips: (post.relatedTrips || []).map(id => Number(id)).filter(Boolean).slice(0, 3),
-          status: post.status,
+          status: post.status || 'draft',
+          publishedAt: this.toDateTimeLocal(post.publishedAt),
           metaTitle: post.metaTitle || '',
           metaDescription: post.metaDescription || '',
           ogImage: post.ogImage || ''
@@ -188,6 +191,10 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   async onSubmit() {
+    if (this.mediaUploading) {
+      this.error = 'Aguarde o envio da imagem do conteúdo terminar antes de salvar.';
+      return;
+    }
     if (this.postForm.invalid) {
       this.markFormGroupTouched(this.postForm);
       return;
@@ -200,10 +207,9 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
 
     try {
       const formValue = this.postForm.value;
-      const { contentImagesText, contentImageUpload, featuredImage, ...baseValue } = formValue;
+      const { featuredImage, ...baseValue } = formValue;
 
       const featuredFile = featuredImage instanceof File ? featuredImage : null;
-      const contentFile = contentImageUpload instanceof File ? contentImageUpload : null;
       const existingFeatured = featuredImage instanceof File ? '' : String(featuredImage || '');
 
       const basePostData: Partial<Post> = {
@@ -211,7 +217,8 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
         featuredImage: existingFeatured,
         tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : [],
         relatedTrips: (formValue.relatedTrips || []).map((id: string | number) => Number(id)).filter(Boolean).slice(0, 3),
-        contentImages: this.parseLines(contentImagesText)
+        contentImages: [],
+        publishedAt: this.fromDateTimeLocal(formValue.publishedAt)
       };
 
       const saved = this.isEditMode && this.postId
@@ -220,7 +227,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
 
       const postIdToUse = saved?.id || this.postId;
 
-      if ((featuredFile || contentFile) && postIdToUse) {
+      if (featuredFile && postIdToUse) {
         this.savingStep = 'Enviando imagens para o Firebase Storage...';
         const updates: Partial<Post> = {};
 
@@ -230,13 +237,6 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
               this.uploadService.uploadToEntity(featuredFile, 'posts', postIdToUse).pipe(timeout(45000))
             );
             updates.featuredImage = uploaded.url;
-          }
-
-          if (contentFile) {
-            const uploaded = await firstValueFrom(
-              this.uploadService.uploadToEntity(contentFile, 'posts', postIdToUse).pipe(timeout(45000))
-            );
-            updates.contentImages = [...(basePostData.contentImages || []), uploaded.url];
           }
 
           if (Object.keys(updates).length > 0) {
@@ -291,10 +291,34 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     return '';
   }
 
-  private parseLines(value: string): string[] {
-    return String(value || '')
-      .split('\n')
-      .map(item => item.trim())
-      .filter(Boolean);
+  private toDateTimeLocal(value?: Date | string): string {
+    if (!value) return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  onMediaBusyChange(busy: boolean) {
+    this.mediaUploading = busy;
+  }
+
+  override canSubmit(): boolean {
+    return !this.mediaUploading && this.postForm.valid;
+  }
+
+  private fromDateTimeLocal(value?: string): Date | undefined {
+    if (!value) return undefined;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+
+  private mergeLegacyImagesIntoContent(content: string, images: string[]): string {
+    const missingImages = images.filter(url => url && !content.includes(url));
+    if (!missingImages.length) return content;
+    const gallery = missingImages
+      .map(url => `<figure><img src="${url.replace(/"/g, '&quot;')}" alt=""><figcaption></figcaption></figure>`)
+      .join('');
+    return `${content}${gallery}`;
   }
 }

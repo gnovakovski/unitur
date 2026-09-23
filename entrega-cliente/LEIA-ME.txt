@@ -1,0 +1,31 @@
+ASSINATURA DE E-MAIL - UNITUR
+=============================
+
+Arquivo principal:
+  assinatura-unitur.html
+
+COMO PERSONALIZAR
+-----------------
+
+Abra o HTML em um editor de texto e procure por "EDITE AQUI".
+Existem somente dois pontos de personalização:
+
+1. Substitua NOME COMPLETO pelo nome da pessoa.
+2. Substitua a URL FOTO-DO-COLABORADOR.png pela URL pública da foto.
+
+A foto deve ser:
+  - PNG com fundo transparente;
+  - previamente recortada;
+  - aproximadamente 182 x 170 pixels;
+  - hospedada em uma URL HTTPS pública.
+
+COMO INSTALAR
+-------------
+
+1. Depois de personalizar, abra assinatura-unitur.html no navegador.
+2. Selecione somente a assinatura exibida.
+3. Copie e cole no editor de assinatura do Gmail ou Outlook.
+4. Envie um e-mail de teste antes de aplicar para toda a equipe.
+
+Não utilize caminhos locais, como C:\Fotos\foto.png. Os destinatários externos
+não conseguirão visualizar arquivos que estão somente no computador.

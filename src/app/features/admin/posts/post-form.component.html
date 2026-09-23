@@ -87,17 +87,16 @@
             </div>
 
             <div class="af-field">
-              <label for="content" class="af-label">
+              <label class="af-label">
                 Conteúdo completo <span class="af-label__required">*</span>
               </label>
-              <textarea
-                id="content"
+              <app-rich-text-editor
                 formControlName="content"
-                class="af-control af-control--textarea af-control--editor"
-                [class.is-invalid]="isFieldInvalid('content')"
-                rows="15"
-                placeholder="Texto completo do post. Suporta HTML básico (<p>, <strong>, <a href>, <img src>, etc.)."></textarea>
-              <span class="af-hint">Mínimo de 50 caracteres. Use HTML para formatação.</span>
+                [entityId]="postId || draftMediaId"
+                [invalid]="isFieldInvalid('content')"
+                (busyChange)="onMediaBusyChange($event)">
+              </app-rich-text-editor>
+              <span class="af-hint">Selecione um trecho e use a barra para definir títulos, links, listas e citações. As imagens são inseridas exatamente na posição do cursor.</span>
               @if (isFieldInvalid('content')) {
                 <span class="af-error">{{ getFieldError('content') }}</span>
               }
@@ -107,16 +106,7 @@
           <div class="af-section af-section--no-border">
             <div class="af-section__header">
               <span class="af-section__step">3</span>
-              <h2 class="af-section__title">Mídia e metadados</h2>
-            </div>
-
-            <div class="af-field">
-              <app-image-upload
-                label="Imagem complementar do conteúdo"
-                helper="Aparece no início do texto. Você também pode inserir <img src=...> direto no conteúdo."
-                [cropRatio]="16/9"
-                formControlName="contentImageUpload">
-              </app-image-upload>
+              <h2 class="af-section__title">Metadados</h2>
             </div>
 
             <div class="af-field">
@@ -194,6 +184,16 @@
               <span>Publicar imediatamente</span>
             </label>
           </div>
+
+          <div class="af-field publication-date-field">
+            <label for="publishedAt" class="af-label">Data de publicação</label>
+            <input
+              id="publishedAt"
+              type="datetime-local"
+              formControlName="publishedAt"
+              class="af-control">
+            <span class="af-hint">Define a posição cronológica no blog. Se ficar vazio ao publicar, será usada a data atual.</span>
+          </div>
         </div>
 
         <div class="af-card">
@@ -253,7 +253,7 @@
           <button
             type="submit"
             class="af-btn af-btn--primary af-btn--block af-btn--lg"
-            [disabled]="saving || postForm.invalid">
+            [disabled]="saving || mediaUploading || postForm.invalid">
             {{ saving ? 'Salvando...' : (isEditMode ? 'Atualizar post' : 'Criar post') }}
           </button>
           <button

@@ -196,7 +196,7 @@ $soft: #f5f8fc;
   }
 }
 
-.post-body {
+:host ::ng-deep .post-body {
   margin-bottom: 2rem;
   color: $ink;
   font-size: 1.05rem;
@@ -206,10 +206,19 @@ $soft: #f5f8fc;
     margin: 0 0 1.4rem;
   }
 
+  h1,
   h2,
-  h3 {
+  h3,
+  h4,
+  h5,
+  h6 {
     color: $blue-dark;
     line-height: 1.25;
+  }
+
+  h1 {
+    margin: 2.5rem 0 1rem;
+    font-size: 2.1rem;
   }
 
   h2 {
@@ -220,6 +229,24 @@ $soft: #f5f8fc;
   h3 {
     margin: 1.8rem 0 0.85rem;
     font-size: 1.35rem;
+  }
+
+  h4 {
+    margin: 1.5rem 0 0.75rem;
+    font-size: 1.16rem;
+  }
+
+  h5,
+  h6 {
+    margin: 1.35rem 0 0.65rem;
+    font-size: 1.02rem;
+  }
+
+  a {
+    color: $blue-dark;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
 
   ul,
@@ -256,6 +283,26 @@ $soft: #f5f8fc;
     max-width: 100%;
   }
 
+  figure {
+    margin: 1.75rem 0;
+
+    img { margin: 0 auto; }
+  }
+
+  figcaption {
+    margin-top: 0.65rem;
+    color: $muted;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  hr {
+    margin: 2rem 0;
+    border: 0;
+    border-top: 1px solid $line;
+  }
+
   iframe {
     width: 100%;
   }
@@ -266,6 +313,13 @@ $soft: #f5f8fc;
     max-width: 100%;
     overflow-x: auto;
     border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: 0.65rem;
+    border: 1px solid $line;
+    text-align: left;
   }
 
   pre {
@@ -516,11 +570,13 @@ $soft: #f5f8fc;
     padding: 3.5rem 0 3rem;
   }
 
-  .post-body {
+  :host ::ng-deep .post-body {
     font-size: 1rem;
 
+    h1 { font-size: 1.7rem; }
     h2 { font-size: 1.5rem; }
     h3 { font-size: 1.2rem; }
+    h4 { font-size: 1.08rem; }
   }
 
   .post-excerpt p {

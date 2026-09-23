@@ -46,7 +46,9 @@ export class PostsListComponent implements OnInit {
     this.filterForm = this.fb.group({
       search: [''],
       categoryId: [''],
-      status: ['']
+      status: [''],
+      sortBy: ['publishedAt'],
+      sortDirection: ['desc']
     });
   }
 
@@ -64,8 +66,6 @@ export class PostsListComponent implements OnInit {
       )
       .subscribe(() => {
         this.currentPage = 1;
-        // Reseta o cursor server-side quando os filtros mudam.
-        this.postService.resetPagination();
         this.loadPosts();
       });
   }
@@ -100,7 +100,7 @@ export class PostsListComponent implements OnInit {
     const filters: PostFilters = {
       page: this.currentPage,
       limit: this.itemsPerPage,
-      // Paginação server-side por cursor (só avança / volta ao topo).
+      // O service ordena o conjunto completo e só então aplica a página.
       adminPagination: true,
       ...this.filterForm.value
     };
@@ -142,6 +142,7 @@ export class PostsListComponent implements OnInit {
     ).subscribe({
       next: (response) => {
         this.posts = response.data;
+        this.currentPage = response.page;
         this.totalItems = response.total;
         this.totalPages = response.totalPages;
         this.hasNextPage = response.hasNextPage;
@@ -153,18 +154,19 @@ export class PostsListComponent implements OnInit {
   changePage(page: number) {
     if (page < 1) return;
     if (page > this.currentPage && !this.hasNextPage) return;
-    // Voltando ao início: reseta o cursor para recomeçar do topo.
-    if (page === 1) {
-      this.postService.resetPagination();
-    }
     this.currentPage = page;
     this.loadPosts();
   }
 
   clearFilters() {
-    this.filterForm.reset();
+    this.filterForm.reset({
+      search: '',
+      categoryId: '',
+      status: '',
+      sortBy: 'publishedAt',
+      sortDirection: 'desc'
+    }, { emitEvent: false });
     this.currentPage = 1;
-    this.postService.resetPagination();
     this.loadPosts();
   }
 
@@ -206,6 +208,10 @@ export class PostsListComponent implements OnInit {
 
   formatDate(date: Date | string): string {
     return new Date(date).toLocaleDateString('pt-BR');
+  }
+
+  publicationDate(post: Post): Date | string {
+    return post.publishedAt || post.createdAt;
   }
 
   brokenImages = new Set<number>();
