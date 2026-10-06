@@ -6,6 +6,13 @@
         {{ isEditMode ? 'Atualize informações, imagens e categorias do post.' : 'Publique conteúdo no blog com imagem destacada e viagens relacionadas.' }}
       </p>
     </div>
+    @if (!loading) {
+      <div class="af-page-header__actions">
+        <button type="button" class="af-btn af-btn--secondary" (click)="openPreview()" [disabled]="saving">
+          Pré-visualizar
+        </button>
+      </div>
+    }
   </header>
 
   @if (loading) {
@@ -96,7 +103,7 @@
                 [invalid]="isFieldInvalid('content')"
                 (busyChange)="onMediaBusyChange($event)">
               </app-rich-text-editor>
-              <span class="af-hint">Selecione um trecho e use a barra para definir títulos, links, listas e citações. As imagens são inseridas exatamente na posição do cursor.</span>
+              <span class="af-hint">Selecione um trecho e use a barra para definir títulos, links, listas e citações. As imagens são inseridas exatamente na posição do cursor; use “Galeria” para inserir várias fotos em grade.</span>
               @if (isFieldInvalid('content')) {
                 <span class="af-error">{{ getFieldError('content') }}</span>
               }
@@ -149,6 +156,18 @@
             @if (isFieldInvalid('categoryId')) {
               <span class="af-error">{{ getFieldError('categoryId') }}</span>
             }
+          </div>
+        </div>
+
+        <div class="af-card">
+          <h3 class="af-section__title">Assinatura</h3>
+          <div class="af-field">
+            <select formControlName="authorName" class="af-control" aria-label="Assinatura do post">
+              @for (name of authorOptions; track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+            <span class="af-hint">Nome exibido como autor do post no blog.</span>
           </div>
         </div>
 
@@ -258,6 +277,13 @@
           </button>
           <button
             type="button"
+            (click)="openPreview()"
+            class="af-btn af-btn--secondary af-btn--block"
+            [disabled]="saving">
+            Pré-visualizar
+          </button>
+          <button
+            type="button"
             (click)="onCancel()"
             class="af-btn af-btn--secondary af-btn--block"
             [disabled]="saving">
@@ -268,6 +294,21 @@
     </form>
   }
 </section>
+
+@if (previewPost) {
+  <div class="post-preview" role="dialog" aria-modal="true" aria-label="Pré-visualização do post">
+    <div class="post-preview__bar">
+      <div class="post-preview__info">
+        <strong>Pré-visualização</strong>
+        <span>É assim que o post vai aparecer no site. Nada foi salvo nem publicado.</span>
+      </div>
+      <button type="button" class="af-btn af-btn--primary" (click)="closePreview()">Voltar à edição</button>
+    </div>
+    <div class="post-preview__page">
+      <app-blog-detail [previewPost]="previewPost"></app-blog-detail>
+    </div>
+  </div>
+}
 
 <app-saving-overlay
   [show]="saving"

@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { PostService } from '../../core/services/post.service';
@@ -9,6 +10,14 @@ import { Trip } from '../../core/models/trip.model';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
 import { postSeo } from '../../core/utils/seo-fallback';
+import { renderPostHtml } from '../../core/utils/post-content';
+import { isInstitutionalAuthor, postAuthorName } from '../../core/utils/post-author';
+
+interface LightboxImage {
+  src: string;
+  alt: string;
+  caption: string;
+}
 
 @Component({
   selector: 'app-blog-detail',
@@ -17,13 +26,26 @@ import { postSeo } from '../../core/utils/seo-fallback';
   templateUrl: './blog-detail.component.html',
   styleUrl: './blog-detail.component.scss'
 })
-export class BlogDetailComponent implements OnInit {
+export class BlogDetailComponent implements OnInit, AfterViewInit, OnDestroy {
+  /**
+   * Quando informado, a página exibe este post (vindo do formulário do admin)
+   * em vez de buscar pela URL: é a pré-visualização antes de publicar.
+   */
+  @Input() previewPost: Post | null = null;
+
   post: Post | null = null;
+  renderedContent: SafeHtml = '';
   relatedPosts: Post[] = [];
   relatedTrips: Trip[] = [];
   loading = true;
   error: string | null = null;
   origin: 'home' | 'footer' | 'blog' = 'blog';
+
+  lightboxImages: LightboxImage[] = [];
+  lightboxIndex = 0;
+  lightboxOpen = false;
+
+  readonly authorName = postAuthorName;
 
   constructor(
     private route: ActivatedRoute,
@@ -31,10 +53,22 @@ export class BlogDetailComponent implements OnInit {
     private postService: PostService,
     private tripService: TripService,
     private seo: SeoService,
+    private sanitizer: DomSanitizer,
+    private host: ElementRef<HTMLElement>,
     private cdr: ChangeDetectorRef
   ) {}
 
+  get preview(): boolean {
+    return this.previewPost !== null;
+  }
+
   ngOnInit() {
+    if (this.previewPost) {
+      this.showPost(this.previewPost);
+      this.loading = false;
+      return;
+    }
+
     safeScrollToTop();
     const origin = this.route.snapshot.queryParamMap.get('origin');
     this.origin = origin === 'home' || origin === 'footer' ? origin : 'blog';
@@ -76,13 +110,38 @@ export class BlogDetailComponent implements OnInit {
         return;
       }
 
-      this.post = post;
+      this.showPost(post);
       this.applyPostSeo(post);
-      this.loadRelatedPosts(post);
-      this.loadRelatedTrips(post);
       this.cdr.markForCheck();
     });
   }
+
+  ngAfterViewInit() {
+    if (this.preview) {
+      // Na pré-visualização os links não podem tirar o usuário do formulário.
+      this.host.nativeElement.addEventListener('click', this.blockPreviewNavigation, true);
+    }
+  }
+
+  ngOnDestroy() {
+    this.host.nativeElement.removeEventListener('click', this.blockPreviewNavigation, true);
+  }
+
+  private showPost(post: Post) {
+    this.post = post;
+    this.renderedContent = renderPostHtml(post.content, this.sanitizer);
+    this.loadRelatedPosts(post);
+    this.loadRelatedTrips(post);
+  }
+
+  private readonly blockPreviewNavigation = (event: MouseEvent) => {
+    const anchor = (event.target as HTMLElement | null)?.closest('a');
+    if (!anchor) return;
+    // Imagens de galeria abrem o lightbox; links externos seguem para nova aba.
+    if (anchor.closest('.post-gallery, .gallery') || anchor.target === '_blank') return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   /** Define meta tags, canonical e JSON-LD (BlogPosting + Breadcrumb) do post. */
   private applyPostSeo(post: Post): void {
@@ -101,7 +160,10 @@ export class BlogDetailComponent implements OnInit {
       url: this.seo.absoluteUrl(canonicalPath),
       datePublished: published ? new Date(published).toISOString() : undefined,
       dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
-      author: { '@type': 'Person', name: post.author?.name || 'Unitur' },
+      author: {
+        '@type': isInstitutionalAuthor(postAuthorName(post)) ? 'Organization' : 'Person',
+        name: postAuthorName(post)
+      },
       publisher: {
         '@type': 'Organization',
         name: 'Unitur Agência de Viagens e Turismo',
@@ -126,14 +188,10 @@ export class BlogDetailComponent implements OnInit {
   }
 
   loadRelatedPosts(post: Post) {
-    this.postService.getPosts({
-      categoryId: post.categoryId,
-      limit: 4,
-      status: 'published'
-    }).pipe(
-      catchError(() => of({ data: [] as Post[], total: 0, page: 1, limit: 4, totalPages: 1, hasNextPage: false }))
-    ).subscribe(response => {
-      this.relatedPosts = response.data.filter(p => p.id !== post.id).slice(0, 3);
+    this.postService.getRelatedPosts(post, 3).pipe(
+      catchError(() => of([] as Post[]))
+    ).subscribe(posts => {
+      this.relatedPosts = posts;
       this.cdr.markForCheck();
     });
   }
@@ -161,25 +219,56 @@ export class BlogDetailComponent implements OnInit {
     });
   }
 
-  /** Mantém quebras de parágrafo de conteúdos antigos salvos como texto puro. */
-  renderPostContent(content: string): string {
-    const value = String(content || '').trim();
-    if (!value) return '';
-    if (/<[a-z][\s\S]*>/i.test(value)) return value;
+  /**
+   * Abre o lightbox ao clicar numa imagem de galeria — tanto a nova galeria do
+   * editor (.post-gallery) quanto as galerias herdadas do WordPress (.gallery),
+   * cujos links apontavam para páginas de anexo que não existem mais.
+   */
+  onPostBodyClick(event: MouseEvent) {
+    const target = event.target as HTMLElement | null;
+    const gallery = target?.closest<HTMLElement>('.post-gallery, .gallery');
+    const item = target?.tagName === 'IMG' ? target : target?.closest('figure, .gallery-item');
+    if (!gallery || !item) return;
 
-    return value
-      .split(/\r?\n\r?\n/)
-      .map(paragraph => `<p>${this.escapeHtml(paragraph).replace(/\r?\n/g, '<br>')}</p>`)
-      .join('');
+    const clicked = item.tagName === 'IMG' ? item as HTMLImageElement : item.querySelector('img');
+    if (!clicked) return;
+
+    event.preventDefault();
+    const images = Array.from(gallery.querySelectorAll('img'));
+    this.lightboxImages = images.map(image => ({
+      src: image.currentSrc || image.src,
+      alt: image.alt || '',
+      caption: this.captionFor(image)
+    }));
+    this.lightboxIndex = Math.max(0, images.indexOf(clicked));
+    this.lightboxOpen = true;
   }
 
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+  closeLightbox() {
+    this.lightboxOpen = false;
+  }
+
+  lightboxPrev() {
+    const total = this.lightboxImages.length;
+    this.lightboxIndex = (this.lightboxIndex - 1 + total) % total;
+  }
+
+  lightboxNext() {
+    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxImages.length;
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent) {
+    if (!this.lightboxOpen) return;
+    if (event.key === 'Escape') this.closeLightbox();
+    if (event.key === 'ArrowLeft') this.lightboxPrev();
+    if (event.key === 'ArrowRight') this.lightboxNext();
+  }
+
+  private captionFor(image: HTMLImageElement): string {
+    const caption = image.closest('figure')?.querySelector('figcaption')
+      ?? image.closest('.gallery-item')?.querySelector('.gallery-caption');
+    return caption?.textContent?.trim() || '';
   }
 
   shareOnFacebook() {

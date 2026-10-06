@@ -1,7 +1,11 @@
-:host { display: block; }
+:host { display: block; min-width: 0; }
 
 .rte {
+  min-width: 0;
+  // `clip` (e não `hidden`) para não virar container de rolagem: senão a barra
+  // de ferramentas não consegue ficar fixa (sticky) enquanto a página rola.
   overflow: hidden;
+  overflow: clip;
   border: 1px solid #d8dee8;
   border-radius: 12px;
   background: #fff;
@@ -17,6 +21,11 @@
 }
 
 .rte__toolbar {
+  // Acompanha a rolagem: em textos longos as ferramentas continuam visíveis.
+  // O admin define --rte-sticky-top com a altura da barra superior do painel.
+  position: sticky;
+  top: var(--rte-sticky-top, 0px);
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -71,6 +80,12 @@
   font: 1rem/1.75 Arial, sans-serif;
 }
 
+.rte__content {
+  // Contém elementos posicionados vindos do HTML antigo do WordPress.
+  position: relative;
+  overflow-wrap: break-word;
+}
+
 :host ::ng-deep .rte__content {
   &:empty::before { content: attr(data-placeholder); color: #8a94a6; pointer-events: none; }
   p { margin: 0 0 1rem; }
@@ -86,6 +101,29 @@
   a { color: #24558f; text-decoration: underline; }
   table { width: 100%; border-collapse: collapse; }
   td, th { padding: 0.5rem; border: 1px solid #d8dee8; }
+
+  // HTML legado do WordPress: legendas com largura fixa (até 1650px), embeds e
+  // tabelas largas não podem estourar a área do editor nem cobrir o texto.
+  div, figure, table, iframe, video { max-width: 100%; }
+  iframe { display: block; }
+
+  // Galeria do editor (.post-gallery) e galerias antigas do WordPress (.gallery).
+  .post-gallery,
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.6rem;
+    margin: 1.25rem 0;
+    padding: 0.6rem;
+    border: 1px dashed #c3cfdf;
+    border-radius: 10px;
+    background: #f9fbfe;
+
+    figure, .gallery-item, dt, dd { float: none !important; width: auto !important; margin: 0; }
+    img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; margin: 0; border-radius: 8px; }
+    figcaption, .gallery-caption { margin-top: 0.25rem; font-size: 0.78rem; }
+    br { display: none; }
+  }
 }
 
 .rte__source {
@@ -118,6 +156,9 @@
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (max-width: 720px) {
+  // Uma linha só, com rolagem lateral: a barra fixa não ocupa meia tela.
+  .rte__toolbar { flex-wrap: nowrap; overflow-x: auto; }
+  .rte__select, .rte__button { flex: none; }
   .rte__content, .rte__source { min-height: 340px; padding: 1rem; }
   .rte__footer { flex-direction: column; gap: 0.2rem; }
   .rte__separator { display: none; }

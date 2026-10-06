@@ -1,4 +1,4 @@
-<div class="blog-detail-page">
+<div class="blog-detail-page" [class.is-preview]="preview">
   @if (loading) {
     <div class="loading-container">
       <div class="spinner"></div>
@@ -26,8 +26,10 @@
       }
       <div class="hero-content">
         <div class="container">
-          <a href="/" class="back-link" (click)="goBackToHomeBlog($event)">← Voltar para o Blog</a>
-          
+          @if (!preview) {
+            <a href="/" class="back-link" (click)="goBackToHomeBlog($event)">← Voltar para o Blog</a>
+          }
+
           @if (post.category) {
             <span class="post-category">{{ post.category.name }}</span>
           }
@@ -39,12 +41,10 @@
               <span class="meta-icon">Data</span>
               <span>{{ formatDate(post.publishedAt || post.createdAt) }}</span>
             </div>
-            @if (post.author) {
-              <div class="meta-item">
-                <span class="meta-icon">✍️</span>
-                <span>{{ post.author.name }}</span>
-              </div>
-            }
+            <div class="meta-item">
+              <span class="meta-icon">✍️</span>
+              <span>{{ authorName(post) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -72,7 +72,7 @@
               </div>
             }
 
-            <div class="post-body" [innerHTML]="renderPostContent(post.content)"></div>
+            <div class="post-body" [innerHTML]="renderedContent" (click)="onPostBodyClick($event)"></div>
 
             <!-- Tags -->
             @if (post.tags && post.tags.length > 0) {
@@ -90,8 +90,8 @@
             <div class="share-section">
               <h3>Compartilhe este post</h3>
               <div class="share-buttons">
-                <button class="share-btn link" (click)="copyPostLink()"><span class="share-icon">Link</span>Copiar link</button>
-                <button class="share-btn whatsapp" (click)="shareOnWhatsApp()">
+                <button class="share-btn link" [disabled]="preview" (click)="copyPostLink()"><span class="share-icon">Link</span>Copiar link</button>
+                <button class="share-btn whatsapp" [disabled]="preview" (click)="shareOnWhatsApp()">
                   <span class="share-icon">WhatsApp</span>
                   WhatsApp
                 </button>
@@ -147,6 +147,49 @@
         </div>
       </div>
     </article>
+  }
+
+  @if (lightboxOpen && lightboxImages.length) {
+    <div class="post-lightbox" (click)="closeLightbox()" role="dialog" aria-modal="true" aria-label="Galeria de imagens">
+      <button type="button" class="post-lightbox__close" (click)="closeLightbox()" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      @if (lightboxImages.length > 1) {
+        <button
+          type="button"
+          class="post-lightbox__arrow post-lightbox__arrow--prev"
+          (click)="$event.stopPropagation(); lightboxPrev()"
+          aria-label="Imagem anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+      }
+
+      <figure class="post-lightbox__figure" (click)="$event.stopPropagation()">
+        <img class="post-lightbox__image" [src]="lightboxImages[lightboxIndex].src" [alt]="lightboxImages[lightboxIndex].alt">
+        @if (lightboxImages[lightboxIndex].caption) {
+          <figcaption class="post-lightbox__caption">{{ lightboxImages[lightboxIndex].caption }}</figcaption>
+        }
+      </figure>
+
+      @if (lightboxImages.length > 1) {
+        <button
+          type="button"
+          class="post-lightbox__arrow post-lightbox__arrow--next"
+          (click)="$event.stopPropagation(); lightboxNext()"
+          aria-label="Próxima imagem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+        <span class="post-lightbox__counter">{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</span>
+      }
+    </div>
   }
 </div>
 

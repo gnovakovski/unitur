@@ -1,13 +1,15 @@
-import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PostService, PostFilters } from '../../core/services/post.service';
 import { CategoryService } from '../../core/services/category.service';
 import { Post, Category } from '../../core/models/post.model';
-import { catchError, finalize, of, timeout } from 'rxjs';
+import { Subject, Subscription, catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, map, of, timeout } from 'rxjs';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
+import { postAuthorName } from '../../core/utils/post-author';
 
 @Component({
   selector: 'app-blog-list',
@@ -24,6 +26,16 @@ export class BlogListComponent implements OnInit {
   categorySelectOpen = false;
   loading = false;
   loaded = false;
+
+  /** Busca por palavra-chave (título, resumo, tags, categoria e texto do post). */
+  searchTerm = '';
+  totalResults = 0;
+  private categoryCounts = new Map<number, number>();
+  private readonly search$ = new Subject<string>();
+  private postsSubscription?: Subscription;
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly authorName = postAuthorName;
 
   currentPage = 1;
   totalPages = 1;
@@ -55,6 +67,16 @@ export class BlogListComponent implements OnInit {
     this.applySeo();
     this.loadCategories();
     this.loadPosts();
+
+    this.search$.pipe(
+      debounceTime(350),
+      map(term => term.trim()),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.loadPosts(false);
+    });
   }
 
   /** Define meta/canonical conforme página e categoria atuais. */
@@ -77,26 +99,54 @@ export class BlogListComponent implements OnInit {
   }
 
   loadCategories() {
-    this.categoryService.getAllCategories().pipe(
-      timeout(this.blogRequestTimeout),
-      catchError(() => of([] as Category[]))
-    ).subscribe({
-      next: (categories) => {
-        this.categories = categories.filter(c => c.type === 'blog' || c.type === 'both');
+    combineLatest([
+      this.categoryService.getAllCategories().pipe(
+        timeout(this.blogRequestTimeout),
+        catchError(() => of([] as Category[]))
+      ),
+      this.postService.getPublishedCategoryCounts().pipe(
+        catchError(() => of(new Map<number, number>()))
+      )
+    ]).subscribe({
+      next: ([categories, counts]) => {
+        const blogCategories = categories.filter(c => c.type === 'blog' || c.type === 'both');
         // Resolve o slug da URL (/blog/categoria/:cat) para o categoryId do filtro.
         if (this.categorySlug) {
-          const match = this.categories.find(c => c.slug === this.categorySlug);
+          const match = blogCategories.find(c => c.slug === this.categorySlug);
           if (match && this.selectedCategory !== match.id) {
             this.selectedCategory = match.id;
             this.loadPosts();
           }
         }
+        // Só lista categorias com posts publicados (sem contagem, mostra todas).
+        this.categoryCounts = counts;
+        this.categories = counts.size === 0
+          ? blogCategories
+          : blogCategories.filter(c => counts.has(Number(c.id)) || c.id === this.selectedCategory);
         this.cdr.markForCheck();
       }
     });
   }
 
-  loadPosts() {
+  categoryCount(category: Category): number {
+    return this.categoryCounts.get(Number(category.id)) || 0;
+  }
+
+  onSearchInput(term: string) {
+    this.searchTerm = term;
+    this.search$.next(term);
+  }
+
+  clearSearch() {
+    this.onSearchInput('');
+  }
+
+  get activeSearch(): string {
+    return this.searchTerm.trim();
+  }
+
+  loadPosts(scrollToTop = true) {
+    this.postsSubscription?.unsubscribe();
     this.loading = true;
 
     const filters: PostFilters = {
@@ -109,7 +159,12 @@ export class BlogListComponent implements OnInit {
       filters.categoryId = this.selectedCategory;
     }
 
-    this.postService.getPosts(filters).pipe(
+    if (this.activeSearch) {
+      filters.search = this.activeSearch;
+      filters.searchScope = 'full';
+    }
+
+    this.postsSubscription = this.postService.getPosts(filters).pipe(
       timeout(this.blogRequestTimeout),
       catchError(() => of({
         data: [] as Post[],
@@ -128,7 +183,8 @@ export class BlogListComponent implements OnInit {
       next: (response) => {
         this.posts = response.data;
         this.totalPages = response.totalPages;
-        if (this.currentPage > 1 || this.selectedCategory) {
+        this.totalResults = response.total;
+        if (scrollToTop && (this.currentPage > 1 || this.selectedCategory)) {
           safeScrollToTop('smooth');
         }
       }
@@ -144,7 +200,7 @@ export class BlogListComponent implements OnInit {
   }
 
   get selectedCategoryName(): string {
-    return this.categories.find(category => category.id === this.selectedCategory)?.name || 'Todos os países';
+    return this.categories.find(category => category.id === this.selectedCategory)?.name || 'Todos os destinos e temas';
   }
 
   get filteredCategories(): Category[] {

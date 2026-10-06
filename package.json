@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "import:wordpress-blog": "node scripts/import-wordpress-blog.mjs"
+    "import:wordpress-blog": "node scripts/import-wordpress-blog.mjs",
+    "blog:standardize-authors": "node scripts/standardize-post-authors.mjs"
   },
   "private": true,
   "packageManager": "npm@11.9.0",

@@ -13,56 +13,85 @@
   </section>
 
   <div class="container">
-    <!-- Filtro pesquisável de países/categorias -->
-    <section class="categories-filter">
-      <label class="category-filter-label" for="country-filter">Filtre os posts por país</label>
-      <div class="category-select" [class.is-open]="categorySelectOpen">
-        <button
-          id="country-filter"
-          type="button"
-          class="category-select__trigger"
-          [attr.aria-expanded]="categorySelectOpen"
-          aria-haspopup="listbox"
-          (click)="toggleCategorySelect($event)">
-          <span>{{ selectedCategoryName }}</span>
-          <span class="category-select__chevron" aria-hidden="true">⌄</span>
-        </button>
+    <!-- Busca por palavra-chave + filtro pesquisável de destinos/temas (categorias) -->
+    <section class="categories-filter" role="search">
+      <div class="blog-filter-field">
+        <label class="category-filter-label" for="blog-search">Buscar no blog</label>
+        <div class="blog-search">
+          <span class="blog-search__icon" aria-hidden="true">⌕</span>
+          <input
+            id="blog-search"
+            type="search"
+            [ngModel]="searchTerm"
+            (ngModelChange)="onSearchInput($event)"
+            placeholder="Ex.: Fátima, Terra Santa, roteiro..."
+            autocomplete="off"
+            enterkeyhint="search">
+          @if (searchTerm) {
+            <button type="button" class="blog-search__clear" (click)="clearSearch()" aria-label="Limpar busca">×</button>
+          }
+        </div>
+      </div>
 
-        @if (categorySelectOpen) {
-          <div class="category-select__menu" (click)="$event.stopPropagation()">
-            <div class="category-select__search">
-              <span aria-hidden="true">⌕</span>
-              <input
-                type="search"
-                [(ngModel)]="categorySearch"
-                placeholder="Buscar país..."
-                aria-label="Buscar país">
-            </div>
-            <div class="category-select__options" role="listbox" aria-label="Países disponíveis">
-              <button
-                type="button"
-                class="category-select__option"
-                [class.is-selected]="selectedCategory === null"
-                (click)="filterByCategory(null)">
-                Todos os países
-              </button>
-              @for (category of filteredCategories; track category.id) {
+      <div class="blog-filter-field">
+        <label class="category-filter-label" for="country-filter">Destino ou tema</label>
+        <div class="category-select" [class.is-open]="categorySelectOpen">
+          <button
+            id="country-filter"
+            type="button"
+            class="category-select__trigger"
+            [attr.aria-expanded]="categorySelectOpen"
+            aria-haspopup="listbox"
+            (click)="toggleCategorySelect($event)">
+            <span>{{ selectedCategoryName }}</span>
+            <span class="category-select__chevron" aria-hidden="true">⌄</span>
+          </button>
+
+          @if (categorySelectOpen) {
+            <div class="category-select__menu" (click)="$event.stopPropagation()">
+              <div class="category-select__search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  [(ngModel)]="categorySearch"
+                  placeholder="Buscar destino ou tema..."
+                  aria-label="Buscar destino ou tema">
+              </div>
+              <div class="category-select__options" role="listbox" aria-label="Destinos e temas disponíveis">
                 <button
                   type="button"
                   class="category-select__option"
-                  [class.is-selected]="selectedCategory === category.id"
-                  (click)="filterByCategory(category.id)">
-                  {{ category.name }}
+                  [class.is-selected]="selectedCategory === null"
+                  (click)="filterByCategory(null)">
+                  Todos os destinos e temas
                 </button>
-              }
-              @if (filteredCategories.length === 0) {
-                <p class="category-select__empty">Nenhum país encontrado.</p>
-              }
+                @for (category of filteredCategories; track category.id) {
+                  <button
+                    type="button"
+                    class="category-select__option"
+                    [class.is-selected]="selectedCategory === category.id"
+                    (click)="filterByCategory(category.id)">
+                    {{ category.name }}
+                    @if (categoryCount(category)) {
+                      <span class="category-select__count">({{ categoryCount(category) }})</span>
+                    }
+                  </button>
+                }
+                @if (filteredCategories.length === 0) {
+                  <p class="category-select__empty">Nada encontrado.</p>
+                }
+              </div>
             </div>
-          </div>
-        }
+          }
+        </div>
       </div>
     </section>
+
+    @if (activeSearch && !loading && posts.length > 0) {
+      <p class="search-summary">
+        {{ totalResults }} {{ totalResults === 1 ? 'post encontrado' : 'posts encontrados' }} para “{{ activeSearch }}”
+      </p>
+    }
 
     <!-- Loading State -->
     @if (loading) {
@@ -100,9 +129,7 @@
             <div class="post-content">
               <div class="post-meta">
                 <span class="post-date">{{ formatDate(post.publishedAt || post.createdAt) }}</span>
-                @if (post.author) {
-                  <span class="post-author">Por {{ post.author.name }}</span>
-                }
+                <span class="post-author">Por {{ authorName(post) }}</span>
               </div>
               <h2 class="post-title">{{ post.title }}</h2>
               <p class="post-excerpt">{{ post.excerpt }}</p>
@@ -170,13 +197,23 @@
         <div class="empty-icon">POST</div>
         <h3>Nenhum post encontrado</h3>
         <p>
-          @if (selectedCategory) {
+          @if (activeSearch) {
+            Não encontramos posts para “{{ activeSearch }}”
+            @if (selectedCategory) {
+              em {{ selectedCategoryName }}
+            }
+            — tente outras palavras.
+          } @else if (selectedCategory) {
             Não há posts nesta categoria ainda.
           } @else {
             Em breve teremos novos conteúdos por aqui!
           }
         </p>
-        @if (selectedCategory) {
+        @if (activeSearch) {
+          <button class="btn-primary" (click)="clearSearch()">
+            Limpar busca
+          </button>
+        } @else if (selectedCategory) {
           <button class="btn-primary" (click)="filterByCategory(null)">
             Ver todos os posts
           </button>

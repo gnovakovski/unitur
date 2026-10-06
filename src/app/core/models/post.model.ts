@@ -27,6 +27,11 @@ export interface Post {
     id: number;
     name: string;
   };
+  /** Autor original, preservado quando a assinatura é padronizada em lote. */
+  originalAuthor?: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface Category {

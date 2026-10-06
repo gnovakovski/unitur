@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -13,12 +13,14 @@ import { RichTextEditorComponent } from '../../../shared/components/rich-text-ed
 import { SavingOverlayComponent } from '../../../shared/components/saving-overlay/saving-overlay.component';
 import { UnsavedChangesModalComponent } from '../../../shared/components/unsaved-changes-modal/unsaved-changes-modal.component';
 import { UnsavedFormBase } from '../../../shared/components/unsaved-changes-modal/unsaved-form.base';
+import { BlogDetailComponent } from '../../blog/blog-detail.component';
+import { DEFAULT_POST_AUTHOR, POST_AUTHOR_OPTIONS, isPlaceholderAuthor } from '../../../core/utils/post-author';
 import { firstValueFrom, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-post-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent, RichTextEditorComponent, SavingOverlayComponent, UnsavedChangesModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploadComponent, RichTextEditorComponent, SavingOverlayComponent, UnsavedChangesModalComponent, BlogDetailComponent],
   templateUrl: './post-form.component.html',
   styleUrl: './post-form.component.scss'
 })
@@ -33,6 +35,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     featuredImage: 'Imagem destacada',
     publishedAt: 'Data de publicação',
     categoryId: 'Categoria',
+    authorName: 'Assinatura',
     tags: 'Tags',
     relatedTrips: 'Viagens relacionadas',
     status: 'Status',
@@ -55,6 +58,15 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
   readonly draftMediaId = `draft-${Date.now()}`;
   mediaUploading = false;
 
+  /** Assinaturas oferecidas no formulário (+ a atual do post, se for outra). */
+  authorOptions: string[] = [...POST_AUTHOR_OPTIONS];
+  private loadedAuthor: Post['author'] | null = null;
+
+  /** Post montado a partir do formulário para a pré-visualização (null = fechada). */
+  previewPost: Post | null = null;
+  private previewImageUrl: string | null = null;
+  @ViewChild(BlogDetailComponent) private previewDetail?: BlogDetailComponent;
+
   constructor(
     private fb: FormBuilder,
     private postService: PostService,
@@ -74,6 +86,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
       featuredImage: [''],
       contentImages: [[]],
       categoryId: ['', [Validators.required]],
+      authorName: [DEFAULT_POST_AUTHOR, [Validators.required]],
       tags: [''],
       relatedTrips: [[]],
       status: ['draft', [Validators.required]],
@@ -105,6 +118,14 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
     this.loading = true;
     this.postService.getPost(id).subscribe({
       next: (post) => {
+        // "Administrador" era um valor fixo do código, não uma assinatura real.
+        const currentAuthor = String(post.author?.name || '').trim();
+        const authorName = isPlaceholderAuthor(currentAuthor) ? DEFAULT_POST_AUTHOR : currentAuthor;
+        if (!this.authorOptions.includes(authorName)) {
+          this.authorOptions = [...POST_AUTHOR_OPTIONS, authorName];
+        }
+        this.loadedAuthor = post.author || null;
+
         this.postForm.patchValue({
           title: post.title,
           slug: post.slug,
@@ -113,6 +134,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
           featuredImage: post.featuredImage || '',
           contentImages: [],
           categoryId: post.categoryId,
+          authorName,
           tags: (post.tags || []).join(', '),
           relatedTrips: (post.relatedTrips || []).map(id => Number(id)).filter(Boolean).slice(0, 3),
           status: post.status || 'draft',
@@ -207,7 +229,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
 
     try {
       const formValue = this.postForm.value;
-      const { featuredImage, ...baseValue } = formValue;
+      const { featuredImage, authorName, ...baseValue } = formValue;
 
       const featuredFile = featuredImage instanceof File ? featuredImage : null;
       const existingFeatured = featuredImage instanceof File ? '' : String(featuredImage || '');
@@ -215,7 +237,11 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
       const basePostData: Partial<Post> = {
         ...baseValue,
         featuredImage: existingFeatured,
-        tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()) : [],
+        // Cópia da categoria junto do post, como nos posts migrados do WordPress:
+        // é o que o site exibe sem precisar consultar a coleção de categorias.
+        category: this.categorySnapshot(formValue.categoryId),
+        author: this.buildAuthor(authorName),
+        tags: this.parseTags(formValue.tags),
         relatedTrips: (formValue.relatedTrips || []).map((id: string | number) => Number(id)).filter(Boolean).slice(0, 3),
         contentImages: [],
         publishedAt: this.fromDateTimeLocal(formValue.publishedAt)
@@ -267,6 +293,80 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
 
   onCancel() {
     this.router.navigate(['/admin/posts']);
+  }
+
+  /** Abre o post como ficará no site, com o que está no formulário (nada é salvo). */
+  openPreview() {
+    const value = this.postForm.getRawValue();
+    const now = new Date();
+    this.revokePreviewImage();
+    if (value.featuredImage instanceof File) {
+      this.previewImageUrl = URL.createObjectURL(value.featuredImage);
+    }
+
+    this.previewPost = {
+      id: this.postId ?? 0,
+      title: value.title || 'Post sem título',
+      slug: value.slug || '',
+      content: value.content || '',
+      excerpt: value.excerpt || '',
+      featuredImage: this.previewImageUrl || (value.featuredImage ? String(value.featuredImage) : undefined),
+      categoryId: Number(value.categoryId) || 0,
+      category: this.findCategory(value.categoryId),
+      tags: this.parseTags(value.tags),
+      relatedTrips: this.selectedRelatedTripIds.slice(0, 3),
+      status: 'published',
+      publishedAt: this.fromDateTimeLocal(value.publishedAt) || now,
+      createdAt: now,
+      updatedAt: now,
+      author: { id: 1, name: value.authorName || DEFAULT_POST_AUTHOR }
+    };
+  }
+
+  closePreview() {
+    this.previewPost = null;
+    this.revokePreviewImage();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    // O primeiro Esc fecha o lightbox da galeria (se aberto); o seguinte, a prévia.
+    if (this.previewPost && !this.previewDetail?.lightboxOpen) {
+      this.closePreview();
+    }
+  }
+
+  override ngOnDestroy() {
+    this.revokePreviewImage();
+    super.ngOnDestroy();
+  }
+
+  private revokePreviewImage() {
+    if (this.previewImageUrl) {
+      URL.revokeObjectURL(this.previewImageUrl);
+      this.previewImageUrl = null;
+    }
+  }
+
+  private findCategory(categoryId: unknown): Category | undefined {
+    return this.categories.find(category => Number(category.id) === Number(categoryId));
+  }
+
+  /** Categoria sem campos `undefined` (o Firestore rejeita undefined aninhado). */
+  private categorySnapshot(categoryId: unknown): Category | undefined {
+    const category = this.findCategory(categoryId);
+    return category
+      ? Object.fromEntries(Object.entries(category).filter(([, value]) => value !== undefined)) as unknown as Category
+      : undefined;
+  }
+
+  private buildAuthor(name: string): Post['author'] {
+    const authorName = String(name || '').trim() || DEFAULT_POST_AUTHOR;
+    return this.loadedAuthor?.name === authorName ? this.loadedAuthor : { id: 1, name: authorName };
+  }
+
+  private parseTags(value: unknown): string[] {
+    return String(value || '').split(',').map(tag => tag.trim()).filter(Boolean);
   }
 
   markFormGroupTouched(formGroup: FormGroup) {

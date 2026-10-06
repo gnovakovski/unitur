@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Post } from '../models/post.model';
 import { BrowserStorageService } from './browser-storage.service';
+import { CategoryService } from './category.service';
 import { FirebaseService } from './firebase.service';
 import { PostService } from './post.service';
 
@@ -22,7 +23,7 @@ function post(id: number, title: string, createdAt: string, publishedAt?: string
 }
 
 describe('PostService ordering', () => {
-  const service = new PostService({} as FirebaseService, {} as BrowserStorageService);
+  const service = new PostService({} as FirebaseService, {} as BrowserStorageService, {} as CategoryService);
   const applyFilters = (items: Post[], filters: object) =>
     (service as unknown as { applyClientFilters(posts: Post[], filters: object): Post[] })
       .applyClientFilters(items, filters);
@@ -45,5 +46,47 @@ describe('PostService ordering', () => {
   it('ordena alfabeticamente sem considerar acentos e caixa', () => {
     expect(applyFilters(posts, { sortBy: 'title', sortDirection: 'asc' }).map(item => item.title))
       .toEqual(['Post antigo', 'Post novo', 'Sem data de publicação']);
+  });
+});
+
+describe('PostService busca do blog', () => {
+  const service = new PostService({} as FirebaseService, {} as BrowserStorageService, {} as CategoryService);
+  const applyFilters = (items: Post[], filters: object) =>
+    (service as unknown as { applyClientFilters(posts: Post[], filters: object): Post[] })
+      .applyClientFilters(items, filters);
+
+  const posts: Post[] = [
+    {
+      ...post(1, 'Roteiro pela Itália', '2024-01-01', '2024-01-01'),
+      content: '<p>Visita ao <strong>Santuário de Fátima</strong> no caminho.</p>'
+    },
+    {
+      ...post(2, 'Peregrinação a Fátima', '2023-01-01', '2023-01-01'),
+      content: '<p>Roteiro completo em Portugal.</p>'
+    },
+    {
+      ...post(3, 'Dicas de bagagem', '2025-01-01', '2025-01-01'),
+      tags: ['Terra Santa'],
+      content: '<p>O que levar.</p><script>fatima()</script>'
+    }
+  ];
+
+  it('procura no texto do post sem considerar acentos e ignora scripts', () => {
+    expect(applyFilters(posts, { search: 'fatima', searchScope: 'full' }).map(item => item.id))
+      .toEqual([2, 1]);
+  });
+
+  it('exige todas as palavras digitadas', () => {
+    expect(applyFilters(posts, { search: 'santuario fatima', searchScope: 'full' }).map(item => item.id))
+      .toEqual([1]);
+  });
+
+  it('encontra pelas tags', () => {
+    expect(applyFilters(posts, { search: 'terra santa', searchScope: 'full' }).map(item => item.id))
+      .toEqual([3]);
+  });
+
+  it('mantém a busca do admin restrita a título e resumo', () => {
+    expect(applyFilters(posts, { search: 'santuario' }).map(item => item.id)).toEqual([]);
   });
 });

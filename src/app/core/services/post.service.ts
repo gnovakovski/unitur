@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, concat, from, map, of, shareReplay, tap } from 'rxjs';
-import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc } from 'firebase/firestore';
-import { Post } from '../models/post.model';
+import { Observable, catchError, concat, from, map, of, shareReplay, switchMap, take, tap, timeout } from 'rxjs';
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where } from 'firebase/firestore';
+import { Category, Post } from '../models/post.model';
+import { DEFAULT_POST_AUTHOR } from '../utils/post-author';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
+import { CategoryService } from './category.service';
 
 export interface PostFilters {
   search?: string;
@@ -18,6 +20,12 @@ export interface PostFilters {
    * busca e ordenação globais sem depender da ordem arbitrária do Firestore.
    */
   adminPagination?: boolean;
+  /**
+   * 'full' (blog público) procura também em tags, categoria e no texto do post,
+   * exigindo todas as palavras digitadas. 'basic' (padrão, admin) olha só
+   * título e resumo.
+   */
+  searchScope?: 'basic' | 'full';
 }
 
 export interface PaginatedResponse<T> {
@@ -49,9 +57,13 @@ export class PostService {
    */
   private allPosts$?: Observable<Post[]>;
 
+  /** Texto normalizado usado pela busca do blog, memoizado por post. */
+  private readonly searchIndex = new Map<number, { title: string; content: string; text: string }>();
+
   constructor(
     private firebaseService: FirebaseService,
-    private storage: BrowserStorageService
+    private storage: BrowserStorageService,
+    private categoryService: CategoryService
   ) {}
 
   /** Força a próxima listagem a reler o Firestore. */
@@ -62,6 +74,7 @@ export class PostService {
   /** Descarta a leitura memoizada da coleção — a próxima listagem relê o Firestore. */
   private invalidateCache(): void {
     this.allPosts$ = undefined;
+    this.searchIndex.clear();
   }
 
   getPosts(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
@@ -88,21 +101,8 @@ export class PostService {
       of(this.getLocalPosts()),
       this.loadAllPosts().pipe(catchError(() => of(this.getLocalPosts())))
     ).pipe(
-      map(posts => {
-        const filtered = this.applyClientFilters(posts, filters);
-        const total = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-        const start = (page - 1) * pageSize;
-
-        return {
-          data: filtered.slice(start, start + pageSize),
-          total,
-          page,
-          limit: pageSize,
-          totalPages,
-          hasNextPage: page < totalPages
-        } as PaginatedResponse<Post>;
-      })
+      map(posts => this.paginate(this.applyClientFilters(posts, filters), page, pageSize, false)),
+      switchMap(response => this.withResolvedCategories(response))
     );
   }
 
@@ -150,21 +150,72 @@ export class PostService {
     // determinística por data/título. A leitura é memoizada por sessão, então
     // filtros, ordenação e paginação não geram novas leituras no Firestore.
     return this.loadAllPosts().pipe(
-      map(posts => {
-        const filtered = this.applyClientFilters(posts, filters);
-        const total = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-        const safePage = Math.min(page, totalPages);
-        const start = (safePage - 1) * pageSize;
+      map(posts => this.paginate(this.applyClientFilters(posts, filters), page, pageSize, true)),
+      switchMap(response => this.withResolvedCategories(response))
+    );
+  }
 
-        return {
-          data: filtered.slice(start, start + pageSize),
-          total,
-          page: safePage,
-          limit: pageSize,
-          totalPages,
-          hasNextPage: safePage < totalPages
-        } as PaginatedResponse<Post>;
+  private paginate(items: Post[], page: number, pageSize: number, clampPage: boolean): PaginatedResponse<Post> {
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = clampPage ? Math.min(page, totalPages) : page;
+    const start = (currentPage - 1) * pageSize;
+
+    return {
+      data: items.slice(start, start + pageSize),
+      total,
+      page: currentPage,
+      limit: pageSize,
+      totalPages,
+      hasNextPage: currentPage < totalPages
+    };
+  }
+
+  private withResolvedCategories(response: PaginatedResponse<Post>): Observable<PaginatedResponse<Post>> {
+    return this.resolveCategories(response.data).pipe(map(data => ({ ...response, data })));
+  }
+
+  /**
+   * Completa `post.category` a partir do `categoryId`. Só os posts migrados do
+   * WordPress têm a cópia embutida da categoria; os criados no admin antes desta
+   * correção não tinham, e por isso a categoria sumia das telas. Só consulta as
+   * categorias quando algum post precisa (sem cópia, ou cópia divergente).
+   */
+  private resolveCategories(posts: Post[]): Observable<Post[]> {
+    if (!posts.some(post => this.needsCategoryLookup(post))) {
+      return of(posts);
+    }
+
+    return this.categoryService.getAllCategories().pipe(
+      take(1),
+      timeout(8000),
+      map(categories => {
+        const byId = new Map<number, Category>(categories.map(category => [Number(category.id), category]));
+        return posts.map(post => {
+          if (!this.needsCategoryLookup(post)) return post;
+          const category = byId.get(Number(post.categoryId));
+          return category ? { ...post, category } : post;
+        });
+      }),
+      catchError(() => of(posts))
+    );
+  }
+
+  private needsCategoryLookup(post: Post): boolean {
+    return Boolean(post.categoryId) && (!post.category || Number(post.category.id) !== Number(post.categoryId));
+  }
+
+  /** Quantidade de posts publicados por categoria (para o filtro do blog). */
+  getPublishedCategoryCounts(): Observable<Map<number, number>> {
+    return this.loadAllPosts().pipe(
+      map(posts => {
+        const counts = new Map<number, number>();
+        for (const post of this.dedupePosts(posts)) {
+          if ((post.status || 'published') !== 'published' || !post.categoryId) continue;
+          const id = Number(post.categoryId);
+          counts.set(id, (counts.get(id) || 0) + 1);
+        }
+        return counts;
       })
     );
   }
@@ -194,32 +245,83 @@ export class PostService {
     );
   }
 
+  /**
+   * Antes cada visita a um post lia a coleção inteira (~356 documentos). Agora:
+   * se a coleção já foi carregada na sessão, reaproveita; senão busca só o
+   * documento pelo slug (1 leitura) e só cai na leitura completa quando o slug
+   * não bate exatamente (slugs legados gerados a partir do título ou do id).
+   */
   getPostBySlug(slug: string): Observable<Post> {
     const normalized = String(slug || '').trim().toLowerCase();
+    const fromCollection$ = () => this.loadAllPosts().pipe(
+      map(posts => this.findBySlug(posts, normalized) ?? this.findBySlug(this.getLocalPosts(), normalized))
+    );
+    const source$ = this.allPosts$
+      ? fromCollection$()
+      : this.fetchPostBySlug(normalized).pipe(switchMap(post => post ? of(post) : fromCollection$()));
 
-    return from(this.firebaseService.withTimeout(
-      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
-      'Tempo esgotado ao carregar post do Firestore.'
-    )).pipe(
-      map(snapshot => {
-        const posts = snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data()));
-        const candidates = this.dedupePosts([...posts, ...this.getLocalPosts()]);
-        const post = candidates.find(item => this.matchesSlug(item, normalized));
-
+    return source$.pipe(
+      map(post => {
         if (!post) {
           throw new Error('Post não encontrado');
         }
-
         return post;
       }),
       catchError(() => {
-        const post = this.getLocalPosts().find(item => this.matchesSlug(item, normalized));
+        const post = this.findBySlug(this.getLocalPosts(), normalized);
         if (!post) {
           throw new Error('Post não encontrado');
         }
         return of(post);
-      })
+      }),
+      switchMap(post => this.resolveCategories([post]).pipe(map(([resolved]) => resolved)))
     );
+  }
+
+  /** Posts publicados da mesma categoria, sem reler a coleção inteira. */
+  getRelatedPosts(post: Post, count = 3): Observable<Post[]> {
+    const pick = (posts: Post[]) => this.applyClientFilters(posts, { categoryId: post.categoryId, status: 'published' })
+      .filter(item => Number(item.id) !== Number(post.id))
+      .slice(0, count);
+
+    if (this.allPosts$) {
+      return this.allPosts$.pipe(map(pick), catchError(() => of([])));
+    }
+    if (!post.categoryId) {
+      return of([]);
+    }
+
+    return from(this.firebaseService.withTimeout(
+      getDocs(query(
+        collection(this.firebaseService.firestore, this.collectionName),
+        where('categoryId', '==', Number(post.categoryId)),
+        limit(count * 4)
+      )),
+      'Tempo esgotado ao carregar posts relacionados do Firestore.'
+    )).pipe(
+      map(snapshot => pick(snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data())))),
+      catchError(() => of([]))
+    );
+  }
+
+  private fetchPostBySlug(slug: string): Observable<Post | null> {
+    if (!slug) return of(null);
+
+    return from(this.firebaseService.withTimeout(
+      getDocs(query(
+        collection(this.firebaseService.firestore, this.collectionName),
+        where('slug', '==', slug),
+        limit(1)
+      )),
+      'Tempo esgotado ao carregar post do Firestore.'
+    )).pipe(
+      map(snapshot => snapshot.empty ? null : this.mapFirestorePost(snapshot.docs[0].id, snapshot.docs[0].data())),
+      catchError(() => of(null))
+    );
+  }
+
+  private findBySlug(posts: Post[], slug: string): Post | undefined {
+    return this.dedupePosts(posts).find(item => this.matchesSlug(item, slug));
   }
 
   private matchesSlug(post: Post, slug: string): boolean {
@@ -242,6 +344,7 @@ export class PostService {
       featuredImage: post.featuredImage,
       contentImages: post.contentImages || [],
       categoryId: Number(post.categoryId),
+      category: post.category,
       tags: post.tags || [],
       relatedTrips: post.relatedTrips || [],
       status: post.status || 'draft',
@@ -251,7 +354,7 @@ export class PostService {
       publishedAt: post.status === 'published' ? (post.publishedAt || now) : undefined,
       createdAt: now,
       updatedAt: now,
-      author: post.author || { id: 1, name: 'Administrador' }
+      author: post.author || { id: 1, name: DEFAULT_POST_AUTHOR }
     };
 
     return from(this.firebaseService.withTimeout(
@@ -318,7 +421,15 @@ export class PostService {
   private applyClientFilters(posts: Post[], filters?: PostFilters): Post[] {
     let filtered = this.dedupePosts([...posts]);
 
-    if (filters?.search) {
+    const terms = this.normalizeSearch(filters?.search).split(/\s+/).filter(Boolean);
+    const fullSearch = filters?.searchScope === 'full' && terms.length > 0;
+
+    if (fullSearch) {
+      filtered = filtered.filter(post => {
+        const text = this.searchableText(post);
+        return terms.every(term => text.includes(term));
+      });
+    } else if (filters?.search) {
       const search = this.normalizeSearch(filters.search);
       filtered = filtered.filter(post =>
         this.normalizeSearch(post.title).includes(search) ||
@@ -334,7 +445,38 @@ export class PostService {
       filtered = filtered.filter(post => (post.status || 'published') === filters.status);
     }
 
-    return this.sortPosts(filtered, filters?.sortBy, filters?.sortDirection);
+    const sorted = this.sortPosts(filtered, filters?.sortBy, filters?.sortDirection);
+    if (!fullSearch) return sorted;
+
+    // Na busca, posts com os termos no título vêm primeiro (mantendo a ordem por data).
+    const inTitle = (post: Post) => terms.every(term => this.normalizeSearch(post.title).includes(term));
+    return [...sorted.filter(inTitle), ...sorted.filter(post => !inTitle(post))];
+  }
+
+  private searchableText(post: Post): string {
+    const id = Number(post.id);
+    const title = post.title || '';
+    const content = post.content || '';
+    const cached = this.searchIndex.get(id);
+    if (cached && cached.title === title && cached.content === content) {
+      return cached.text;
+    }
+
+    const plainContent = content
+      .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ');
+    const text = this.normalizeSearch([
+      title,
+      post.excerpt,
+      (post.tags || []).join(' '),
+      post.category?.name,
+      (post.sourceCategories || []).join(' '),
+      plainContent
+    ].join(' ')).replace(/\s+/g, ' ');
+
+    this.searchIndex.set(id, { title, content, text });
+    return text;
   }
 
   private normalizeSearch(value?: string): string {

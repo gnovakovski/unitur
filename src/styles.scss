@@ -12,6 +12,14 @@ html, body {
   overflow-x: hidden;
 }
 
+// No painel admin, `clip` no lugar de `hidden`: com hidden em html E body, o body
+// vira um container de rolagem que nunca rola e nenhum position: sticky funciona
+// (topbar e barra de ferramentas do editor). Classe aplicada pelo AdminLayoutComponent.
+html.admin-shell,
+html.admin-shell body {
+  overflow-x: clip;
+}
+
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;

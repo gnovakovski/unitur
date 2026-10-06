@@ -23,13 +23,15 @@
     <button type="button" class="rte__button rte__button--text" title="Adicionar hiperlink" [disabled]="disabled || sourceMode" (mousedown)="preserveSelection($event)" (click)="insertLink()">🔗 Link</button>
     <button type="button" class="rte__button rte__button--text" title="Remover hiperlink" [disabled]="disabled || sourceMode" (mousedown)="preserveSelection($event)" (click)="execute('unlink')">Remover link</button>
     <span class="rte__separator"></span>
-    <button type="button" class="rte__button rte__button--text" title="Enviar e inserir imagem" [disabled]="disabled || sourceMode || uploading" (click)="chooseImage()">{{ uploading ? 'Enviando…' : '↑ Imagem' }}</button>
+    <button type="button" class="rte__button rte__button--text" title="Enviar e inserir imagem" [disabled]="disabled || sourceMode || uploading" (click)="chooseImage()">{{ uploading && !galleryProgress ? 'Enviando…' : '↑ Imagem' }}</button>
     <button type="button" class="rte__button rte__button--text" title="Inserir imagem por URL" [disabled]="disabled || sourceMode" (mousedown)="preserveSelection($event)" (click)="insertImageFromUrl()">Imagem por URL</button>
+    <button type="button" class="rte__button rte__button--text" title="Enviar várias imagens e inserir uma galeria. Com o cursor dentro de uma galeria, as fotos são adicionadas a ela." [disabled]="disabled || sourceMode || uploading" (mousedown)="preserveSelection($event)" (click)="chooseGallery()">{{ galleryProgress ? 'Galeria ' + galleryProgress + '…' : '▦ Galeria' }}</button>
     <span class="rte__spacer"></span>
     <button type="button" class="rte__button rte__button--text" [class.is-active]="sourceMode" [disabled]="disabled" (click)="toggleSourceMode()">{{ sourceMode ? 'Editor visual' : 'Ver HTML' }}</button>
   </div>
 
   <input #fileInput class="rte__file" type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadImage($event)">
+  <input #galleryInput class="rte__file" type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="uploadGallery($event)">
 
   @if (!sourceMode) {
     <div
