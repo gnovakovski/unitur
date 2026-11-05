@@ -30,9 +30,9 @@
       </div>
       <select class="af-control" [(ngModel)]="typeFilter">
         <option value="">Todos os tipos</option>
-        <option value="peregrinacao">Peregrinação</option>
-        <option value="regular">Regular</option>
-        <option value="curadoria">Curadoria</option>
+        @for (menu of menus; track menu.id) {
+          <option [value]="menu.id">{{ menu.label }}</option>
+        }
       </select>
       <select class="af-control" [(ngModel)]="statusFilter">
         <option value="">Todos os status</option>
@@ -113,9 +113,13 @@
                 </div>
               </td>
               <td>
-                <span class="type-pill" [attr.data-type]="trip.tripType">
-                  {{ getTypeLabel(trip.tripType) }}
-                </span>
+                <div class="type-pills">
+                  @for (menu of getTripMenus(trip); track menu.id) {
+                    <span class="type-pill" [attr.data-menu]="menu.id">{{ menu.label }}</span>
+                  } @empty {
+                    <span class="type-pill">Sem menu</span>
+                  }
+                </div>
               </td>
               <td class="nowrap">{{ trip.period || formatDate(trip.startDate) }}</td>
               <td class="nowrap">{{ trip.duration }} dias</td>

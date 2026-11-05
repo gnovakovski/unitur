@@ -9,19 +9,21 @@ import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
 import { SiteContentService } from '../../core/services/site-content.service';
-import { normalizeWhatsAppNumber, slugFromHeaderRoute } from '../../core/models/site-content.model';
+import { HeaderLink, normalizeWhatsAppNumber, slugFromHeaderRoute } from '../../core/models/site-content.model';
 import { tripScope, tripCanonicalPath } from '../../core/utils/trip-scope';
 import { tripSeo } from '../../core/utils/seo-fallback';
 import { buildWhatsappLink, resolveWhatsappMessage } from '../../core/utils/whatsapp-message';
 import { TripTag } from '../../core/models/tag.model';
 import { TagService } from '../../core/services/tag.service';
 import { TagBadge, resolveTagBadge } from '../../core/utils/tag-badge';
+import { resolveTripMenuIds, tripMenuLabel } from '../../core/utils/trip-menu';
 
 interface ProductTrip {
   slug: string;
   tagId?: number | null;
   title: string;
-  eyebrow: string;
+  /** Menus do cabeçalho em que a viagem aparece (base do selo de categoria). */
+  menuIds: string[];
   destination: string;
   date: string;
   duration: string;
@@ -70,6 +72,8 @@ export class ProductDetailComponent implements OnInit {
   tags: TripTag[] = [];
   /** Número de WhatsApp (só dígitos) vindo do conteúdo de contato do site. */
   private whatsappNumber = '';
+  /** Menus do cabeçalho já carregados do Firestore; null enquanto não chegam. */
+  private headerLinks: HeaderLink[] | null = null;
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor(
@@ -87,6 +91,17 @@ export class ProductDetailComponent implements OnInit {
   /** Badge da tag desta viagem, exibido acima do título. */
   get tagBadge(): TagBadge | null {
     return resolveTagBadge(this.trip?.tagId, this.tags);
+  }
+
+  /**
+   * Selo laranja com a categoria da viagem: nome atual do menu dela no
+   * cabeçalho. Fica oculto até os menus chegarem do Firestore — antes disso só
+   * existiriam os nomes padrão (ex.: "Viagens Regulares"), que podem não ser os
+   * do site.
+   */
+  get categoryLabel(): string {
+    if (!this.trip || !this.headerLinks) return '';
+    return tripMenuLabel({ menuIds: this.trip.menuIds }, this.headerLinks);
   }
 
   get showHeroTripDate(): boolean {
@@ -137,6 +152,12 @@ export class ProductDetailComponent implements OnInit {
       this.cdr.detectChanges();
     });
     this.siteContentService.loadContact().subscribe();
+
+    // Menus do cabeçalho, para o selo de categoria usar o nome atual do menu.
+    this.siteContentService.loadHeader().subscribe(() => {
+      this.headerLinks = this.siteContentService.getCurrentHeaderLinks();
+      this.cdr.markForCheck();
+    });
 
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
@@ -368,7 +389,7 @@ export class ProductDetailComponent implements OnInit {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
       tagId: trip.tagId ?? null,
       title: trip.title,
-      eyebrow: this.getTripTypeLabel(trip.tripType),
+      menuIds: resolveTripMenuIds(trip),
       destination,
       date: trip.period || this.formatPeriod(trip.startDate),
       duration,
@@ -386,7 +407,7 @@ export class ProductDetailComponent implements OnInit {
       imageFit: trip.mainImageFit || 'cover',
       imageRotation: Number(trip.mainImageRotation || 0),
       summary,
-      description: trip.description || '',
+      description: (trip.description || '').trim(),
       experienceImages: trip.experienceImages || trip.gallery || [],
       highlights: [destination, trip.period || 'Período a definir', duration],
       itinerary: trip.itinerary
@@ -466,16 +487,6 @@ export class ProductDetailComponent implements OnInit {
 
   private defaultCancellationPolicy(): string {
     return 'Política de cancelamento padrão conforme contrato da viagem.';
-  }
-
-  private getTripTypeLabel(type?: Trip['tripType']) {
-    const labels: Record<string, string> = {
-      peregrinacao: 'Viagens de Peregrinação',
-      regular: 'Viagens Regulares',
-      curadoria: 'Viagens de Curadoria'
-    };
-
-    return labels[type || 'regular'];
   }
 
   private formatPeriod(date?: Date): string {

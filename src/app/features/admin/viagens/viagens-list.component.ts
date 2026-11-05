@@ -9,6 +9,9 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { TripService } from '../../../core/services/trip.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { formatTripForeign } from '../../../core/utils/trip-pricing';
+import { SiteContentService } from '../../../core/services/site-content.service';
+import { HeaderLink } from '../../../core/models/site-content.model';
+import { resolveTripMenuIds, tripMenus } from '../../../core/utils/trip-menu';
 
 @Component({
   selector: 'app-viagens-list',
@@ -26,12 +29,15 @@ export class ViagensListComponent implements OnInit {
   typeFilter = '';
   statusFilter = '';
   brokenImages = new Set<number>();
+  /** Menus do cabeçalho: dão nome ao "Tipo" de cada viagem e ao filtro. */
+  menus: HeaderLink[] = [];
 
   constructor(
     private authService: AuthService,
     private permissionService: PermissionService,
     private tripService: TripService,
     private exchangeRateService: ExchangeRateService,
+    private siteContentService: SiteContentService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -45,6 +51,12 @@ export class ViagensListComponent implements OnInit {
       this.loadTrips();
       // Cotações atualizadas para a coluna de preço refletir o câmbio de agora.
       this.exchangeRateService.loadRates().subscribe(() => this.cdr.detectChanges());
+      // O "Tipo" é o menu em que a viagem aparece, com o nome atual do menu.
+      this.menus = this.siteContentService.getCurrentHeaderLinks();
+      this.siteContentService.loadHeader().subscribe(() => {
+        this.menus = this.siteContentService.getCurrentHeaderLinks();
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -122,24 +134,19 @@ export class ViagensListComponent implements OnInit {
         trip.country,
         trip.destination,
         trip.period,
-        this.getTypeLabel(trip.tripType)
+        ...this.getTripMenus(trip).map(menu => menu.label)
       ].filter(Boolean).join(' '));
       const matchesSearch = !search || searchable.includes(search);
-      const matchesType = !this.typeFilter || trip.tripType === this.typeFilter;
+      const matchesType = !this.typeFilter || resolveTripMenuIds(trip).includes(this.typeFilter);
       const matchesStatus = !this.statusFilter || trip.status === this.statusFilter;
 
       return matchesSearch && matchesType && matchesStatus;
     });
   }
 
-  getTypeLabel(type?: Trip['tripType']) {
-    const labels: Record<string, string> = {
-      peregrinacao: 'Peregrinação',
-      regular: 'Regular',
-      curadoria: 'Curadoria'
-    };
-
-    return labels[type || 'regular'];
+  /** Menus em que a viagem aparece (mesmos marcados em "Aparece nos menus"). */
+  getTripMenus(trip: Trip): HeaderLink[] {
+    return tripMenus(trip, this.menus);
   }
 
   getStatusLabel(status?: Trip['status']) {

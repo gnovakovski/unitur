@@ -10,7 +10,9 @@
     <div class="hero-content">
       <a routerLink="/viagens" class="back-link">Voltar para viagens</a>
       <div class="hero-labels">
-        <span class="eyebrow">{{ trip.eyebrow }}</span>
+        @if (categoryLabel) {
+          <span class="eyebrow">{{ categoryLabel }}</span>
+        }
         @if (tagBadge; as badge) {
           <span class="hero-tag" [style.background]="badge.background" [style.color]="badge.textColor">
             {{ badge.label }}
@@ -47,7 +49,8 @@
             <span>01</span>
             <h2>Experiência</h2>
           </div>
-          <p class="lead">{{ trip.summary }}</p>
+          <!-- Descrição completa (a chamada curta já aparece no topo da página). -->
+          <p class="lead lead--full">{{ trip.description || trip.summary }}</p>
           @if (galleryImages.length > 0) {
             <div class="gallery-carousel">
               <div class="gallery-stage">

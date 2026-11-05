@@ -276,6 +276,12 @@ $dark: #1a1a2e;
   line-height: 1.85;
 }
 
+// A descrição completa é cadastrada como texto com quebras de linha (listas,
+// tópicos); preserva as quebras sem manter a indentação colada do Word.
+.lead--full {
+  white-space: pre-line;
+}
+
 .highlights {
   display: flex;
   flex-wrap: wrap;

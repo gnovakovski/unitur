@@ -11,7 +11,8 @@ import { ResolvedTripPrice, formatTripBRL, formatTripForeign } from '../../core/
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { SiteContentService } from '../../core/services/site-content.service';
 import { SeoService } from '../../core/services/seo.service';
-import { LEGACY_TRIP_TYPE_TO_MENU_ID, slugFromHeaderRoute } from '../../core/models/site-content.model';
+import { slugFromHeaderRoute } from '../../core/models/site-content.model';
+import { resolveTripMenuIds, tripMenuLabel } from '../../core/utils/trip-menu';
 
 interface ViagemCard {
   slug: string;
@@ -112,6 +113,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
     this.siteContentService.loadHeader().subscribe(() => {
       this.rebuildCategories();
       this.updateSelectedCategory();
+      this.refreshCategoryLabels();
       this.cdr.detectChanges();
     });
 
@@ -337,6 +339,18 @@ export class ViagensComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Se as viagens chegaram antes do cabeçalho, o selo foi montado com os nomes
+   * em cache/padrão; reaplica com os nomes atuais dos menus.
+   */
+  private refreshCategoryLabels() {
+    const links = this.siteContentService.getCurrentHeaderLinks();
+    this.viagens = this.viagens.map(card => ({
+      ...card,
+      category: tripMenuLabel({ menuIds: card.menuIds }, links)
+    }));
+  }
+
   private mapTrip(trip: Trip): ViagemCard {
     const card: ViagemCard = {
       slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
@@ -355,8 +369,8 @@ export class ViagensComponent implements OnInit, OnDestroy {
       guide: (trip.spiritualGuide || '').trim(),
       coordinator: (trip.coordinator || '').trim(),
       tagId: trip.tagId ?? null,
-      menuIds: this.resolveMenuIds(trip),
-      category: this.getCategoryLabel(trip),
+      menuIds: resolveTripMenuIds(trip),
+      category: tripMenuLabel(trip, this.siteContentService.getCurrentHeaderLinks()),
       startDate: trip.startDate
     };
     this.attachPrices(card, trip);
@@ -398,32 +412,6 @@ export class ViagensComponent implements OnInit, OnDestroy {
 
     parsed.setHours(0, 0, 0, 0);
     return parsed;
-  }
-
-  /** menuIds da viagem, migrando o tripType legado quando o campo não existir. */
-  private resolveMenuIds(trip: Trip): string[] {
-    const fromTrip = Array.isArray(trip.menuIds) ? trip.menuIds.filter(Boolean) : [];
-    if (fromTrip.length) return fromTrip;
-    const legacy = LEGACY_TRIP_TYPE_TO_MENU_ID[trip.tripType || 'regular'];
-    return legacy ? [legacy] : [];
-  }
-
-  /** Label do badge do card: nome do primeiro menu real da viagem. */
-  private getCategoryLabel(trip: Trip): string {
-    const menuIds = this.resolveMenuIds(trip);
-    const links = this.siteContentService.getCurrentHeaderLinks();
-    for (const id of menuIds) {
-      const link = links.find(l => l.id === id);
-      if (link) return link.label;
-    }
-
-    // Fallback para viagens cujo menu não existe mais no header.
-    const labels: Record<string, string> = {
-      peregrinacao: 'Viagens de Peregrinação',
-      regular: 'Viagens Regulares',
-      curadoria: 'Viagens de Curadoria'
-    };
-    return labels[trip.tripType || 'regular'] || 'Viagens';
   }
 
   private formatPeriod(date?: Date) {

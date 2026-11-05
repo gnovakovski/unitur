@@ -162,6 +162,12 @@ table {
   }
 }
 
+.type-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
 .type-pill {
   display: inline-flex;
   align-items: center;
@@ -174,17 +180,17 @@ table {
   background: $af-bg;
   color: $af-muted;
 
-  &[data-type="peregrinacao"] {
+  &[data-menu="peregrinacao"] {
     background: #efe7ff;
     color: #553aa1;
   }
 
-  &[data-type="regular"] {
+  &[data-menu="regulares"] {
     background: $af-blue-soft;
     color: #1f487e;
   }
 
-  &[data-type="curadoria"] {
+  &[data-menu="curadoria"] {
     background: $af-orange-soft;
     color: #b94d09;
   }
