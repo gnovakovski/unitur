@@ -1,5 +1,5 @@
 <!-- H1 semântico da página (visível só para leitores de tela / crawlers).
-     O carrossel exibe só a arte e o botão, sem textos. -->
+     O carrossel exibe só a arte, sem textos; o banner inteiro é clicável. -->
 <h1 class="visually-hidden">Unitur — Agência de Viagens, Peregrinações e Roteiros</h1>
 
 <!-- Banner Carousel -->
@@ -22,14 +22,8 @@
               <img [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)">
             </picture>
             @if (slide.link) {
-              <!-- Só o botão sobre a arte: sem sobreposição colorida e sem textos. -->
-              <div class="carousel-overlay">
-                <div class="carousel-content">
-                  <a class="carousel-cta animate-fade-in-delay" [routerLink]="slide.link">
-                    {{ slide.buttonText || 'Saiba mais' }}
-                  </a>
-                </div>
-              </div>
+              <!-- Sem botão: uma camada transparente sobre a arte torna o banner todo clicável. -->
+              <a class="slide-link" [routerLink]="slide.link" [attr.aria-label]="slide.buttonText || 'Saiba mais'"></a>
             }
           </div>
         }

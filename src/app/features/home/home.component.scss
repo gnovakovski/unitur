@@ -149,38 +149,19 @@ $dark: #1a1a2e;
   }
 }
 
-// Camada transparente que só posiciona o botão no centro da arte — sem cor nem
-// escurecimento por cima do banner. Não captura cliques, para não bloquear as setas.
-.carousel-overlay {
+// Link transparente cobrindo a arte inteira: o banner todo leva ao destino
+// escolhido no admin, sem botão e sem escurecer a imagem.
+.slide-link {
   position: absolute;
   inset: 0;
-  // Acima do fundo desfocado (0) e da arte (1).
+  // Acima do fundo desfocado (0) e da arte (1); setas e indicadores ficam por cima.
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
+  cursor: pointer;
 
-.carousel-content {
-  text-align: center;
-  padding: 2rem;
-}
-
-.carousel-cta {
-  pointer-events: auto;
-  display: inline-block;
-  background: $orange;
-  color: $white;
-  font-weight: 600;
-  font-size: 1.05rem;
-  padding: 0.9rem 2.2rem;
-  border-radius: 999px;
-  text-decoration: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  &:hover { transform: translateY(-2px); background: lighten($orange, 6%); }
-  @media (max-width: 768px) { font-size: 0.95rem; padding: 0.75rem 1.8rem; }
+  &:focus-visible {
+    outline: 3px solid $white;
+    outline-offset: -6px;
+  }
 }
 
 .cta-button {
@@ -208,6 +189,8 @@ $dark: #1a1a2e;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  // Acima do link que cobre o banner, para as setas continuarem clicáveis.
+  z-index: 3;
   &:hover { background: rgba($white, 0.25); }
   &.prev { left: 2rem; }
   &.next { right: 2rem; }
@@ -1390,10 +1373,7 @@ $dark: #1a1a2e;
 // para celular não cobrir bem (alturas de imagem, fontes de hero, paddings).
 // ============================================================================
 @media (max-width: 480px) {
-  // Banner / hero — a altura vem da proporção da arte (ver .banner-carousel), aqui
-  // só ajustamos o botão sobreposto.
-  .carousel-content { padding: 1.25rem; }
-  .carousel-cta { font-size: 0.9rem; padding: 0.7rem 1.4rem; }
+  // Banner / hero — a altura vem da proporção da arte (ver .banner-carousel).
   .carousel-btn { width: 40px; height: 40px; font-size: 1.6rem; &.prev { left: 0.5rem; } &.next { right: 0.5rem; } }
   .carousel-indicators { bottom: 1rem; gap: 0.5rem; }
   .indicator { width: 28px; &.active { width: 44px; } }

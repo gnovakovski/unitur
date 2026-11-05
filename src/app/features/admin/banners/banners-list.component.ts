@@ -96,9 +96,9 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
               <div class="banner-row__info">
                 <strong>Banner {{ $index + 1 }}</strong>
                 @if (banner.link) {
-                  <span class="muted">{{ banner.buttonText || 'Saiba mais' }} → {{ banner.link }}</span>
+                  <span class="muted">Leva para → {{ banner.link }}</span>
                 } @else {
-                  <span class="muted">Sem botão</span>
+                  <span class="muted">Sem link</span>
                 }
               </div>
 
@@ -155,7 +155,7 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
 
           <app-image-upload
             label="Imagem do banner (celular)"
-            helper="Arte vertical recomendada 1080×1350. Em telas pequenas o carrossel troca para esta imagem — o botão continua o mesmo. Se ficar em branco, a arte de desktop é usada sem cortes."
+            helper="Arte vertical recomendada 1080×1350. Em telas pequenas o carrossel troca para esta imagem — o link continua o mesmo. Se ficar em branco, a arte de desktop é usada sem cortes."
             aspectRatio="portrait"
             [cropRatio]="1080/1350"
             formControlName="imageUrlMobile">
@@ -163,10 +163,10 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
 
           <div class="af-grid af-grid--2">
             <div class="af-field af-field--span-2">
-              <label class="af-label">Botão de direcionamento <span class="af-label__optional">opcional</span></label>
-              <p class="af-hint">Escolha para onde o banner leva ao clicar. Deixe em "Nenhum" para um banner sem botão.</p>
+              <label class="af-label">Link do banner <span class="af-label__optional">opcional</span></label>
+              <p class="af-hint">O banner não tem botão: clicar em qualquer parte da arte leva para a página escolhida. Deixe em "Nenhum" para um banner sem link.</p>
               <select class="af-control" formControlName="link">
-                <option value="">Nenhum (banner sem botão)</option>
+                <option value="">Nenhum (banner sem link)</option>
                 @for (g of routeGroups; track g.group) {
                   <optgroup [label]="g.group">
                     @for (opt of g.options; track opt.value) {
@@ -176,14 +176,6 @@ import { UnsavedChangesModalComponent, UnsavedAction } from '../../../shared/com
                 }
               </select>
             </div>
-
-            @if (bannerForm.get('link')?.value) {
-              <div class="af-field af-field--span-2">
-                <label class="af-label">Texto do botão</label>
-                <input class="af-control" formControlName="buttonText" placeholder="Ex: Saiba mais, Ver roteiro, Reservar">
-                <p class="af-hint">Se vazio, o botão mostra "Saiba mais".</p>
-              </div>
-            }
           </div>
 
           @if (saving && savingStep) {
@@ -233,14 +225,14 @@ export class BannersListComponent implements OnInit {
   changedFields: string[] = [];
   reordering = false;
 
-  /** Opções de rota para o botão do banner (rotas fixas + viagens cadastradas). */
+  /** Opções de rota para o link do banner (rotas fixas + viagens cadastradas). */
   routeOptions: Array<{ label: string; value: string; group: string }> = [];
 
   private readonly fieldLabels: Record<string, string> = {
     imageUrl: 'Imagem (desktop)',
     imageUrlMobile: 'Imagem (celular)',
     status: 'Status',
-    link: 'Link do botão',
+    link: 'Link do banner',
     buttonText: 'Texto do botão'
   };
 
