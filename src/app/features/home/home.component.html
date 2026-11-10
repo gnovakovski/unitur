@@ -19,7 +19,10 @@
               @if (slide.imageUrlMobile) {
                 <source media="(max-width: 768px)" [srcset]="slide.imageUrlMobile">
               }
-              <img [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)">
+              <!-- 1º slide = LCP da página: baixa com prioridade alta; os demais ficam em
+                   prioridade baixa (sem lazy, para não piscar em branco ao girar o carrossel). -->
+              <img [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)"
+                   [attr.fetchpriority]="i === 0 ? 'high' : 'low'">
             </picture>
             @if (slide.link) {
               <!-- Sem botão: uma camada transparente sobre a arte torna o banner todo clicável. -->
@@ -83,7 +86,7 @@
       @for (trip of section.trips; track trip.slug) {
         <article class="trip-card">
           <a class="trip-card__media" [routerLink]="['/viagens', trip.slug]">
-            <img [src]="trip.image" [alt]="trip.title" (error)="useFallbackImage($event)" loading="lazy"
+            <img [src]="trip.image" [alt]="trip.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async"
                  [style.object-fit]="trip.imageFit || 'cover'"
                  [style.object-position]="trip.imagePosition || '50% 50%'"
                  [style.transform]="'rotate(' + (trip.imageRotation || 0) + 'deg)'">
@@ -184,7 +187,7 @@
   <div class="continents-grid">
     @for (continent of continents; track continent.name) {
       <a class="continent-card" routerLink="/viagens" [queryParams]="{ destination: continent.name }">
-        <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)">
+        <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
         <div class="continent-overlay">
           <h3>{{ continent.name }}</h3>
           @if (continent.description) {
@@ -222,7 +225,7 @@
           <a class="btn-curadoria" [routerLink]="['/viagens', item.slug]">Quero Conhecer</a>
         </div>
         <div class="curadoria-image">
-          <img [src]="item.image" [alt]="item.title" (error)="useFallbackImage($event)">
+          <img [src]="item.image" [alt]="item.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
           <div class="curadoria-overlay"></div>
         </div>
       </div>
@@ -240,7 +243,7 @@
     @for (post of blogPosts; track post.title) {
       <div class="blog-card">
         <div class="blog-image">
-          <img [src]="post.image" [alt]="post.title" (error)="useFallbackImage($event)">
+          <img [src]="post.image" [alt]="post.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
           <span class="blog-category">{{ post.category }}</span>
         </div>
         <div class="blog-content">
@@ -278,7 +281,7 @@
       <a routerLink="/about" class="btn-about">Conhe&ccedil;a nossa hist&oacute;ria</a>
     </div>
     <div class="about-image">
-      <img [src]="homeAbout.imageUrl" alt="Sobre a Unitur">
+      <img [src]="homeAbout.imageUrl" alt="Sobre a Unitur" loading="lazy" decoding="async">
     </div>
   </div>
 </section>
@@ -294,7 +297,7 @@
     @for (testimonial of testimonials; track testimonial.name) {
       <div class="testimonial-card">
         <div class="testimonial-header">
-          <img [src]="testimonial.image" [alt]="testimonial.name" class="testimonial-avatar" (error)="useFallbackImage($event)">
+          <img [src]="testimonial.image" [alt]="testimonial.name" class="testimonial-avatar" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
           <div>
             <h4>{{ testimonial.name }}</h4>
             <span class="trip-name">{{ testimonial.trip }}</span>

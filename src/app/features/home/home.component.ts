@@ -412,20 +412,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private loadPosts() {
-    const emptyResponse = {
-      data: [],
-      total: 0,
-      page: 1,
-      limit: 3,
-      totalPages: 1,
-      hasNextPage: false
-    };
-
-    this.postService.getPosts({ status: 'published', limit: 3 }).pipe(
+    // Só os 3 mais recentes: antes a home baixava os ~360 posts (4+ MB com o HTML
+    // de cada um) para exibir 3 cards.
+    this.postService.getLatestPosts(3).pipe(
       timeout(12000),
-      catchError(() => of(emptyResponse))
-    ).subscribe(response => {
-      const nextPosts = response.data.map(post => this.mapBlogPostCard(post));
+      catchError(() => of([] as Post[]))
+    ).subscribe(posts => {
+      const nextPosts = posts.map(post => this.mapBlogPostCard(post));
       if (nextPosts.length > 0 || this.blogPosts.length === 0) {
         this.blogPosts = nextPosts;
       }

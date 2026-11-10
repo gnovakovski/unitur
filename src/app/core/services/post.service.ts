@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, shareReplay, switchMap, take, tap, timeout } from 'rxjs';
-import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, where } from 'firebase/firestore';
 import { Category, Post } from '../models/post.model';
 import { DEFAULT_POST_AUTHOR } from '../utils/post-author';
 import { FirebaseService } from './firebase.service';
@@ -275,6 +275,35 @@ export class PostService {
         return of(post);
       }),
       switchMap(post => this.resolveCategories([post]).pipe(map(([resolved]) => resolved)))
+    );
+  }
+
+  /**
+   * Últimos posts publicados, para vitrines como a home. Lê só alguns documentos
+   * via `orderBy('publishedAt')` (índice automático de campo único, sem índice
+   * composto) em vez da coleção inteira — que hoje passa de 4 MB com o HTML dos
+   * posts. A margem extra cobre rascunhos, filtrados no cliente. Se a consulta
+   * falhar, cai na listagem completa (comportamento antigo).
+   */
+  getLatestPosts(count = 3): Observable<Post[]> {
+    if (this.allPosts$) {
+      return this.getPostsPublic({ status: 'published', limit: count }).pipe(map(response => response.data));
+    }
+
+    return from(this.firebaseService.withTimeout(
+      getDocs(query(
+        collection(this.firebaseService.firestore, this.collectionName),
+        orderBy('publishedAt', 'desc'),
+        limit(count + 5)
+      )),
+      'Tempo esgotado ao carregar os últimos posts do Firestore.'
+    )).pipe(
+      map(snapshot => this.applyClientFilters(
+        snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data())),
+        { status: 'published' }
+      ).slice(0, count)),
+      switchMap(posts => this.resolveCategories(posts)),
+      catchError(() => this.getPostsPublic({ status: 'published', limit: count }).pipe(map(response => response.data)))
     );
   }
 

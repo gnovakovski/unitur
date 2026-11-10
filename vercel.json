@@ -1,7 +1,854 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "trailingSlash": true,
+  "headers": [
+    {
+      "source": "/:file((?:main|chunk|polyfills|styles)-[A-Z0-9]{8}\\.(?:js|css))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "/sitemap.xml",
+      "statusCode": 301
+    },
+    {
+      "source": "/:name([a-z_-]+-sitemap\\d*\\.xml)",
+      "destination": "/sitemap.xml",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/carlo-acutis-quem-foi-o-jovem-beato/",
+      "destination": "/blog/sao-carlo-acutis-historia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/brasil/9-motivos-para-conhecer-curitiba-e-se-apaixonar/",
+      "destination": "/blog/9-motivos-para-conhecer-curitiba-e-se-apaixonar/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/africa/africa-do-sul-turismo-quando-ir-e-o-que-esperar/",
+      "destination": "/blog/africa-do-sul-turismo-quando-ir-e-o-que-esperar/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/europa/italia/monte-gargano-conheca-o-local-do-santuario-de-sao-miguel-arcanjo/",
+      "destination": "/blog/monte-gargano-conheca-o-local-do-santuario-de-sao-miguel-arcanjo/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/santuarios/la-moreneta-conheca-historia-da-virgem-negra-de-montserrat/",
+      "destination": "/blog/la-moreneta-conheca-historia-da-virgem-negra-de-montserrat/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/europa/italia/loreto-a-cidade-italiana-que-abriga-a-casa-da-sagrada-familia/",
+      "destination": "/blog/loreto-a-cidade-italiana-que-abriga-a-casa-da-sagrada-familia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/espanha/6-destinos-para-amantes-de-vinho-pelo-brasil-e-pelo-mundo/",
+      "destination": "/blog/6-destinos-para-amantes-de-vinho-pelo-brasil-e-pelo-mundo/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/brasil/6-destinos-de-termas-no-brasil-para-relaxar-com-a-familia/",
+      "destination": "/blog/6-destinos-de-termas-no-brasil-para-relaxar-com-a-familia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/brasil/paraty-onde-historia-e-natureza-se-encontram/",
+      "destination": "/blog/paraty-onde-historia-e-natureza-se-encontram/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/america-do-sul/argentina/entre-o-mar-e-os-andes-conheca-a-belissima-patagonia/",
+      "destination": "/blog/entre-o-mar-e-os-andes-conheca-a-belissima-patagonia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/europa/istambul-curiosidade-da-cidade-de-dois-continentes-e-5-destinos-imperdiveis/",
+      "destination": "/blog/istambul-curiosidade-da-cidade-de-dois-continentes-e-5-destinos-imperdiveis/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/europa/italia/bem-aventurado-joao-batista-scalabrini/",
+      "destination": "/blog/bem-aventurado-joao-batista-scalabrini/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/europa/italia/no-dia-dos-avos-conheca-a-historia-e-a-igreja-dedicada-a-santa-ana-e-sao-joaquim/",
+      "destination": "/blog/no-dia-dos-avos-conheca-a-historia-e-a-igreja-dedicada-a-santa-ana-e-sao-joaquim/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/europa/italia/sao-joao-bosco-pai-e-mestre-da-juventude/",
+      "destination": "/blog/sao-joao-bosco-pai-e-mestre-da-juventude/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/terra-santa/guia-de-viagem-definitivo-para-a-terra-santa/",
+      "destination": "/blog/guia-de-viagem-definitivo-para-a-terra-santa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/brasil/01-maravilhas-do-brasil-salvador/",
+      "destination": "/blog/01-maravilhas-do-brasil-salvador/",
+      "statusCode": 301
+    },
+    {
+      "source": "/sem-categoria/malta-tudo-o-que-voce-precisa-saber/",
+      "destination": "/blog/malta-tudo-o-que-voce-precisa-saber/",
+      "statusCode": 301
+    },
+    {
+      "source": "/sem-categoria/rio-danubio-o-que-fazer-as-margens-do-rio-europeu/",
+      "destination": "/blog/rio-danubio-o-que-fazer-as-margens-do-rio-europeu/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/africa/",
+      "destination": "/blog/categoria/africa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/albania/",
+      "destination": "/blog/categoria/albania/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/amazonas/",
+      "destination": "/blog/categoria/amazonas/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/america-do-norte/",
+      "destination": "/blog/categoria/america-do-norte/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/america-do-sul/",
+      "destination": "/blog/categoria/america-do-sul/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/america-do-sul/argentina/",
+      "destination": "/blog/categoria/argentina/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/asia/",
+      "destination": "/blog/categoria/asia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/austria/",
+      "destination": "/blog/categoria/austria/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/bahia/",
+      "destination": "/blog/categoria/bahia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/",
+      "destination": "/blog/categoria/brasil/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/curiosidades/",
+      "destination": "/blog/categoria/curiosidades/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/espanha-europa/",
+      "destination": "/blog/categoria/espanha-europa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/espanha/",
+      "destination": "/blog/categoria/espanha/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/america-do-norte/estados-unidos/",
+      "destination": "/blog/categoria/estados-unidos/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/",
+      "destination": "/blog/categoria/europa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/franca-europa/",
+      "destination": "/blog/categoria/franca-europa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/geral/",
+      "destination": "/blog/categoria/geral/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/grecia/",
+      "destination": "/blog/categoria/grecia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/inglaterra/",
+      "destination": "/blog/categoria/inglaterra/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/italia/",
+      "destination": "/blog/categoria/italia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/jordania/",
+      "destination": "/blog/categoria/jordania/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/macedonia/",
+      "destination": "/blog/categoria/macedonia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/maranhao/",
+      "destination": "/blog/categoria/maranhao/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/marrocos/",
+      "destination": "/blog/categoria/marrocos/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/mato-grosso-do-sul/",
+      "destination": "/blog/categoria/mato-grosso-do-sul/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/mexico/",
+      "destination": "/blog/categoria/mexico/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/minas-gerais/",
+      "destination": "/blog/categoria/minas-gerais/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/piaui/",
+      "destination": "/blog/categoria/piaui/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/polonia-europa/",
+      "destination": "/blog/categoria/polonia-europa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/portugal/",
+      "destination": "/blog/categoria/portugal/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/portugal-europa/",
+      "destination": "/blog/categoria/portugal-europa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/republica-dominicana/",
+      "destination": "/blog/categoria/republica-dominicana/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/rio-grande-do-sul/",
+      "destination": "/blog/categoria/rio-grande-do-sul/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/roteiros/roteiros-internacionais/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/roteiros/roteiros-nacionais/",
+      "destination": "/blog/categoria/roteiros-nacionais/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/europa/russia/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/brasil/santa-catarina/",
+      "destination": "/blog/categoria/santa-catarina/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/santuarios/",
+      "destination": "/blog/categoria/santuarios/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/terra-santa/",
+      "destination": "/blog/categoria/terra-santa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/turismo-religioso/",
+      "destination": "/blog/categoria/turismo-religioso/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/unitur/",
+      "destination": "/blog/categoria/unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/america-do-sul/uruguai/",
+      "destination": "/blog/categoria/uruguai/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/utilidades/",
+      "destination": "/blog/categoria/utilidades/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/viagem/",
+      "destination": "/blog/categoria/viagem/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/blog/viajar-e-ser-feliz-blog/",
+      "destination": "/blog/categoria/viajar-e-ser-feliz-blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/alagoas/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/enoturismo/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/letonia/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/roteiros/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/categoria/sergipe/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/feed/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/feed/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/comments/feed/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/author/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/tag/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/seguro-viagens/",
+      "destination": "/blog/seguro-viagem-do-cartao-de-credito-e-o-suficiente/",
+      "statusCode": 301
+    },
+    {
+      "source": "/documentacao/seguro-de-viagem/",
+      "destination": "/blog/seguro-viagem-do-cartao-de-credito-e-o-suficiente/",
+      "statusCode": 301
+    },
+    {
+      "source": "/documentacao/viagem-nacional-de-menor-acompanhado-por-terceiros/",
+      "destination": "/blog/confira-a-nova-exigencia-para-o-embarque-de-menores-desacompanhados/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/criancas/",
+      "destination": "/blog/saiba-quais-sao-os-documentos-necessarios-para-viajar-com-criancas-2/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/compras/",
+      "destination": "/blog/tax-free-saiba-como-obter-reembolso-de-impostos-em-compras-no-exterior/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/saude/",
+      "destination": "/blog/5-dicas-para-preservar-sua-saude-durante-a-viagem/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/bagagem/",
+      "destination": "/blog/checklist-o-que-levar-na-mala-de-bordo-no-voo-internacional/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/passagens-e-companhias-aereas/",
+      "destination": "/blog/planejando-uma-viagem-com-antecedencia-entenda-quando-as-passagens-aereas-sao-liberadas/",
+      "statusCode": 301
+    },
+    {
+      "source": "/materiais-gratuitos/infografico-medidas-de-roupas-nos-eua-brasil-e-europa/",
+      "destination": "/blog/infografico-medidas-de-roupas-e-calcados-nos-eua-e-europa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/materiais-gratuitos/5-destinos-em-alta-para-viajar-na-melhor-idade-e-book/",
+      "destination": "/blog/top-5-melhores-destinos-de-viagem-para-a-melhor-idade/",
+      "statusCode": 301
+    },
+    {
+      "source": "/materiais-gratuitos/infografico-destino-israel/",
+      "destination": "/blog/6-curiosidades-sobre-israel-que-vao-te-surpreender/",
+      "statusCode": 301
+    },
+    {
+      "source": "/materiais-gratuitos/checklist-definitivo-da-sua-viagem-internacional/",
+      "destination": "/blog/checklist-8-dicas-para-uma-viagem-segura/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dicas/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/documentacao/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/documentacao/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/materiais-gratuitos/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/materiais-gratuitos/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/equipe/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/equipe/:rest*/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/depoimentos/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/depoimentos/:rest*/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/lua-de-mel/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/lua-de-mel/:rest*/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/sobre/",
+      "destination": "/sobre/sobre-a-unitur/",
+      "statusCode": 301
+    },
+    {
+      "source": "/organize-um-grupo/",
+      "destination": "/contato/",
+      "statusCode": 301
+    },
+    {
+      "source": "/cotacao-manual/:rest*/",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-sagrada-roma-egito-e-terra-santa-2642/",
+      "destination": "/roteiros-internacionais/peregrinacao-sagrada-roma-egito-e-terra-santa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-sagrada-egito-terra-santa-e-roma/",
+      "destination": "/roteiros-internacionais/peregrinacao-sagrada-roma-egito-e-terra-santa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/italia-rota-da-fe-e-da-arte-2702/",
+      "destination": "/roteiros-internacionais/italia-rota-de-fe-e-arte/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/grande-rota-dos-alpes-e-renascenca-italiana-2613/",
+      "destination": "/roteiros-internacionais/a-grande-rota-dos-alpes-e-renascenca-italiana-/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/suica-onde-o-ceu-encontra-os-alpes-2715/",
+      "destination": "/roteiros-internacionais/suica-onde-o-ceu-encontra-os-alpes/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/franca-e-portugal-o-caminho-da-graca-e-das-aparicoes-2714/",
+      "destination": "/roteiros-internacionais/o-caminho-da-graca-e-das-aparicoes-franca-e-portugal/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/nos-passos-da-fe-portugal-franca-bosnia-e-italia-2716/",
+      "destination": "/roteiros-internacionais/nos-passos-da-fe-portugal-franca-bosnia-e-italia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-a-polonia-e-franca/",
+      "destination": "/roteiros-internacionais/luz-da-esperanca-peregrinacao-nos-santuarios-da-polonia-e-franca/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrincao-portugal-e-italia-2710/",
+      "destination": "/roteiros-internacionais/nos-passos-da-esperanca-peregrinacao-portugal-e-italia-/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-a-portugal-e-italia-2711/",
+      "destination": "/roteiros-internacionais/nos-passos-da-esperanca-peregrinacao-portugal-e-italia-/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-a-alemanha-italia-e-portugal-schoenstatt-2708/",
+      "destination": "/roteiros-internacionais/santuarios-mae-rainha-e-santuarios-da-europa-schoenstatt/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/gramado-e-canela-2664/",
+      "destination": "/roteiros-nacionais/gramado-e-canela/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/minas-gerais-nos-passos-da-fe-2649/",
+      "destination": "/roteiros-nacionais/minas-gerais-nos-passos-da-fe-/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/turquia-e-grecia-fe-cultura-e-historia-2602/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/terra-santa-do-mar-da-galileia-ao-tumulo-de-carlo-acutis-2701/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/turquia-e-grecia-fe-cultura-e-historia-2703/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/egito-e-terra-santa-uma-peregrinacao-pelos-caminhos-da-fe/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/italia-e-portugal-nos-passos-dos-santos/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/uma-viagem-pela-historia-e-espiritualidade-na-polonia-e-paises-balticos-2704/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/caminhos-de-maria-santuarios-marianos-2705/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/caminhos-de-maria-uma-experiencia-de-fe-pelos-santuario-marianos-2601/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/os-caminhos-de-santo-antonio-2706/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/santuarios-europeus-2707/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/uma-jornada-entre-culturas-punicas-romanas-e-barrocas-2636/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-ao-mexico-2656/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/africa-do-sul-espetacular-2660/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/rio-imperial-andes/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-de-catequistas-26-18-4/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-dos-catequistas-26-18-3/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/vale-do-paraiba-na-fe-2641/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-ao-santuario-de-aparecida-2660/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/caminhos-de-aparecida-2663/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/encontro-dos-santuarios-de-aparecida-2652/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/aparecida-durante-a-semana-2668/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/congresso-nacional-da-divina-misericordia-2667/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/estrela-em-peregrinaao-a-nossa-senhora-aparecida-2637/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-de-catequistas-2618-2/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-de-catequistas-2618-1/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-11/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-3/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-9/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-1/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-4/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-12/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-e-santuarios-paulista/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-8/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/do-litoral-norte-a-aparecida-do-norte-2653/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-de-catequistas-2618-9/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-aparecida-2650/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/categoria-nacional/:rest*/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/tags/:rest*/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/peregrinacao/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/peregrinacoes/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/eventos/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/vivencias/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/portugal/",
+      "destination": "/viagens/?destination=portugal",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/franca/",
+      "destination": "/viagens/?destination=franca",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/italia/",
+      "destination": "/viagens/?destination=italia",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/espanha/",
+      "destination": "/viagens/?destination=espanha",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/:rest*/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/wp-content/uploads/:y(\\d{4})/:m(\\d{2})/:file([^/]+\\.(?:jpe?g|JPE?G|png|PNG|gif|GIF|webp|WEBP))",
+      "destination": "https://firebasestorage.googleapis.com/v0/b/unitur-e7882.firebasestorage.app/o/blog-legacy%2F:y%2F:m%2F:file?alt=media",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

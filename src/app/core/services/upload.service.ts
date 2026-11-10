@@ -81,9 +81,15 @@ export class UploadService {
     return { valid: true };
   }
 
-  private async uploadToStorage(imageRef: ReturnType<typeof ref>, file: File, filename: string, path: string): Promise<UploadResponse> {
+  private async uploadToStorage(imageRef: ReturnType<typeof ref>, original: File, filename: string, path: string): Promise<UploadResponse> {
+    const file = await this.optimizeImage(original);
     const snapshot = await uploadBytes(imageRef, file, {
-      contentType: file.type
+      contentType: file.type,
+      // Cada upload ganha um caminho único (carimbo de tempo no nome), então o
+      // arquivo nunca é sobrescrito e pode ficar em cache no navegador por 1 ano.
+      // Sem isto o Storage responde `private, max-age=0` e a imagem é baixada de
+      // novo a cada visita.
+      cacheControl: 'public, max-age=31536000, immutable'
     });
 
     return {
@@ -93,6 +99,52 @@ export class UploadService {
       mimetype: file.type,
       path
     };
+  }
+
+  /**
+   * Reduz fotos grandes antes do upload: limita o lado maior a 2048 px e
+   * recomprime em qualidade 0,82. Fotos de banco de imagem chegavam com 3+ MB e
+   * eram o maior peso da home (o banner é o LCP). Só mexe em JPEG/WebP — PNG
+   * costuma ser logo/arte com transparência e fica como veio. Em qualquer falha,
+   * ou se o resultado não ficar menor, envia o arquivo original.
+   */
+  private async optimizeImage(file: File): Promise<File> {
+    const MAX_DIMENSION = 2048;
+    const QUALITY = 0.82;
+    const SKIP_BELOW_BYTES = 300 * 1024;
+
+    if (!/^image\/(jpe?g|webp)$/i.test(file.type)) return file;
+    if (typeof document === 'undefined' || typeof createImageBitmap !== 'function') return file;
+
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch {
+      return file;
+    }
+
+    try {
+      const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size <= SKIP_BELOW_BYTES) return file;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) return file;
+      context.imageSmoothingQuality = 'high';
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+      const type = file.type.toLowerCase() === 'image/webp' ? 'image/webp' : 'image/jpeg';
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, type, QUALITY));
+      if (!blob || blob.size >= file.size) return file;
+
+      return new File([blob], file.name, { type, lastModified: Date.now() });
+    } catch {
+      return file;
+    } finally {
+      bitmap.close();
+    }
   }
 
   private getFilename(file: File): string {

@@ -1,7 +1,5 @@
 import {
   ApplicationConfig,
-  inject,
-  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -10,7 +8,6 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
-import { UserBootstrapService } from './core/services/user-bootstrap.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -28,9 +25,9 @@ export const appConfig: ApplicationConfig = {
       }),
     ),
     provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
-    provideAppInitializer(() => {
-      const bootstrap = inject(UserBootstrapService);
-      return bootstrap.ensureSeedUser();
-    }),
+    // Não há APP_INITIALIZER de propósito: antes havia um que, a cada visita,
+    // criava/logava uma conta admin de teste no Firebase Auth antes de renderizar
+    // qualquer coisa. Isso travava o primeiro paint (FCP/LCP) e expunha a senha
+    // no bundle público. Contas de admin são criadas pelo console do Firebase.
   ],
 };

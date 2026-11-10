@@ -15,7 +15,12 @@
   <meta name="description" content="A Unitur é uma agência de viagens especializada em peregrinações e roteiros para grupos pelo Brasil e diversos destinos internacionais.">
   <meta name="theme-color" content="#0a3d62">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="canonical" href="https://www.unitur.com.br/">
+  <!-- Sem tag de URL canônica aqui de propósito: este HTML é servido para TODAS
+       as rotas (SPA), e uma canônica fixa apontava todas as páginas para a home.
+       O SeoService cria a canônica correta de cada página no navegador. -->
+  <!-- Conexões antecipadas: dados (Firestore) e imagens (Storage) do Firebase. -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://firebasestorage.googleapis.com">
   <meta property="og:site_name" content="Unitur Agência de Viagens e Turismo">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:type" content="website">
