@@ -41,10 +41,17 @@ export function decodeRestFields(fields: Record<string, unknown>): Record<string
  * [id do documento, dados] para cada um. Lança erro se a API responder com
  * falha, para quem chama decidir o fallback.
  */
+export interface SelectQueryOptions {
+  /** Ordenação (campo único: usa o índice automático do Firestore). */
+  orderBy?: { field: string; direction: 'ASCENDING' | 'DESCENDING' };
+  limit?: number;
+}
+
 export async function runSelectQuery(
   projectId: string,
   collectionId: string,
-  fields: readonly string[]
+  fields: readonly string[],
+  options: SelectQueryOptions = {}
 ): Promise<Array<[string, Record<string, unknown>]>> {
   const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents:runQuery`;
   const response = await fetch(url, {
@@ -53,7 +60,9 @@ export async function runSelectQuery(
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId }],
-        select: { fields: fields.map(fieldPath => ({ fieldPath })) }
+        select: { fields: fields.map(fieldPath => ({ fieldPath })) },
+        ...(options.orderBy ? { orderBy: [{ field: { fieldPath: options.orderBy.field }, direction: options.orderBy.direction }] } : {}),
+        ...(options.limit ? { limit: options.limit } : {})
       }
     })
   });

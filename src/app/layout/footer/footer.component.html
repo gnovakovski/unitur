@@ -2,7 +2,7 @@
   <div class="container">
     <div class="footer-content">
       <div class="footer-section">
-        <img class="footer-logo" src="assets/unitur_logo_white.png" [alt]="footerContent.brandName">
+        <img class="footer-logo" src="assets/unitur_logo_white.png" [alt]="footerContent.brandName" width="436" height="94" loading="lazy" decoding="async">
         <p>{{ footerContent.tagline }}</p>
         <div class="social-links">
           <a [href]="contact.instagram || null" [class.social-icon--disabled]="!contact.instagram" [attr.target]="contact.instagram ? '_blank' : null" rel="noopener" aria-label="Instagram" class="social-icon social-icon--instagram" title="Instagram">
@@ -67,8 +67,8 @@
             }
           </div>
           <div class="certifications">
-            <img src="edc_sem_fundo.png" alt="Economia de Comunhão" class="certifications__logo" (error)="onLogoError($event)">
-            <img src="iata-logo-png-transparent.png" alt="IATA" class="certifications__logo" (error)="onLogoError($event)">
+            <img src="edc_sem_fundo.png" alt="Economia de Comunhão" class="certifications__logo" width="259" height="195" loading="lazy" decoding="async" (error)="onLogoError($event)">
+            <img src="iata-logo-png-transparent.png" alt="IATA" class="certifications__logo" width="2400" height="1465" loading="lazy" decoding="async" (error)="onLogoError($event)">
           </div>
         </div>
       }

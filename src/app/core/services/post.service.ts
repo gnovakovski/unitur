@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, concat, from, map, of, shareReplay, switchMap, take, tap, timeout } from 'rxjs';
+import { Observable, catchError, concat, defer, firstValueFrom, from, map, of, shareReplay, switchMap, take, tap, timeout } from 'rxjs';
 import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, where } from 'firebase/firestore/lite';
 import { Category, Post } from '../models/post.model';
 import { DEFAULT_POST_AUTHOR } from '../utils/post-author';
@@ -18,6 +18,9 @@ const POST_INDEX_FIELDS = [
   'id', 'slug', 'title', 'excerpt', 'featuredImage', 'categoryId', 'category',
   'tags', 'status', 'publishedAt', 'createdAt', 'updatedAt', 'author'
 ] as const;
+
+/** Campos dos cards de "últimos posts" da home (o índice + a 1ª imagem do texto como capa reserva). */
+const POST_CARD_FIELDS = [...POST_INDEX_FIELDS, 'contentImages'] as const;
 
 export interface PostFilters {
   search?: string;
@@ -338,18 +341,23 @@ export class PostService {
       return this.getPostsPublic({ status: 'published', limit: count }).pipe(map(response => response.data));
     }
 
+    // Só os campos dos cards: alguns KB, em vez de ~145 KB com o texto dos posts.
+    // Se a leitura leve falhar, usa a consulta completa (comportamento anterior).
+    const light$ = from(runSelectQuery(environment.firebase.projectId, this.collectionName, POST_CARD_FIELDS, {
+      orderBy: { field: 'publishedAt', direction: 'DESCENDING' },
+      limit: count + 5
+    })).pipe(map(rows => rows.map(([id, data]) => this.mapFirestorePost(id, data))));
+    const full$ = defer(() => from(getDocs(query(
+      collection(this.firebaseService.firestore, this.collectionName),
+      orderBy('publishedAt', 'desc'),
+      limit(count + 5)
+    )))).pipe(map(snapshot => snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data()))));
+
     return from(this.firebaseService.withTimeout(
-      getDocs(query(
-        collection(this.firebaseService.firestore, this.collectionName),
-        orderBy('publishedAt', 'desc'),
-        limit(count + 5)
-      )),
+      firstValueFrom(light$.pipe(catchError(() => full$))),
       'Tempo esgotado ao carregar os últimos posts do Firestore.'
     )).pipe(
-      map(snapshot => this.applyClientFilters(
-        snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data())),
-        { status: 'published' }
-      ).slice(0, count)),
+      map(posts => this.applyClientFilters(posts, { status: 'published' }).slice(0, count)),
       switchMap(posts => this.resolveCategories(posts)),
       catchError(() => this.getPostsPublic({ status: 'published', limit: count }).pipe(map(response => response.data)))
     );

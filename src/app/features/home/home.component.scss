@@ -105,6 +105,13 @@ $dark: #1a1a2e;
   }
 }
 
+// Fundo do carrossel com a cor da marca: aparece no espaço reservado enquanto os
+// banners carregam e atrás de cada arte até a imagem chegar (sem animação, que
+// também custaria CPU).
+.banner-carousel {
+  background: linear-gradient(135deg, #0a3d62 0%, #15507d 60%, #1d5f8f 100%);
+}
+
 .carousel-container { position: relative; width: 100%; height: 100%; }
 
 .carousel-slides {
@@ -141,12 +148,8 @@ $dark: #1a1a2e;
   z-index: 0;
   filter: brightness(0.6) blur(28px);
   transform: scale(1.15);
-  // Só uma imagem por aparelho: o celular usa a arte mobile (se houver) e não
-  // baixa a desktop. Variáveis definidas no template.
-  background-image: var(--backdrop);
-  @media (max-width: 768px) {
-    background-image: var(--backdrop-mobile, var(--backdrop));
-  }
+  // A própria imagem do slide (já baixada), definida no template após o load.
+  background-image: var(--backdrop, none);
 }
 
 // Link transparente cobrindo a arte inteira: o banner todo leva ao destino

@@ -27,10 +27,3 @@ export function srcsetForImage(srcset: string | null | undefined, currentUrl: st
   const candidates = parseSrcset(srcset);
   return candidates.some(candidate => candidate.url === url) ? candidates.map(c => `${c.url} ${c.width}w`).join(', ') : '';
 }
-
-/** URL da menor versão do srcset (ou '' se não houver). */
-export function smallestSrcsetUrl(srcset: string | null | undefined): string {
-  const candidates = parseSrcset(srcset);
-  if (candidates.length === 0) return '';
-  return candidates.reduce((smallest, candidate) => (candidate.width < smallest.width ? candidate : smallest)).url;
-}

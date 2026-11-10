@@ -13,6 +13,14 @@
     rgba(#ff812c, 0.02) 100%
   );
 
+  // Páginas públicas carregam o conteúdo depois (Firestore). Sem altura mínima, o
+  // rodapé aparecia no meio da tela e era empurrado para baixo quando o conteúdo
+  // chegava: o Lighthouse mede isso como CLS, e as imagens do rodapé competiam
+  // com o banner. Com 100vh o rodapé começa sempre abaixo da 1ª tela.
+  &:not(.admin-content) {
+    min-height: 100vh;
+  }
+
   &.admin-content {
     background: #f5f7fb;
   }

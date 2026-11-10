@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { smallestSrcsetUrl, srcsetForImage } from './responsive-image';
+import { srcsetForImage } from './responsive-image';
 
 const A1280 = 'https://firebasestorage.googleapis.com/v0/b/x/o/banners%2F1%2Fa-1280w.jpg?alt=media&token=1';
 const A2560 = 'https://firebasestorage.googleapis.com/v0/b/x/o/banners%2F1%2Fa-2560w.jpg?alt=media&token=2';
@@ -15,10 +15,5 @@ describe('responsive-image', () => {
     expect(srcsetForImage(SRCSET, '')).toBe('');
     expect(srcsetForImage('', A2560)).toBe('');
     expect(srcsetForImage(undefined, A2560)).toBe('');
-  });
-
-  it('acha a menor versão', () => {
-    expect(smallestSrcsetUrl(`${A2560} 2560w, ${A1280} 1280w`)).toBe(A1280);
-    expect(smallestSrcsetUrl('')).toBe('');
   });
 });

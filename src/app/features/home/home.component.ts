@@ -21,7 +21,7 @@ import { SiteContentService } from '../../core/services/site-content.service';
 import { DEFAULT_HOME_CONTENT, LEGACY_TRIP_TYPE_TO_MENU_ID, SiteHomeContent } from '../../core/models/site-content.model';
 import { Banner } from '../../core/models/banner.model';
 import { SeoService } from '../../core/services/seo.service';
-import { smallestSrcsetUrl, srcsetForImage } from '../../core/utils/responsive-image';
+import { srcsetForImage } from '../../core/utils/responsive-image';
 
 interface HomeTripCard {
   slug: string;
@@ -71,9 +71,6 @@ interface HomeBannerSlide {
   srcset: string;
   /** Versões da arte mobile por largura ('' quando há um arquivo só). */
   mobileSrcset: string;
-  /** Fundo desfocado: a menor versão basta, o desfoque esconde a resolução. */
-  backdrop: string;
-  backdropMobile: string;
   link?: string;
   buttonText?: string;
 }
@@ -184,14 +181,17 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.applySeo();
+    // Topo da página: carregam já.
     this.loadBanners();
     this.loadHeaderMenus();
-    this.loadTags();
-    this.loadTrips();
-    this.loadTestimonials();
-    this.loadPosts();
-    this.loadAboutContent();
     this.loadHomeContent();
+    // Seções de baixo (viagens, blog, depoimentos, sobre): esperam o banner
+    // aparecer — ver settleHero(). Rede de segurança: no máximo 4 s.
+    if (this.isBrowser) {
+      this.heroTimer = setTimeout(() => this.settleHero(), 4000);
+    } else {
+      this.settleHero();
+    }
   }
 
   /**
@@ -248,6 +248,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.slideInterval) {
       clearInterval(this.slideInterval);
     }
+    if (this.heroTimer) {
+      clearTimeout(this.heroTimer);
+    }
   }
 
   startSlideShow() {
@@ -261,6 +264,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       this.slideInterval = setInterval(() => {
         this.ngZone.run(() => {
+          this.heroSettled = true;
           this.currentSlide = (this.currentSlide + 1) % this.bannerSlides.length;
           this.cdr.detectChanges();
         });
@@ -273,22 +277,93 @@ export class HomeComponent implements OnInit, OnDestroy {
    * menos uma arte mobile cadastrada; caso contrário mantém a proporção larga.
    */
   get hasMobileBannerArt(): boolean {
+    // Enquanto carrega, assume arte mobile (o caso normal), para o espaço
+    // reservado já ter a altura certa no celular.
+    if (!this.bannersLoaded) return true;
     return this.bannerSlides.some(slide => !!slide.imageUrlMobile);
+  }
+
+  /**
+   * false até a 1ª resposta dos banners. Antes disso a home já mostra o espaço
+   * do carrossel vazio: se o banner surgisse depois, empurraria a página toda
+   * para baixo, e o Lighthouse mede isso como CLS (o site chegou a 0,7, quando
+   * o limite bom é 0,1).
+   */
+  bannersLoaded = false;
+
+  /**
+   * Libera as demais imagens da home: slides seguintes do carrossel e as fotos
+   * das seções (viagens, destinos, curadoria, blog, sobre, depoimentos).
+   *
+   * Fica false até a imagem do 1º banner carregar (ou não haver banner, ou 4 s,
+   * ou o visitante usar as setas). Sem isso, como as seções surgem aos poucos,
+   * o Chrome antecipava fotos "quase visíveis" (o PNG de 1,3 MB do blog, por
+   * exemplo) e o banner, que é a imagem principal da página (LCP), dividia a
+   * conexão com elas. Os quadros das fotos têm altura fixa, então nada pula.
+   */
+  heroSettled = false;
+  private heroTimer?: ReturnType<typeof setTimeout>;
+
+  settleHero() {
+    if (this.heroSettled) return;
+    this.heroSettled = true;
+    if (this.heroTimer) clearTimeout(this.heroTimer);
+    this.loadBelowTheFold();
+    this.cdr.markForCheck();
+  }
+
+  /** Fundo desfocado de cada slide = a própria imagem já baixada (sem download extra). */
+  backdropById: Record<string, string> = {};
+
+  /**
+   * Imagem de um slide carregou: o fundo desfocado passa a usar a mesma imagem
+   * (`currentSrc`, já em cache, na versão que o navegador escolheu para a tela).
+   * No 1º slide, espera a imagem ser pintada (2 frames + folga) antes de liberar
+   * o resto da home; assim nada mais disputa a conexão antes do LCP.
+   */
+  onSlideImageLoad(index: number, slideId: string, event: Event) {
+    const src = (event.target as HTMLImageElement | null)?.currentSrc;
+    if (src && this.backdropById[slideId] !== src) {
+      this.backdropById = { ...this.backdropById, [slideId]: src };
+      this.cdr.markForCheck();
+    }
+    if (index !== 0 || this.heroSettled) return;
+    if (!this.isBrowser || typeof requestAnimationFrame !== 'function') {
+      this.settleHero();
+      return;
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => this.settleHero(), 300)));
+  }
+
+  private belowTheFoldLoaded = false;
+
+  /** Dados das seções abaixo do banner. Roda uma vez só. */
+  private loadBelowTheFold() {
+    if (this.belowTheFoldLoaded) return;
+    this.belowTheFoldLoaded = true;
+    this.loadTags();
+    this.loadTrips();
+    this.loadTestimonials();
+    this.loadPosts();
+    this.loadAboutContent();
   }
 
   nextSlide() {
     if (this.bannerSlides.length === 0) return;
+    this.settleHero();
     this.currentSlide = (this.currentSlide + 1) % this.bannerSlides.length;
     this.startSlideShow();
   }
 
   prevSlide() {
     if (this.bannerSlides.length === 0) return;
+    this.settleHero();
     this.currentSlide = this.currentSlide === 0 ? this.bannerSlides.length - 1 : this.currentSlide - 1;
     this.startSlideShow();
   }
 
   goToSlide(index: number) {
+    this.settleHero();
     this.currentSlide = index;
     this.startSlideShow();
   }
@@ -390,6 +465,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       timeout(12000),
       catchError(() => of([] as Banner[]))
     ).subscribe(banners => {
+      this.bannersLoaded = true;
       this.bannerSlides = banners
         .filter(banner => banner.imageUrl)
         .map(banner => {
@@ -403,13 +479,15 @@ export class HomeComponent implements OnInit, OnDestroy {
             imageUrlMobile,
             srcset,
             mobileSrcset,
-            backdrop: smallestSrcsetUrl(srcset) || imageUrl,
-            backdropMobile: imageUrlMobile ? (smallestSrcsetUrl(mobileSrcset) || imageUrlMobile) : '',
             link: banner.link || '',
             buttonText: banner.buttonText || ''
           };
         });
       this.currentSlide = 0;
+      if (this.bannerSlides.length === 0) {
+        // Sem banner não há imagem principal a esperar.
+        this.settleHero();
+      }
       if (this.bannerSlides.length > 0) {
         this.startSlideShow();
       }

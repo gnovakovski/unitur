@@ -3,19 +3,25 @@
 <h1 class="visually-hidden">Unitur — Agência de Viagens, Peregrinações e Roteiros</h1>
 
 <!-- Banner Carousel -->
-@if (bannerSlides.length > 0) {
-  <section class="banner-carousel" [class.has-mobile-art]="hasMobileBannerArt">
+<!-- O espaço do carrossel existe desde o 1º instante (vazio enquanto carrega), para a
+     página não "pular" quando o banner chega. Só some se não houver banner nenhum. -->
+@if (!bannersLoaded || bannerSlides.length > 0) {
+  <section class="banner-carousel" [class.has-mobile-art]="hasMobileBannerArt" [class.is-loading]="!bannersLoaded"
+           [attr.aria-busy]="!bannersLoaded">
     <div class="carousel-container">
       <div class="carousel-slides" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
         @for (slide of bannerSlides; track slide.id; let i = $index) {
           <div class="carousel-slide">
             <!-- Fundo desfocado da própria arte: preenche a sobra quando a proporção da
                  imagem não bate exatamente com a da tela, sem cortar nada do banner. -->
-            <!-- Um elemento só, com a imagem do aparelho via variável CSS: antes havia um
-                 fundo desktop por baixo do mobile, e o celular baixava as duas artes. -->
+            <!-- O fundo usa a própria imagem do slide depois que ela carrega (já em cache,
+                 na versão escolhida para a tela): nenhum download extra. Antes disso aparece
+                 o degradê da marca do carrossel. -->
+            <!-- Slides seguintes (e as imagens do resto da home) só baixam depois que o 1º
+                 banner apareceu: a imagem principal (LCP) não divide a conexão com as outras. -->
+            @if (i === 0 || heroSettled) {
             <div class="slide-backdrop"
-                 [style.--backdrop]="'url(' + slide.backdrop + ')'"
-                 [style.--backdrop-mobile]="slide.backdropMobile ? 'url(' + slide.backdropMobile + ')' : null"></div>
+                 [style.--backdrop]="backdropById[slide.id] ? 'url(' + backdropById[slide.id] + ')' : null"></div>
             <picture>
               @if (slide.imageUrlMobile) {
                 <source media="(max-width: 768px)" [attr.srcset]="slide.mobileSrcset || slide.imageUrlMobile" sizes="100vw">
@@ -25,8 +31,10 @@
                    prioridade baixa (sem lazy, para não piscar em branco ao girar o carrossel). -->
               <img [attr.srcset]="slide.srcset || null" [attr.sizes]="slide.srcset ? bannerSizes : null"
                    [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)"
-                   [attr.fetchpriority]="i === 0 ? 'high' : 'low'">
+                   [attr.fetchpriority]="i === 0 ? 'high' : 'low'"
+                   (load)="onSlideImageLoad(i, slide.id, $event)" (error)="i === 0 && settleHero()">
             </picture>
+            }
             @if (slide.link) {
               <!-- Sem botão: uma camada transparente sobre a arte torna o banner todo clicável. -->
               <a class="slide-link" [routerLink]="slide.link" [attr.aria-label]="slide.buttonText || 'Saiba mais'"></a>
@@ -89,10 +97,12 @@
       @for (trip of section.trips; track trip.slug) {
         <article class="trip-card">
           <a class="trip-card__media" [routerLink]="['/viagens', trip.slug]">
+            @if (heroSettled) {
             <img [src]="trip.image" [alt]="trip.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async"
                  [style.object-fit]="trip.imageFit || 'cover'"
                  [style.object-position]="trip.imagePosition || '50% 50%'"
                  [style.transform]="'rotate(' + (trip.imageRotation || 0) + 'deg)'">
+            }
             <div class="trip-card__media-gradient"></div>
             <span class="trip-card__tag" [class.trip-card__tag--regular]="section.isRegular">{{ section.tagLabel }}</span>
             @if (tagBadge(trip.tagId); as badge) {
@@ -190,7 +200,7 @@
   <div class="continents-grid">
     @for (continent of continents; track continent.name) {
       <a class="continent-card" routerLink="/viagens" [queryParams]="{ destination: continent.name }">
-        <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
+        @if (heroSettled) { <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
         <div class="continent-overlay">
           <h3>{{ continent.name }}</h3>
           @if (continent.description) {
@@ -228,7 +238,7 @@
           <a class="btn-curadoria" [routerLink]="['/viagens', item.slug]">Quero Conhecer</a>
         </div>
         <div class="curadoria-image">
-          <img [src]="item.image" [alt]="item.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
+          @if (heroSettled) { <img [src]="item.image" [alt]="item.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
           <div class="curadoria-overlay"></div>
         </div>
       </div>
@@ -246,7 +256,7 @@
     @for (post of blogPosts; track post.title) {
       <div class="blog-card">
         <div class="blog-image">
-          <img [src]="post.image" [alt]="post.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
+          @if (heroSettled) { <img [src]="post.image" [alt]="post.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
           <span class="blog-category">{{ post.category }}</span>
         </div>
         <div class="blog-content">
@@ -284,7 +294,7 @@
       <a routerLink="/about" class="btn-about">Conhe&ccedil;a nossa hist&oacute;ria</a>
     </div>
     <div class="about-image">
-      <img [src]="homeAbout.imageUrl" alt="Sobre a Unitur" loading="lazy" decoding="async">
+      @if (heroSettled) { <img [src]="homeAbout.imageUrl" alt="Sobre a Unitur" loading="lazy" decoding="async"> }
     </div>
   </div>
 </section>
@@ -300,7 +310,7 @@
     @for (testimonial of testimonials; track testimonial.name) {
       <div class="testimonial-card">
         <div class="testimonial-header">
-          <img [src]="testimonial.image" [alt]="testimonial.name" class="testimonial-avatar" (error)="useFallbackImage($event)" loading="lazy" decoding="async">
+          @if (heroSettled) { <img [src]="testimonial.image" [alt]="testimonial.name" class="testimonial-avatar" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
           <div>
             <h4>{{ testimonial.name }}</h4>
             <span class="trip-name">{{ testimonial.trip }}</span>
