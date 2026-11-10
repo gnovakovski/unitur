@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter } from 'firebase/firestore';
+import { QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter } from 'firebase/firestore/lite';
 import { Trip } from '../models/trip.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';

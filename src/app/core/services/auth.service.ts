@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, from, Observable, switchMap, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+// Só tipos: o módulo do Firebase Auth é carregado sob demanda (ver FirebaseService.getAuth),
+// para o visitante do site não baixar o código de login do admin.
+import type { Auth, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore/lite';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
 import { ModuleKey } from '../models/user.model';
@@ -45,10 +47,8 @@ export class AuthService {
   ) {}
 
   login(credentials: LoginCredentials): Observable<AuthResponse> {
-    return from(signInWithEmailAndPassword(
-      this.firebaseService.auth,
-      credentials.email,
-      credentials.password
+    return from(Promise.all([this.firebaseService.getAuth(), import('firebase/auth')]).then(
+      ([auth, { signInWithEmailAndPassword }]) => signInWithEmailAndPassword(auth, credentials.email, credentials.password)
     )).pipe(
       switchMap(async ({ user }) => {
         const token = await user.getIdToken();
@@ -64,7 +64,9 @@ export class AuthService {
   }
 
   logout(): void {
-    signOut(this.firebaseService.auth).catch(() => undefined);
+    Promise.all([this.firebaseService.getAuth(), import('firebase/auth')])
+      .then(([auth, { signOut }]) => signOut(auth))
+      .catch(() => undefined);
     this.storage.removeItem(this.TOKEN_KEY);
     this.storage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
@@ -72,7 +74,8 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    if (this.firebaseService.auth.currentUser) {
+    // Síncrono: usa o Auth só se já foi carregado; senão vale o token salvo.
+    if (this.firebaseService.loadedAuth?.currentUser) {
       return true;
     }
 
@@ -85,8 +88,15 @@ export class AuthService {
     return !this.isTokenExpired(token);
   }
 
-  waitForAuthenticatedUser(): Promise<boolean> {
-    const auth = this.firebaseService.auth;
+  async waitForAuthenticatedUser(): Promise<boolean> {
+    let auth: Auth;
+    let onAuthStateChanged: typeof import('firebase/auth').onAuthStateChanged;
+    try {
+      [auth, { onAuthStateChanged }] = await Promise.all([this.firebaseService.getAuth(), import('firebase/auth')]);
+    } catch {
+      // Falha ao carregar o módulo (rede): trata como não autenticado.
+      return false;
+    }
 
     if (auth.currentUser) {
       const current = auth.currentUser;

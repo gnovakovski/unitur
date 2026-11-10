@@ -21,6 +21,7 @@ import { SiteContentService } from '../../core/services/site-content.service';
 import { DEFAULT_HOME_CONTENT, LEGACY_TRIP_TYPE_TO_MENU_ID, SiteHomeContent } from '../../core/models/site-content.model';
 import { Banner } from '../../core/models/banner.model';
 import { SeoService } from '../../core/services/seo.service';
+import { smallestSrcsetUrl, srcsetForImage } from '../../core/utils/responsive-image';
 
 interface HomeTripCard {
   slug: string;
@@ -66,6 +67,13 @@ interface HomeBannerSlide {
   imageUrl: string;
   /** Arte vertical opcional exibida em telas pequenas. */
   imageUrlMobile: string;
+  /** Versões da arte desktop por largura ('' quando há um arquivo só). */
+  srcset: string;
+  /** Versões da arte mobile por largura ('' quando há um arquivo só). */
+  mobileSrcset: string;
+  /** Fundo desfocado: a menor versão basta, o desfoque esconde a resolução. */
+  backdrop: string;
+  backdropMobile: string;
   link?: string;
   buttonText?: string;
 }
@@ -146,6 +154,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   homeContent: SiteHomeContent = { ...DEFAULT_HOME_CONTENT };
 
   bannerSlides: HomeBannerSlide[] = [];
+
+  /**
+   * Largura em que o banner desktop aparece: a tela toda, até 2400 px (limite
+   * de max-height 900 px na proporção 1920×720). O navegador usa isso para
+   * escolher a versão certa do srcset (já considerando telas Retina/4K).
+   */
+  readonly bannerSizes = '(min-width: 2400px) 2400px, 100vw';
 
   /** Seções de viagem geradas dinamicamente, uma por menu visível do header. */
   tripSections: HomeTripSection[] = [];
@@ -377,13 +392,23 @@ export class HomeComponent implements OnInit, OnDestroy {
     ).subscribe(banners => {
       this.bannerSlides = banners
         .filter(banner => banner.imageUrl)
-        .map(banner => ({
-          id: String(banner.id),
-          imageUrl: this.normalizeImage(banner.imageUrl),
-          imageUrlMobile: banner.imageUrlMobile ? this.normalizeImage(banner.imageUrlMobile) : '',
-          link: banner.link || '',
-          buttonText: banner.buttonText || ''
-        }));
+        .map(banner => {
+          const imageUrl = this.normalizeImage(banner.imageUrl);
+          const imageUrlMobile = banner.imageUrlMobile ? this.normalizeImage(banner.imageUrlMobile) : '';
+          const srcset = srcsetForImage(banner.imageSrcset, imageUrl);
+          const mobileSrcset = imageUrlMobile ? srcsetForImage(banner.imageMobileSrcset, imageUrlMobile) : '';
+          return {
+            id: String(banner.id),
+            imageUrl,
+            imageUrlMobile,
+            srcset,
+            mobileSrcset,
+            backdrop: smallestSrcsetUrl(srcset) || imageUrl,
+            backdropMobile: imageUrlMobile ? (smallestSrcsetUrl(mobileSrcset) || imageUrlMobile) : '',
+            link: banner.link || '',
+            buttonText: banner.buttonText || ''
+          };
+        });
       this.currentSlide = 0;
       if (this.bannerSlides.length > 0) {
         this.startSlideShow();

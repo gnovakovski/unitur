@@ -1,11 +1,23 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, concat, from, map, of, shareReplay, switchMap, take, tap, timeout } from 'rxjs';
-import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, where } from 'firebase/firestore/lite';
 import { Category, Post } from '../models/post.model';
 import { DEFAULT_POST_AUTHOR } from '../utils/post-author';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
 import { CategoryService } from './category.service';
+import { runSelectQuery } from '../utils/firestore-rest';
+import { environment } from '../../../environments/environment';
+
+/**
+ * Campos que a listagem do blog usa (cards, filtro por categoria, ordenação e
+ * paginação). Tudo menos o HTML do post (`content`), que é o grosso dos ~4 MB
+ * da coleção.
+ */
+const POST_INDEX_FIELDS = [
+  'id', 'slug', 'title', 'excerpt', 'featuredImage', 'categoryId', 'category',
+  'tags', 'status', 'publishedAt', 'createdAt', 'updatedAt', 'author'
+] as const;
 
 export interface PostFilters {
   search?: string;
@@ -57,6 +69,13 @@ export class PostService {
    */
   private allPosts$?: Observable<Post[]>;
 
+  /**
+   * Índice leve do blog (só os campos de POST_INDEX_FIELDS): ~100 KB em vez dos
+   * ~4 MB da coleção com o texto dos posts. A coleção completa só é lida quando
+   * a pessoa busca por palavra (a busca olha o texto inteiro) ou no admin.
+   */
+  private postIndex$?: Observable<Post[]>;
+
   /** Texto normalizado usado pela busca do blog, memoizado por post. */
   private readonly searchIndex = new Map<number, { title: string; content: string; text: string }>();
 
@@ -74,6 +93,7 @@ export class PostService {
   /** Descarta a leitura memoizada da coleção — a próxima listagem relê o Firestore. */
   private invalidateCache(): void {
     this.allPosts$ = undefined;
+    this.postIndex$ = undefined;
     this.searchIndex.clear();
   }
 
@@ -96,10 +116,14 @@ export class PostService {
   private getPostsPublic(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
     const pageSize = filters?.limit ?? 10;
     const page = Math.max(1, Number(filters?.page) || 1);
+    // A busca "full" procura no texto dos posts: precisa da coleção completa.
+    // Listagem, paginação e filtro por categoria funcionam com o índice leve.
+    const needsContent = filters?.searchScope === 'full' && !!filters.search?.trim();
+    const source$ = needsContent ? this.loadAllPosts() : this.loadPostIndex();
 
     return concat(
       of(this.getLocalPosts()),
-      this.loadAllPosts().pipe(catchError(() => of(this.getLocalPosts())))
+      source$.pipe(catchError(() => of(this.getLocalPosts())))
     ).pipe(
       map(posts => this.paginate(this.applyClientFilters(posts, filters), page, pageSize, false)),
       switchMap(response => this.withResolvedCategories(response))
@@ -140,6 +164,30 @@ export class PostService {
     );
 
     return this.allPosts$;
+  }
+
+  /**
+   * Índice leve do blog. Se a coleção completa já foi lida nesta sessão,
+   * reaproveita. Se a leitura do índice falhar, cai na coleção completa
+   * (comportamento anterior), então a listagem nunca fica vazia por causa dele.
+   */
+  private loadPostIndex(): Observable<Post[]> {
+    if (this.allPosts$) return this.allPosts$;
+    if (this.postIndex$) return this.postIndex$;
+
+    this.postIndex$ = from(this.firebaseService.withTimeout(
+      runSelectQuery(environment.firebase.projectId, this.collectionName, POST_INDEX_FIELDS),
+      'Tempo esgotado ao carregar o índice do blog.'
+    )).pipe(
+      map(rows => rows.map(([id, data]) => this.mapFirestorePost(id, data))),
+      catchError(() => {
+        this.postIndex$ = undefined;
+        return this.loadAllPosts();
+      }),
+      shareReplay(1)
+    );
+
+    return this.postIndex$;
   }
 
   private getPostsAdmin(filters?: PostFilters): Observable<PaginatedResponse<Post>> {
@@ -207,7 +255,7 @@ export class PostService {
 
   /** Quantidade de posts publicados por categoria (para o filtro do blog). */
   getPublishedCategoryCounts(): Observable<Map<number, number>> {
-    return this.loadAllPosts().pipe(
+    return this.loadPostIndex().pipe(
       map(posts => {
         const counts = new Map<number, number>();
         for (const post of this.dedupePosts(posts)) {

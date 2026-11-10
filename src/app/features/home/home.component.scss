@@ -141,11 +141,11 @@ $dark: #1a1a2e;
   z-index: 0;
   filter: brightness(0.6) blur(28px);
   transform: scale(1.15);
-
-  // Vem depois do fundo desktop no DOM, então cobre-o quando visível.
-  &--mobile { display: none; }
+  // Só uma imagem por aparelho: o celular usa a arte mobile (se houver) e não
+  // baixa a desktop. Variáveis definidas no template.
+  background-image: var(--backdrop);
   @media (max-width: 768px) {
-    &--mobile { display: block; }
+    background-image: var(--backdrop-mobile, var(--backdrop));
   }
 }
 

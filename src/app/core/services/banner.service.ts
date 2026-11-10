@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, from, map, of, shareReplay } from 'rxjs';
-import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore/lite';
 import { Banner } from '../models/banner.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';

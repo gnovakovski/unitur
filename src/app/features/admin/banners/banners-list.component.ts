@@ -407,12 +407,16 @@ export class BannersListComponent implements OnInit {
       const imageFile = imageUrl instanceof File ? imageUrl : null;
       const mobileFile = imageUrlMobile instanceof File ? imageUrlMobile : null;
 
+      const mobileUrl = mobileFile ? '' : String(imageUrlMobile || '');
       const baseData: Partial<Banner> = {
         ...rest,
         imageUrl: imageFile ? '' : String(imageUrl || ''),
         // Arquivo novo entra em branco agora e recebe a URL após o upload; string vazia
         // (imagem removida) precisa ser gravada para limpar a arte mobile antiga.
-        imageUrlMobile: mobileFile ? '' : String(imageUrlMobile || '')
+        imageUrlMobile: mobileUrl,
+        // Imagem trocada ou removida: as versões responsivas antigas deixam de valer.
+        ...(imageFile ? { imageSrcset: '' } : {}),
+        ...(mobileFile || !mobileUrl ? { imageMobileSrcset: '' } : {})
       };
 
       const saved = this.editingBanner
@@ -426,18 +430,22 @@ export class BannersListComponent implements OnInit {
         try {
           const urls: Partial<Banner> = {};
 
+          // Cada arte é salva em várias larguras: o celular baixa a versão leve e
+          // telas grandes/Retina recebem a versão grande, sem perda de qualidade.
           if (imageFile) {
             const uploaded = await firstValueFrom(
-              this.uploadService.uploadToEntity(imageFile, 'banners', bannerIdToUse).pipe(timeout(45000))
+              this.uploadService.uploadResponsiveImage(imageFile, 'banners', bannerIdToUse, 'bannerDesktop').pipe(timeout(90000))
             );
             urls.imageUrl = uploaded.url;
+            urls.imageSrcset = uploaded.srcset;
           }
 
           if (mobileFile) {
             const uploaded = await firstValueFrom(
-              this.uploadService.uploadToEntity(mobileFile, 'banners', bannerIdToUse).pipe(timeout(45000))
+              this.uploadService.uploadResponsiveImage(mobileFile, 'banners', bannerIdToUse, 'bannerMobile').pipe(timeout(90000))
             );
             urls.imageUrlMobile = uploaded.url;
+            urls.imageMobileSrcset = uploaded.srcset;
           }
 
           await firstValueFrom(this.bannerService.updateBanner(bannerIdToUse, urls));

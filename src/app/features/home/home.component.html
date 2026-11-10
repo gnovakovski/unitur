@@ -11,17 +11,20 @@
           <div class="carousel-slide">
             <!-- Fundo desfocado da própria arte: preenche a sobra quando a proporção da
                  imagem não bate exatamente com a da tela, sem cortar nada do banner. -->
-            <div class="slide-backdrop" [style.background-image]="'url(' + slide.imageUrl + ')'"></div>
-            @if (slide.imageUrlMobile) {
-              <div class="slide-backdrop slide-backdrop--mobile" [style.background-image]="'url(' + slide.imageUrlMobile + ')'"></div>
-            }
+            <!-- Um elemento só, com a imagem do aparelho via variável CSS: antes havia um
+                 fundo desktop por baixo do mobile, e o celular baixava as duas artes. -->
+            <div class="slide-backdrop"
+                 [style.--backdrop]="'url(' + slide.backdrop + ')'"
+                 [style.--backdrop-mobile]="slide.backdropMobile ? 'url(' + slide.backdropMobile + ')' : null"></div>
             <picture>
               @if (slide.imageUrlMobile) {
-                <source media="(max-width: 768px)" [srcset]="slide.imageUrlMobile">
+                <source media="(max-width: 768px)" [attr.srcset]="slide.mobileSrcset || slide.imageUrlMobile" sizes="100vw">
               }
-              <!-- 1º slide = LCP da página: baixa com prioridade alta; os demais ficam em
+              <!-- srcset: o navegador escolhe a versão do tamanho da tela (Retina/4K recebem
+                   a grande). 1º slide = LCP da página: prioridade alta; os demais ficam em
                    prioridade baixa (sem lazy, para não piscar em branco ao girar o carrossel). -->
-              <img [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)"
+              <img [attr.srcset]="slide.srcset || null" [attr.sizes]="slide.srcset ? bannerSizes : null"
+                   [src]="slide.imageUrl" [alt]="'Destino ' + (i + 1)"
                    [attr.fetchpriority]="i === 0 ? 'high' : 'low'">
             </picture>
             @if (slide.link) {

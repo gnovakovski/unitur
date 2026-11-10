@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, catchError, from, map, of, shareReplay } from 'rxjs';
-import { collection, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore/lite';
 import { DEFAULT_TAG_COLOR, TripTag } from '../models/tag.model';
 import { FirebaseService } from './firebase.service';
 

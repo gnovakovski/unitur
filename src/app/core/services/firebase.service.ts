@@ -1,10 +1,24 @@
 import { Injectable, PendingTasks, inject } from '@angular/core';
 import { initializeApp, FirebaseApp, FirebaseOptions } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { Firestore, getFirestore, initializeFirestore, Timestamp } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import type { Auth } from 'firebase/auth';
+import { Firestore, getFirestore, Timestamp } from 'firebase/firestore/lite';
+import type { FirebaseStorage } from 'firebase/storage';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Ponto único de acesso ao Firebase.
+ *
+ * Desempenho do site público:
+ * - Firestore **Lite**: o site só faz leituras e gravações pontuais (sem tempo
+ *   real nem cache offline), então usa a versão Lite, que é bem menor e fala
+ *   com o Firestore por requisições HTTP simples. O SDK completo deixava uma
+ *   conexão aberta (long polling), e o Lighthouse nunca via a página "terminar
+ *   de carregar".
+ * - **Auth** e **Storage** carregam sob demanda (`getAuth()` / `getStorage()`):
+ *   só o admin usa login e upload, então o visitante do site não baixa esses
+ *   módulos. O Firestore Lite passa a mandar o token do admin automaticamente
+ *   assim que o Auth é carregado.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -16,28 +30,39 @@ export class FirebaseService {
 
   private app: FirebaseApp | null = null;
   private firestoreDb: Firestore | null = null;
-
-  get auth(): Auth {
-    return getAuth(this.getApp());
-  }
+  private authInstance: Auth | null = null;
+  private authPromise: Promise<Auth> | null = null;
+  private storagePromise: Promise<FirebaseStorage> | null = null;
 
   get firestore(): Firestore {
     if (!this.firestoreDb) {
-      try {
-        this.firestoreDb = initializeFirestore(this.getApp(), {
-          experimentalForceLongPolling: true,
-          useFetchStreams: false
-        } as Parameters<typeof initializeFirestore>[1]);
-      } catch {
-        this.firestoreDb = getFirestore(this.getApp());
-      }
+      this.firestoreDb = getFirestore(this.getApp());
     }
-
     return this.firestoreDb;
   }
 
-  get storage(): FirebaseStorage {
-    return getStorage(this.getApp());
+  /** Firebase Auth, carregado na primeira chamada (só o admin usa). */
+  getAuth(): Promise<Auth> {
+    if (!this.authPromise) {
+      this.authPromise = import('firebase/auth').then(({ getAuth }) => {
+        this.authInstance = getAuth(this.getApp());
+        return this.authInstance;
+      });
+    }
+    return this.authPromise;
+  }
+
+  /** Auth já carregado nesta sessão, ou null se ninguém pediu ainda. */
+  get loadedAuth(): Auth | null {
+    return this.authInstance;
+  }
+
+  /** Firebase Storage, carregado na primeira chamada (só uploads do admin). */
+  getStorage(): Promise<FirebaseStorage> {
+    if (!this.storagePromise) {
+      this.storagePromise = import('firebase/storage').then(({ getStorage }) => getStorage(this.getApp()));
+    }
+    return this.storagePromise;
   }
 
   // Sem Firebase Analytics de propósito: a medição oficial do site é o GA4 do

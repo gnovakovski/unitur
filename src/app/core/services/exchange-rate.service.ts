@@ -8,7 +8,7 @@ import {
   of,
   shareReplay
 } from 'rxjs';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore/lite';
 import { ForeignCurrencyCode, registerCurrencySymbol } from '../utils/currency-format';
 import { ResolvedTripPrice, TripPriceFields, computeTripPrice } from '../utils/trip-pricing';
 import { FirebaseService } from './firebase.service';
