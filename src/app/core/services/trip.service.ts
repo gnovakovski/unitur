@@ -34,6 +34,15 @@ export class TripService {
 
   // Cursor para paginação server-side nas telas de admin.
   private adminCursor: QueryDocumentSnapshot | null = null;
+
+  /**
+   * true quando a última leitura do catálogo em getTripBySlug() veio do
+   * Firestore. Em erro ou timeout fica false, e findActiveReplacement() se
+   * recusa a afirmar que uma viagem não existe.
+   */
+  private catalogFresh = false;
+  /** Catálogo da última leitura bem-sucedida em getTripBySlug(). */
+  private catalog: Trip[] = [];
   private lastFilterHash = '';
 
   constructor(
@@ -206,14 +215,42 @@ export class TripService {
         if (trips.length > 0) {
           this.replaceLocalTrips(trips);
         }
+        this.catalogFresh = trips.length > 0;
+        this.catalog = trips;
         const candidates = this.dedupeTrips([...trips, ...this.getLocalTrips()]);
         return candidates.find(item => this.matchesSlug(item, normalized)) || null;
       }),
       catchError(() => {
+        this.catalogFresh = false;
         const trip = this.getLocalTrips().find(item => this.matchesSlug(item, normalized));
         return of(trip || null);
       })
     );
+  }
+
+  /**
+   * Para um endereço de viagem que não está publicada (roteiro antigo do
+   * WordPress ou viagem encerrada/rascunho): devolve a viagem publicada
+   * equivalente, se houver, ou null.
+   *
+   * "Equivalente" = mesmo slug sem o código numérico que o WordPress colocava
+   * no fim. Ex.: "gramado-e-canela-2664" → "gramado-e-canela".
+   *
+   * Use depois de getTripBySlug(). Devolve undefined se o catálogo não pôde ser
+   * lido agora (erro ou timeout), porque aí não dá para afirmar que a viagem
+   * não existe.
+   */
+  findActiveReplacement(slug: string): Trip | null | undefined {
+    if (!this.catalogFresh) return undefined;
+    const target = legacyBaseSlug(slug);
+    if (!target) return null;
+    return this.catalog.find(trip =>
+      trip.status !== 'inactive' &&
+      trip.status !== 'draft' &&
+      !!trip.slug &&
+      trip.slug.toLowerCase() !== String(slug).toLowerCase() &&
+      legacyBaseSlug(trip.slug) === target
+    ) || null;
   }
 
   createTrip(trip: Partial<Trip>): Observable<Trip> {
@@ -438,4 +475,18 @@ export class TripService {
   private cleanUndefined<T extends object>(data: T): Record<string, unknown> {
     return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
   }
+}
+
+/**
+ * Slug sem o código numérico do WordPress e sem hífens soltos no fim:
+ * "peregrinacao-da-arquidiocese-de-porto-alegre-2625-11" →
+ * "peregrinacao-da-arquidiocese-de-porto-alegre"; "minas-gerais-nos-passos-da-fe-" →
+ * "minas-gerais-nos-passos-da-fe".
+ */
+export function legacyBaseSlug(slug: string | null | undefined): string {
+  return String(slug || '')
+    .trim()
+    .toLowerCase()
+    .replace(/(?:-\d+)+-*$/, '')
+    .replace(/-+$/, '');
 }

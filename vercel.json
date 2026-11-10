@@ -769,6 +769,511 @@
       "statusCode": 301
     },
     {
+      "source": "/roteiros-internacionais/a-esplendida-espanha-de-santa-teresa-davila-2453/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/a-grande-rota-da-descoberta-dos-vinhos-portugueses-2648/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/albania-macedonia-e-grecia-2411/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/alemanha-romantica-e-suica-dos-sonhos-2515/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/balcas-imperdiveis-2612/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/bella-italia-rumo-ao-jubileu-2514/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/caminho-de-fe-mexico-sagrado-2525/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/caminhos-da-fe-pelo-santuario-da-franca-e-italia-jubileu-2025-2521/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/capitais-imperiais-2608/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/dubai-e-abu-dhabi-super-promocional-2463/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/egito-israel-e-italia-2406/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/egito-israel-e-italia-2412/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/emirados-dos-sonhos-2520/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/encontro-das-equipes-de-nossa-senhora-grupo-exclusivo-2431/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/espanha-real-andaluzia-madri-e-barcelona-2442/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/italia-com-costa-amalfitana-e-pompeia-2444/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/italia-e-terra-santa-no-ano-santo-2506/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/italia-egito-jubileu-dos-catequistas-2535/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/italia-terra-santa-2404/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/japao-com-florada-de-cerejeiras-2024/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/jubileu-dos-catequistas-brasilia-2533/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/jubileu-dos-catequistas-porto-alegre-2517/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/jubileu-dos-catequistas-rio-de-janeiro-2530/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/jubileu-dos-catequistas-sao-paulo-2517/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/leste-europeu-alemanha-2452/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/marrocos-e-andaluzia-2414/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/nos-passos-de-chiara-lubich-e-jubileu-da-espiritualidade-mariana-2531/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/nos-passos-de-teresa-verzeri-peregrinacao-a-italia-2523/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/paulo-afonso-pelo-mundo-ano-xi-belgica-holanda-e-alemanha-2524/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-a-italia-jubileu-2025/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-ao-norte-da-espanha-e-italia-jubileu-2025-2537/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-aos-santuarios-marianos-da-europa-2529/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-italia-e-medjugorje-br-2408/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-italia-terra-santa-2360/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-na-rota-da-devocao-italia-e-franca-2548/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-polonia-e-portugal-2516/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/peregrinacao-portugal-e-italia-jubileu-2025-2508/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/perolas-da-europa-franca-italia-croacia-e-bosnia-2549/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/polonia-monumental-e-o-melhor-da-letonia-e-lituania-2527/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/portugal-italia-jubileu-dos-jovens-2536/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/rota-dos-milagres-portugal-italia-2509/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/santuarios-da-franca-espanha-e-portugal-2413/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/santuarios-da-franca-espanha-e-portugal-2432/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/santuarios-da-franca-espanha-e-portugal-2503/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/santuarios-de-portugal-espanha-franca-e-suica-2502/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/terra-santa-e-italia-2418/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/terra-santa-e-italia-2421/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-internacionais/turquia-e-grecia-2419/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/17a-romaria-nacional-do-terco-dos-homens-em-aparecida-2519/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/aparecida-e-frei-galvao-peregrinacao-da-arquidiocese-de-porto-alegre-2246/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/aparecida-e-rio-de-janeiro-2447/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/arquidiocese-de-porto-alegre-em-aparecida-guaratingueta-2456/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/arquidiocese-de-porto-alegre-em-aparecida-guaratingueta-2462/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/devocao-e-fe-no-coracao-do-brasil-2485/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/divino-pai-eterno-e-rio-quente-resort-2617/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/feriado-farroupilha-em-aparecida-2433/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/ferias-em-aparecida-no-ano-jubilar-de-2025-2532/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/festa-da-padroeira-no-santuario-de-aparecida-2470/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/grande-tour-nas-cataratas-brasileiras-areia-branca-2541/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/ix-encontro-nacional-da-pastoral-do-turismo-2487/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/milagres-de-aparecida-peregrinacao-no-ano-jubilar-2518/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/minas-gerais-historica-e-aparecida-2528/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/missao-memoria-e-anuncio-400-anos-de-historia-e-fe-missioneira-2632/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-aparecida-2627/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-aparecida-e-frei-galvao-2448/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-aparecida-no-ano-jubilar-de-2025-peregrinos-da-esperanca-2539/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-aparecida-no-ano-jubilar-de-2025-peregrinos-da-esperanca-mcj-2543/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-casa-da-mae-em-aparecida-2644/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-a-n-sra-aparecida-ano-jubilar-2534/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-ao-santuario-de-aparecida-e-rio-de-janeiro-2522/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-ao-santuario-do-divino-pai-eterno-2526/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-catedral-de-montenegro-ao-santuario-de-aparecida-2466/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-10/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-da-arquidiocese-de-porto-alegre-2625-2/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-dos-educadores-rumo-a-aparecida-2627-1/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/peregrinacao-santuario-do-divino-pai-eterno-2429/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-do-terco-das-mulheres-em-aparecida-2417/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-das-catequistas-ao-santuario-de-aparecida-2437/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/romaria-nacional-das-catequistas-ao-santuario-de-aparecida-2451/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/rumo-a-casa-da-mae-peregrinacao-ao-santuario-de-aparecida-2486/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-aparecida-promocional-2456/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-2248/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-2433/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-2469/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-cancao-nova-2417-1/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-cancao-nova-fazenda-da-esperanca-e-frei-galvao-2458/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-especial-2465/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-especial-2479/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-pe-chico-2262/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-peregrinacao-arquidiocese-de-porto-alegre-2218/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-peregrinacao-arquidiocese-de-porto-alegre-2247/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-peregrinacao-da-arquidiocese-de-porto-alegre-2241/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-peregrinacao-da-arquidiocese-de-porto-alegre-2243/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-peregrinacao-da-arquidiocese-de-porto-alegre-2245/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-peregrinacao-da-arquidiocese-de-porto-alegre-2247/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-romaria-do-movimento-dos-cursilhos-2258/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-roseira-cancao-nova-e-fazenda-da-esperanca-2434/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-aparecida-roseira-e-guaratingueta-2450/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/santuario-de-caravaggio-caminhos-de-pedras-2260/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/sob-o-olhar-da-alma-2628/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
+      "source": "/roteiros-nacionais/viagem-ao-santuario-de-nossa-senhora-aparecida-2450/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
       "source": "/roteiros-internacionais/",
       "destination": "/viagens/",
       "statusCode": 301

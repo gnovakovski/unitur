@@ -8,7 +8,6 @@ export const environment = {
     projectId: 'unitur-e7882',
     storageBucket: 'unitur-e7882.firebasestorage.app',
     messagingSenderId: '422742915300',
-    appId: '1:422742915300:web:58bfb2ff460d5866da54f1',
-    measurementId: 'G-SCBXHSPDWX'
+    appId: '1:422742915300:web:58bfb2ff460d5866da54f1'
   }
 };

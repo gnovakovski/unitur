@@ -3,11 +3,12 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { UrlSerializer, provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { TrailingSlashUrlSerializer } from './core/routing/trailing-slash-url-serializer';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +25,9 @@ export const appConfig: ApplicationConfig = {
         anchorScrolling: 'enabled',
       }),
     ),
+    // URLs sempre com barra final (/blog/post/): sem isto o Angular removia a barra
+    // ao carregar a página e o GA4 contava 2 page_views por entrada.
+    { provide: UrlSerializer, useClass: TrailingSlashUrlSerializer },
     provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
     // Não há APP_INITIALIZER de propósito: antes havia um que, a cada visita,
     // criava/logava uma conta admin de teste no Firebase Auth antes de renderizar

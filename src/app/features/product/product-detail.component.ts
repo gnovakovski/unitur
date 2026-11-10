@@ -128,6 +128,24 @@ export class ProductDetailComponent implements OnInit {
   }
 
   /**
+   * Endereço de viagem que não está publicada: roteiro antigo do WordPress,
+   * viagem encerrada ou rascunho. Em vez de "Viagem não encontrada", leva para a
+   * mesma viagem com o slug novo (ex.: "...-2664" → "gramado-e-canela") ou, se
+   * não houver equivalente, para a listagem de viagens.
+   *
+   * Os endereços antigos conhecidos já têm redirect 301 no vercel.json; este
+   * fallback cobre os demais. Não redireciona se o catálogo não pôde ser lido
+   * (erro/timeout), para não tirar do ar uma viagem que existe.
+   */
+  private redirectRetiredTrip(slug: string): boolean {
+    const replacement = this.tripService.findActiveReplacement(slug);
+    if (replacement === undefined) return false;
+    const target = replacement ? tripCanonicalPath(replacement) : '/viagens/';
+    this.router.navigateByUrl(target, { replaceUrl: true });
+    return true;
+  }
+
+  /**
    * Link de WhatsApp dinâmico: número real do contato + a mensagem cadastrada
    * na viagem (ou o texto padrão com o nome dela, quando não há mensagem).
    */
@@ -305,10 +323,16 @@ export class ProductDetailComponent implements OnInit {
             if (this.redirectIfMenuSlug(slug)) {
               return;
             }
+            if (this.redirectRetiredTrip(slug)) {
+              return;
+            }
             this.trip = null;
             this.notFound = true;
             this.applyNotFoundSeo();
           } else if (trip.status === 'inactive' || trip.status === 'draft') {
+            if (this.redirectRetiredTrip(slug)) {
+              return;
+            }
             this.trip = null;
             this.notFound = true;
             this.applyNotFoundSeo();

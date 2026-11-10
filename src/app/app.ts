@@ -5,7 +5,6 @@ import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
 import { ToastHostComponent } from './shared/components/toast-host/toast-host.component';
 import { WhatsappFloatComponent } from './shared/components/whatsapp-float/whatsapp-float.component';
-import { FirebaseService } from './core/services/firebase.service';
 import { inject as injectVercelAnalytics } from '@vercel/analytics';
 
 /** Link de conversa com um número (wa.me/5551...), não o compartilhamento do blog (wa.me/?text=). */
@@ -22,15 +21,16 @@ export class App {
   isAdminRoute = false;
   private readonly document = inject(DOCUMENT);
 
-  constructor(private router: Router, private firebase: FirebaseService) {
+  constructor(private router: Router) {
     injectVercelAnalytics();
     this.updateRouteVisibility(this.router.url);
     this.trackWhatsappClicks();
 
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
+        // page_view fica a cargo do GA4 do GTM (histórico do navegador); não
+        // registrar aqui para não duplicar.
         this.updateRouteVisibility(event.urlAfterRedirects);
-        this.firebase.logPageView(event.urlAfterRedirects);
       }
     });
   }
