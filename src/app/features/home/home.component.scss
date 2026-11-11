@@ -556,13 +556,17 @@ $dark: #1a1a2e;
     &::-webkit-scrollbar { display: none; }
 
     // Cada card ~88% da largura, com a "espiada" do próximo (sinaliza swipe).
-    // Altura fixa → todos os cards do carrossel ficam idênticos (mesmo padrão).
+    // Sem altura fixa: com altura travada, o conteúdo não cabia, o grid
+    // encolhia a linha da imagem e a foto cobria selo/título/país. Os cards
+    // seguem idênticos porque o flex (align-items: stretch) iguala todos à
+    // altura do maior; o botão vai para o rodapé para ficar alinhado.
     > .curadoria-card {
       flex: 0 0 88%;
       max-width: 360px;
-      height: 460px;
       scroll-snap-align: start;
     }
+
+    .btn-curadoria { margin-top: auto; }
   }
 }
 
