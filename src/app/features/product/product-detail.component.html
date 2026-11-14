@@ -21,6 +21,12 @@
       </div>
       <h1>{{ trip.title }}</h1>
       <p>{{ trip.summary }}</p>
+      <div class="trip-actions">
+        <button type="button" (click)="shareTrip()">Compartilhar roteiro</button>
+        <button type="button" (click)="downloadPdf()" [disabled]="downloadingPdf" [attr.aria-busy]="downloadingPdf">
+          {{ downloadingPdf ? 'Gerando PDF…' : 'Baixar PDF' }}
+        </button>
+      </div>
       @if (showHeroTripDate) {
         <div class="hero-trip-date" aria-label="Data e período da viagem">
           <span>
@@ -28,7 +34,7 @@
             {{ trip.date }}
           </span>
           <span>
-            <strong>Período</strong>
+            <strong>Duração</strong>
             {{ trip.duration }}
           </span>
         </div>

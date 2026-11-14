@@ -13,8 +13,6 @@ import { TestimonialService } from '../../core/services/testimonial.service';
 import { BannerService } from '../../core/services/banner.service';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { ResolvedTripPrice, formatTripBRL, formatTripForeign } from '../../core/utils/trip-pricing';
-import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AboutContentService } from '../../core/services/about-content.service';
 import { DEFAULT_ABOUT_CONTENT, HomeAboutContent } from '../../core/models/about-content.model';
 import { SiteContentService } from '../../core/services/site-content.service';
@@ -22,6 +20,8 @@ import { DEFAULT_HOME_CONTENT, LEGACY_TRIP_TYPE_TO_MENU_ID, SiteHomeContent } fr
 import { Banner } from '../../core/models/banner.model';
 import { SeoService } from '../../core/services/seo.service';
 import { srcsetForImage } from '../../core/utils/responsive-image';
+import { NewsletterSignupComponent } from '../../shared/components/newsletter-signup/newsletter-signup.component';
+import { compareHomeTripMenus } from '../../core/utils/trip-menu';
 
 interface HomeTripCard {
   slug: string;
@@ -34,10 +34,8 @@ interface HomeTripCard {
   imagePosition?: string;
   imageFit?: string;
   imageRotation?: number;
-  price: string;
   spots: string;
   showSpots: boolean;
-  foreignPrice?: string;
   guide: string;
   guideRole: string;
   coordinator: string;
@@ -112,7 +110,7 @@ interface HomeBlogPostCard {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, NewsletterSignupComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
@@ -134,7 +132,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     private postService: PostService,
     private aboutContentService: AboutContentService,
     private siteContentService: SiteContentService,
-    private exchangeRateService: ExchangeRateService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
@@ -174,6 +171,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   continents: HomeWorldCard[] = [];
 
   curadoria: HomeCuradoriaCard[] = [];
+
+  get culturalTripsTitle(): string {
+    return this.siteContentService.getCurrentHeaderLinks().find(link => link.id === this.curadoriaMenuId)?.label
+      || this.homeContent.curadoriaTitle;
+  }
 
   testimonials: HomeTestimonialCard[] = [];
 
@@ -399,9 +401,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     ).subscribe(response => {
       this.activeTrips = response.data;
       this.buildTripSections();
-      this.curadoria = this.activeTrips
-        .filter(trip => this.belongsToMenu(trip, this.curadoriaMenuId) && trip.showOnHome !== false)
-        .map(trip => this.mapCuradoriaCard(trip));
       this.continents = this.mapWorldCards(this.activeTrips);
 
       this.cdr.detectChanges();
@@ -417,12 +416,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   private buildTripSections() {
     const menus = this.siteContentService.getCurrentHeaderLinks()
       .filter(link => link.visible && link.id !== this.curadoriaMenuId)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      .sort(compareHomeTripMenus);
+
+    const culturalMenu = this.siteContentService.getCurrentHeaderLinks().find(link => link.id === this.curadoriaMenuId);
+    this.curadoria = culturalMenu?.visible ? this.activeTrips
+      .filter(trip => this.belongsToMenu(trip, this.curadoriaMenuId) && trip.showOnHome !== false)
+      .map(trip => this.mapCuradoriaCard(trip)) : [];
 
     this.tripSections = menus
       .map(menu => {
         // Peregrinação usa o papel "Guia Espiritual Convidado"; demais usam "Guia".
-        const isPeregrinacao = menu.id === 'peregrinacao';
+        const isPeregrinacao = /^peregrina/i.test(menu.label) || menu.id === 'peregrinacao';
         const guideRole = isPeregrinacao ? 'Guia Espiritual Convidado' : 'Guia';
         // Todas as viagens ativas da categoria (base do "Ver mais", que leva à
         // listagem completa) e as que o admin marcou para aparecer na home.
@@ -551,34 +555,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       imagePosition: trip.mainImagePosition || '50% 50%',
       imageFit: trip.mainImageFit || 'cover',
       imageRotation: Number(trip.mainImageRotation || 0),
-      price: 'Consulte',
-      foreignPrice: '',
       spots: `${Number(trip.availableSpots || 0)} vagas`,
       showSpots: trip.showAvailableSpots !== false,
       guide: (trip.spiritualGuide || '').trim(),
       guideRole,
       coordinator: (trip.coordinator || '').trim()
     };
-    this.attachPrices(card, trip);
     return card;
-  }
-
-  /**
-   * Preenche R$ e valor em moeda estrangeira a partir do que está cadastrado na
-   * viagem (ver `computeTripPrice`). Pinta na hora com as cotações em cache e
-   * corrige quando as do Firestore chegam.
-   */
-  private attachPrices(card: { price: string; foreignPrice?: string }, trip: Trip) {
-    const apply = (resolved: ResolvedTripPrice) => {
-      card.price = formatTripBRL(resolved.brl);
-      card.foreignPrice = formatTripForeign(resolved);
-    };
-
-    apply(this.exchangeRateService.resolveTripPriceSnapshot(trip));
-    this.exchangeRateService.resolveTripPrice(trip).subscribe(resolved => {
-      apply(resolved);
-      this.cdr.markForCheck();
-    });
   }
 
   private mapCuradoriaCard(trip: Trip): HomeCuradoriaCard {

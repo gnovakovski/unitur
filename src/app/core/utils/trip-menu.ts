@@ -3,6 +3,12 @@ import { HeaderLink, LEGACY_TRIP_TYPE_TO_MENU_ID } from '../models/site-content.
 
 type TripMenuSource = Pick<Trip, 'menuIds' | 'tripType'>;
 
+/** Prioridade editorial da home, sem alterar a ordem configurada do cabeçalho. */
+export function compareHomeTripMenus(a: HeaderLink, b: HeaderLink): number {
+  const priority: Record<string, number> = { regulares: 0, peregrinacao: 1, curadoria: 2 };
+  return (priority[a.id] ?? 3) - (priority[b.id] ?? 3) || a.order - b.order;
+}
+
 /**
  * Menus (ids de `HeaderLink`) em que a viagem aparece. Viagens antigas, sem
  * `menuIds`, caem no menu equivalente ao `tripType` legado.

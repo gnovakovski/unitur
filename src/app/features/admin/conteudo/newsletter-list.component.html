@@ -1,0 +1,29 @@
+<section class="af-page">
+  <a routerLink="/admin/conteudo">← Conteúdo do site</a>
+  <header class="af-page-header">
+    <div>
+      <h1 class="af-page-header__title">Newsletter</h1>
+      <p class="af-page-header__subtitle">Contatos que autorizaram o recebimento de novidades na home.</p>
+    </div>
+    <button type="button" (click)="exportCsv()" [disabled]="loading || !!error || !subscribers.length">Exportar CSV</button>
+  </header>
+  @if (loading) { <p role="status">Carregando inscritos…</p> }
+  @if (error) {
+    <p role="alert">{{ error }}</p>
+    <button type="button" (click)="load()">Tentar novamente</button>
+  } @else if (!loading) {
+    <p>{{ subscribers.length }} cadastro(s)</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th scope="col">Nome</th><th scope="col">E-mail</th><th scope="col">Cadastro</th></tr></thead>
+        <tbody>
+          @for (subscriber of subscribers; track subscriber.id) {
+            <tr><td>{{ subscriber.name }}</td><td>{{ subscriber.email }}</td><td>{{ subscriber.createdAt | date:'dd/MM/yyyy HH:mm' }}</td></tr>
+          } @empty {
+            <tr><td colspan="3">Nenhum cadastro recebido ainda.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

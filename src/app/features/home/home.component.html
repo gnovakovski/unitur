@@ -163,13 +163,6 @@
             }
 
             <div class="trip-card__footer">
-              <div class="trip-card__price">
-                <span class="trip-card__price-label">A partir de</span>
-                @if (trip.foreignPrice) {
-                  <span class="trip-card__price-foreign">{{ trip.foreignPrice }}</span>
-                }
-                <strong>{{ trip.price }}</strong>
-              </div>
               <a class="trip-card__cta" [routerLink]="['/viagens', trip.slug]">
                 Reservar
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -190,34 +183,12 @@
   </section>
 }
 
-<!-- Conheca o Mundo -->
-<section class="world-section">
-  <div class="section-header">
-    <h2 class="section-title">{{ homeContent.worldTitle }}</h2>
-    <p class="section-subtitle">{{ homeContent.worldSubtitle }}</p>
-  </div>
-
-  <div class="continents-grid">
-    @for (continent of continents; track continent.name) {
-      <a class="continent-card" routerLink="/viagens" [queryParams]="{ destination: continent.name }">
-        @if (heroSettled) { <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
-        <div class="continent-overlay">
-          <h3>{{ continent.name }}</h3>
-          @if (continent.description) {
-            <p>{{ continent.description }}</p>
-          }
-          <span class="btn-continent">Explorar</span>
-        </div>
-      </a>
-    }
-  </div>
-</section>
-
 <!-- Curadoria Unitur -->
+@if (curadoria.length > 0) {
 <section class="curadoria-section">
   <div class="container">
     <div class="section-header">
-      <h2 class="section-title">{{ homeContent.curadoriaTitle }}</h2>
+      <h2 class="section-title">{{ culturalTripsTitle }}</h2>
       <p class="section-subtitle">{{ homeContent.curadoriaSubtitle }}</p>
     </div>
   </div>
@@ -242,6 +213,30 @@
           <div class="curadoria-overlay"></div>
         </div>
       </div>
+    }
+  </div>
+</section>
+}
+
+<!-- Conheca o Mundo -->
+<section class="world-section">
+  <div class="section-header">
+    <h2 class="section-title">{{ homeContent.worldTitle }}</h2>
+    <p class="section-subtitle">{{ homeContent.worldSubtitle }}</p>
+  </div>
+
+  <div class="continents-grid">
+    @for (continent of continents; track continent.name) {
+      <a class="continent-card" routerLink="/viagens" [queryParams]="{ destination: continent.name }">
+        @if (heroSettled) { <img [src]="continent.image" [alt]="continent.name" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
+        <div class="continent-overlay">
+          <h3>{{ continent.name }}</h3>
+          @if (continent.description) {
+            <p>{{ continent.description }}</p>
+          }
+          <span class="btn-continent">Explorar</span>
+        </div>
+      </a>
     }
   </div>
 </section>
@@ -274,6 +269,8 @@
 </section>
 
 <!-- Sobre -->
+<app-newsletter-signup />
+
 <section class="about-section">
   <div class="about-content">
     <div class="about-text">

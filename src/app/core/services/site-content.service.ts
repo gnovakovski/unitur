@@ -176,7 +176,7 @@ export class SiteContentService {
       map(snapshot => {
         if (snapshot.exists()) {
           const data = this.firebaseService.normalizeDates(snapshot.data()) as SiteHomeContent;
-          const merged = { ...DEFAULT_HOME_CONTENT, ...data };
+          const merged = this.normalizeHome(data);
           this.persistLocalHome(merged);
           this.homeSubject.next(merged);
           return merged;
@@ -439,10 +439,20 @@ export class SiteContentService {
     try {
       const raw = this.storage.getItem(this.homeLocalKey);
       if (!raw) return DEFAULT_HOME_CONTENT;
-      return { ...DEFAULT_HOME_CONTENT, ...JSON.parse(raw) };
+      return this.normalizeHome(JSON.parse(raw));
     } catch {
       return DEFAULT_HOME_CONTENT;
     }
+  }
+
+  private normalizeHome(content: Partial<SiteHomeContent>): SiteHomeContent {
+    const home = { ...DEFAULT_HOME_CONTENT, ...content };
+    // Atualiza a chamada antiga também em documentos e caches já existentes,
+    // preservando chamadas personalizadas no painel.
+    if (/^Encontre (a )?sua próxima aventura[!.]?$/i.test(home.searchTitle.trim())) {
+      home.searchTitle = DEFAULT_HOME_CONTENT.searchTitle;
+    }
+    return home;
   }
 
   private persistLocalHome(value: SiteHomeContent): void {

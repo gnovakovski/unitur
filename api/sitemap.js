@@ -72,8 +72,8 @@ function decodeFields(fields) {
   return result;
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+async function fetchJson(url, timeoutMs = 10000) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!response.ok) throw new Error(`Firestore HTTP ${response.status} em ${url}`);
   return response.json();
 }
@@ -110,7 +110,71 @@ function isoDate(...values) {
 }
 
 function escapeXml(value) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  return String(value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+function decodeHtml(value) {
+  return String(value || '').replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Math.min(Number(code), 0x10ffff)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Math.min(parseInt(code, 16), 0x10ffff)))
+    .replace(/&quot;/g, '"').replace(/&#039;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+function absoluteMediaUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    const url = new URL(decodeHtml(value).trim(), SITE_URL);
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : null;
+  } catch { return null; }
+}
+
+function imageUrls(values) {
+  return [...new Set(values.flat().map(absoluteMediaUrl).filter(Boolean))].slice(0, 1000);
+}
+
+function contentImages(html) {
+  return Array.from(String(html || '').matchAll(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi), match => match[1]);
+}
+
+/** Mesmo conjunto de players aceito em post-content.ts; nenhum URL arbitrário
+ * do HTML é usado para requisições no servidor. */
+function embeddedPlayers(html) {
+  const players = [];
+  for (const match of String(html || '').matchAll(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)) {
+    const src = absoluteMediaUrl(match[1]);
+    if (!src) continue;
+    const url = new URL(src);
+    const host = url.hostname.replace(/^www\./, '');
+    const youtubeId = /^\/embed\/([\w-]{6,20})\/?$/.exec(url.pathname)?.[1];
+    const vimeoId = /^\/video\/(\d{4,12})\/?$/.exec(url.pathname)?.[1];
+    if (['youtube.com', 'youtube-nocookie.com'].includes(host) && youtubeId) {
+      players.push({ player: `https://www.youtube.com/embed/${youtubeId}`, oembed: `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${youtubeId}`)}&format=json` });
+    } else if (host === 'player.vimeo.com' && vimeoId) {
+      players.push({ player: `https://player.vimeo.com/video/${vimeoId}`, oembed: `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(`https://vimeo.com/${vimeoId}`)}` });
+    }
+  }
+  return [...new Map(players.map(player => [player.player, player])).values()];
+}
+
+/** Metadados reais do provedor; falhas de vídeo não impedem o sitemap de páginas.
+ * Quatro workers limitam as consultas; orçamento total de 4s por geração. */
+async function attachVideos(posts, entries) {
+  const jobs = posts.flatMap((post, index) => embeddedPlayers(post.content).map(player => ({ player, index, excerpt: post.excerpt })));
+  const deadline = Date.now() + 4000;
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < jobs.length && Date.now() < deadline) {
+      const job = jobs[cursor++];
+      try {
+        const meta = await fetchJson(job.player.oembed, Math.max(1, Math.min(2000, deadline - Date.now())));
+        const thumbnail = absoluteMediaUrl(meta.thumbnail_url);
+        const title = String(meta.title || '').trim();
+        if (!thumbnail || !title) continue;
+        const description = decodeHtml(String(job.excerpt || '').replace(/<[^>]*>/g, '')).trim() || title;
+        (entries[job.index].videos ||= []).push({ thumbnail, title: title.slice(0, 100), description: description.slice(0, 2048), player: job.player.player });
+      } catch { /* Player privado/removido ou provedor indisponível: omite o vídeo. */ }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, () => worker()));
 }
 
 function renderXml(entries) {
@@ -126,33 +190,53 @@ function renderXml(entries) {
       (entry.lastmod ? `    <lastmod>${entry.lastmod}</lastmod>\n` : '') +
       (entry.changefreq ? `    <changefreq>${entry.changefreq}</changefreq>\n` : '') +
       (entry.priority ? `    <priority>${entry.priority}</priority>\n` : '') +
+      imageUrls(entry.images || []).map(url => `    <image:image><image:loc>${escapeXml(url)}</image:loc></image:image>\n`).join('') +
+      (entry.videos || []).map(video =>
+        '    <video:video>\n' +
+        `      <video:thumbnail_loc>${escapeXml(video.thumbnail)}</video:thumbnail_loc>\n` +
+        `      <video:title>${escapeXml(video.title)}</video:title>\n` +
+        `      <video:description>${escapeXml(video.description)}</video:description>\n` +
+        `      <video:player_loc>${escapeXml(video.player)}</video:player_loc>\n` +
+        '    </video:video>\n'
+      ).join('') +
       '  </url>'
     );
   }
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n' +
     rows.join('\n') + '\n</urlset>\n';
 }
 
 async function buildEntries() {
-  const [posts, trips, menus] = await Promise.all([
-    listCollection('posts', ['slug', 'status', 'publishedAt', 'updatedAt']),
-    listCollection('trips', ['slug', 'status', 'scope', 'country', 'destination', 'updatedAt']),
+  const [posts, trips, menus, banners, about] = await Promise.all([
+    listCollection('posts', ['slug', 'status', 'publishedAt', 'updatedAt', 'featuredImage', 'contentImages', 'content', 'excerpt']),
+    listCollection('trips', ['slug', 'status', 'scope', 'country', 'destination', 'updatedAt', 'mainImage', 'experienceImages', 'gallery', 'hotels']),
     menuPaths().catch(() => []),
+    listCollection('banners', ['status', 'imageUrl', 'imageUrlMobile']).catch(() => []),
+    fetchJson(`${FIRESTORE}/siteContent/about`).then(doc => decodeFields(doc.fields || {})).catch(() => ({})),
   ]);
 
   const tripEntries = trips
     .filter(trip => trip.slug && trip.status === 'active')
-    .map(trip => ({ path: tripPath(trip), lastmod: isoDate(trip.updatedAt), changefreq: 'weekly', priority: '0.8' }));
+    .map(trip => ({ path: tripPath(trip), lastmod: isoDate(trip.updatedAt), changefreq: 'weekly', priority: '0.8',
+      images: imageUrls([trip.mainImage, ...(trip.experienceImages || trip.gallery || []), ...(trip.hotels || []).map(hotel => hotel.image)]) }));
 
-  const postEntries = posts
+  const publishedPosts = posts
     .filter(post => post.slug && (post.status || 'published') === 'published')
-    .sort((a, b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0))
-    .map(post => ({ path: `/blog/${post.slug}/`, lastmod: isoDate(post.publishedAt, post.updatedAt), changefreq: 'monthly', priority: '0.6' }));
+    .sort((a, b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0));
+  const postEntries = publishedPosts.map(post => ({ path: `/blog/${post.slug}/`, lastmod: isoDate(post.publishedAt, post.updatedAt), changefreq: 'monthly', priority: '0.6',
+    images: imageUrls([post.featuredImage, ...(post.contentImages || []), ...contentImages(post.content)]) }));
+  await attachVideos(publishedPosts, postEntries);
 
   const menuEntries = menus.map(path => ({ path, changefreq: 'daily', priority: '0.9' }));
 
-  return [...STATIC_PAGES, ...menuEntries, ...tripEntries, ...postEntries];
+  const staticEntries = STATIC_PAGES.map(entry => ({ ...entry }));
+  staticEntries[0].images = imageUrls([
+    ...banners.filter(banner => banner.status === 'active').flatMap(banner => [banner.imageUrl, banner.imageUrlMobile]),
+    about.home?.imageUrl
+  ]);
+  staticEntries.find(entry => entry.path === '/sobre/sobre-a-unitur/').images = imageUrls([about.about?.storyImageUrl]);
+  return [...staticEntries, ...menuEntries, ...tripEntries, ...postEntries];
 }
 
 module.exports = async function handler(req, res) {

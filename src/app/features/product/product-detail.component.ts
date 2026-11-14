@@ -17,6 +17,8 @@ import { TripTag } from '../../core/models/tag.model';
 import { TagService } from '../../core/services/tag.service';
 import { TagBadge, resolveTagBadge } from '../../core/utils/tag-badge';
 import { resolveTripMenuIds, tripMenuLabel } from '../../core/utils/trip-menu';
+import { formatTripDates } from '../../core/utils/trip-dates';
+import { ToastService } from '../../core/services/toast.service';
 
 interface ProductTrip {
   slug: string;
@@ -68,6 +70,8 @@ export class ProductDetailComponent implements OnInit {
   galleryLightboxOpen = false;
   hotelIndex = 0;
   hotelLightboxOpen = false;
+  downloadingPdf = false;
+  private canonicalUrl = '';
   /** Tags cadastradas, para resolver o badge desta viagem por `tagId`. */
   tags: TripTag[] = [];
   /** Número de WhatsApp (só dígitos) vindo do conteúdo de contato do site. */
@@ -75,6 +79,40 @@ export class ProductDetailComponent implements OnInit {
   /** Menus do cabeçalho já carregados do Firestore; null enquanto não chegam. */
   private headerLinks: HeaderLink[] | null = null;
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly toast = inject(ToastService);
+
+  async shareTrip(): Promise<void> {
+    if (!this.isBrowser || !this.trip) return;
+    const url = this.canonicalUrl;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: this.trip.title, text: 'Conheça este roteiro da Unitur', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        this.toast.success('Link do roteiro copiado!');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      this.toast.error('Não foi possível compartilhar. Copie o endereço da página.');
+    }
+  }
+
+  async downloadPdf(): Promise<void> {
+    if (!this.isBrowser || !this.trip || this.downloadingPdf) return;
+    const trip = this.trip;
+    const url = this.canonicalUrl;
+    this.downloadingPdf = true;
+    try {
+      const { createTripPdf } = await import('../../core/utils/trip-pdf');
+      const pdf = await createTripPdf(trip, url);
+      pdf.save(`unitur-${trip.slug.replace(/[^a-z0-9-]/gi, '-')}.pdf`);
+    } catch {
+      this.toast.error('Não foi possível gerar o PDF. Tente novamente.');
+    } finally {
+      this.downloadingPdf = false;
+      this.cdr.markForCheck();
+    }
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -105,12 +143,7 @@ export class ProductDetailComponent implements OnInit {
   }
 
   get showHeroTripDate(): boolean {
-    const key = `${this.trip?.slug || ''} ${this.trip?.title || ''}`
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-
-    return key.includes('arquidiocese-de-porto-alegre') && key.includes('padre-carlinhos');
+    return !!this.trip;
   }
 
   /**
@@ -360,6 +393,7 @@ export class ProductDetailComponent implements OnInit {
   private applyTripSeo(trip: Trip): void {
     const { title, description, image } = tripSeo(trip);
     const canonicalPath = tripCanonicalPath(trip);
+    this.canonicalUrl = this.seo.absoluteUrl(canonicalPath);
     const scopeLabel = tripScope(trip) === 'nacional' ? 'Roteiros Nacionais' : 'Roteiros Internacionais';
     const scopePath = tripScope(trip) === 'nacional' ? '/roteiros-nacionais/' : '/roteiros-internacionais/';
     const priceBRL = this.exchangeRateService.resolveTripPriceSnapshot(trip).brl;
@@ -415,7 +449,7 @@ export class ProductDetailComponent implements OnInit {
       title: trip.title,
       menuIds: resolveTripMenuIds(trip),
       destination,
-      date: trip.period || this.formatPeriod(trip.startDate),
+      date: formatTripDates(trip.startDate, trip.endDate, trip.period),
       duration,
       price: 'Consulte',
       priceTagline: trip.priceTagline !== undefined ? trip.priceTagline : 'Aéreo e apartamento duplo, a partir de:',
@@ -513,19 +547,4 @@ export class ProductDetailComponent implements OnInit {
     return 'Política de cancelamento padrão conforme contrato da viagem.';
   }
 
-  private formatPeriod(date?: Date): string {
-    if (!date) {
-      return 'A definir';
-    }
-
-    const parsedDate = date instanceof Date ? date : new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return 'A definir';
-    }
-
-    return parsedDate.toLocaleDateString('pt-BR', {
-      month: 'long',
-      year: 'numeric'
-    });
-  }
 }

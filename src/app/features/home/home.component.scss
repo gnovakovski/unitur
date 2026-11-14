@@ -1058,9 +1058,6 @@ $dark: #1a1a2e;
       width: 100%;
     }
 
-    .trip-card__price strong {
-      font-size: 1.35rem;
-    }
   }
 }
 
@@ -1316,40 +1313,11 @@ $dark: #1a1a2e;
 .trip-card__footer {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.75rem;
   margin-top: auto;
   padding-top: 1rem;
   border-top: 1px solid #eaeef3;
-}
-
-.trip-card__price {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-
-  &-label {
-    font-size: 0.7rem;
-    color: $gray;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
-  }
-
-  &-foreign {
-    font-size: 0.75rem;
-    color: $gray;
-    font-weight: 600;
-  }
-
-  strong {
-    font-size: 1.5rem;
-    color: $orange;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
 }
 
 .trip-card__cta {

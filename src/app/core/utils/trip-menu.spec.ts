@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HeaderLink } from '../models/site-content.model';
-import { resolveTripMenuIds, tripMenuLabel, tripMenus } from './trip-menu';
+import { compareHomeTripMenus, resolveTripMenuIds, tripMenuLabel, tripMenus } from './trip-menu';
 
 // Espelha o cabeçalho de produção: o menu `regulares` foi renomeado.
 const links: HeaderLink[] = [
@@ -10,6 +10,12 @@ const links: HeaderLink[] = [
 ];
 
 describe('trip-menu', () => {
+  it('prioriza internacionais, nacionais e culturais na home sem modificar o cabeçalho', () => {
+    expect([...links].sort(compareHomeTripMenus).map(link => link.label)).toEqual([
+      'Peregrinações Internacionais', 'Peregrinações Nacionais', 'Viagens Culturais'
+    ]);
+    expect(links[0].id).toBe('peregrinacao');
+  });
   it('usa o nome atual do menu, não o rótulo fixo do tripType', () => {
     expect(tripMenuLabel({ menuIds: ['regulares'], tripType: 'regular' }, links)).toBe('Peregrinações Internacionais');
   });

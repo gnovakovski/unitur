@@ -153,6 +153,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/conteudo/cabecalho-form.component').then(m => m.CabecalhoFormComponent)
       },
       {
+        path: 'conteudo/newsletter',
+        canActivate: [permissionGuard('conteudo')],
+        loadComponent: () => import('./features/admin/conteudo/newsletter-list.component').then(m => m.NewsletterListComponent)
+      },
+      {
         path: 'conteudo/contato',
         canActivate: [permissionGuard('conteudo')],
         loadComponent: () => import('./features/admin/conteudo/contato-form.component').then(m => m.ContatoFormComponent)

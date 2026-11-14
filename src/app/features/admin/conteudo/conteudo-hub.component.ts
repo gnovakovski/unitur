@@ -19,6 +19,12 @@ interface HubCard {
 export class ConteudoHubComponent {
   cards: HubCard[] = [
     {
+      title: 'Newsletter',
+      description: 'Consulte os inscritos e exporte os contatos para envio de novidades.',
+      route: 'newsletter',
+      icon: 'contact'
+    },
+    {
       title: 'Home',
       description: 'Edite títulos e subtítulos das seções e a frase do buscador.',
       route: 'home',

@@ -108,7 +108,7 @@ export function normalizeWhatsAppNumber(value?: string): string {
 }
 
 export const DEFAULT_HOME_CONTENT: SiteHomeContent = {
-  searchTitle: 'Encontre sua próxima aventura',
+  searchTitle: 'Encontre a sua próxima viagem',
   peregrinacoesTitle: 'Próximas Peregrinações',
   peregrinacoesSubtitle: 'Jornadas espirituais que transformam vidas',
   regularesTitle: 'Viagens Regulares',

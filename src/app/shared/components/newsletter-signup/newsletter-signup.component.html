@@ -1,0 +1,28 @@
+<section id="newsletter" class="newsletter" aria-labelledby="newsletter-title">
+  <div class="newsletter__inner">
+    <div class="newsletter__intro">
+      <span class="newsletter__eyebrow">Novos destinos, novas histórias</span>
+      <h2 id="newsletter-title">Sua próxima viagem começa aqui</h2>
+      <p>Receba novidades, peregrinações e roteiros especiais da Unitur no seu e-mail.</p>
+    </div>
+    <form #signup="ngForm" (ngSubmit)="subscribe(signup)" class="newsletter__form" [attr.aria-busy]="saving">
+      <div class="newsletter__fields">
+        <label for="newsletter-name">Nome
+          <input id="newsletter-name" name="name" type="text" autocomplete="given-name" placeholder="Como podemos chamar você?"
+                 [(ngModel)]="name" required maxlength="120" [disabled]="saving">
+        </label>
+        <label for="newsletter-email">E-mail
+          <input id="newsletter-email" name="email" type="email" autocomplete="email" placeholder="seu@email.com"
+                 [(ngModel)]="email" required email maxlength="254" [disabled]="saving">
+        </label>
+      </div>
+      <label class="newsletter__consent">
+        <input name="consent" type="checkbox" [(ngModel)]="consent" required [disabled]="saving">
+        <span>Quero receber novidades e ofertas de viagens da Unitur por e-mail.</span>
+      </label>
+      <button type="submit" [disabled]="saving">{{ saving ? 'Cadastrando…' : 'Quero receber novidades' }}</button>
+      @if (success) { <p class="newsletter__feedback" role="status">Cadastro realizado! Obrigado por viajar com a gente.</p> }
+      @if (error) { <p class="newsletter__feedback newsletter__feedback--error" role="alert">{{ error }}</p> }
+    </form>
+  </div>
+</section>

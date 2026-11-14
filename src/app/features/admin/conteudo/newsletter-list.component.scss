@@ -1,0 +1,14 @@
+@import '../shared/admin-forms.scss';
+
+:host { display: block; }
+.af-page > a { display: inline-block; margin-bottom: 1.25rem; }
+button {
+  font: inherit; font-weight: 600; padding: 0.7rem 1.1rem; border-radius: 10px;
+  border: 1px solid $af-border; background: $af-surface; color: #254f88; cursor: pointer;
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+.table-wrapper { overflow-x: auto; margin-top: 1rem; border: 1px solid $af-border; border-radius: $af-radius-lg; }
+table { width: 100%; border-collapse: collapse; background: $af-surface; }
+th, td { padding: 1rem; text-align: left; border-bottom: 1px solid $af-border; }
+th { background: #f3f6fb; }
+td { overflow-wrap: anywhere; }
