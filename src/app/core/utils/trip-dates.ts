@@ -5,9 +5,19 @@ export function formatTripDate(value: Date | string | undefined): string {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
 }
 
+/**
+ * Datas exibidas na página (e no PDF) do roteiro.
+ *
+ * Quando a viagem tem data de início e de fim diferentes, mostra o intervalo.
+ * Hoje o cadastro só tem o campo de data de início — a data final é gravada
+ * igual a ela — e o intervalo completo fica no campo "Data da Viagem"
+ * (`period`, ex.: "21/04/27 a 01/05/27"). Por isso, sem um intervalo de verdade
+ * nas datas, vale o período digitado: mostrar só o dia de início escondia a
+ * data de volta. A data sozinha fica para viagens sem período preenchido.
+ */
 export function formatTripDates(start?: Date | string, end?: Date | string, period?: string): string {
   const first = formatTripDate(start);
   const last = formatTripDate(end);
   if (first && last && first !== last) return `${first} a ${last}`;
-  return first || last || period?.trim() || 'A definir';
+  return period?.trim() || first || last || 'A definir';
 }
