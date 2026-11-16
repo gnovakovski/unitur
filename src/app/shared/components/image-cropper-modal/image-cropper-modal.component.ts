@@ -45,6 +45,10 @@ export class ImageCropperModalComponent implements OnChanges {
   }
 
   onImageCropped(event: ImageCroppedEvent) {
+    // Enquanto a foto nova carrega, um recorte que chegue atrasado só pode ser da
+    // foto anterior da fila (o recorte em blob é assíncrono): descarta, para não
+    // repetir a foto anterior no lugar desta.
+    if (this.loading) return;
     this.cropped = event.blob ?? null;
   }
 

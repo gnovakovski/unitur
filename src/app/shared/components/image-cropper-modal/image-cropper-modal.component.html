@@ -48,6 +48,6 @@
 
   <footer class="cropper-modal__footer">
     <button type="button" class="btn btn--ghost" (click)="cancel()">Cancelar</button>
-    <button type="button" class="btn btn--primary" (click)="confirm()" [disabled]="!cropped">Aplicar recorte</button>
+    <button type="button" class="btn btn--primary" (click)="confirm()" [disabled]="!cropped || loading">Aplicar recorte</button>
   </footer>
 </div>
