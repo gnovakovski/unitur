@@ -73,6 +73,8 @@ export class ProductDetailComponent implements OnInit {
   galleryLightboxOpen = false;
   hotelIndex = 0;
   hotelLightboxOpen = false;
+  /** Gerando o PDF automático (roteiro sem PDF anexado pela equipe). */
+  downloadingPdf = false;
   private canonicalUrl = '';
   /** Tags cadastradas, para resolver o badge desta viagem por `tagId`. */
   tags: TripTag[] = [];
@@ -96,6 +98,28 @@ export class ProductDetailComponent implements OnInit {
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       this.toast.error('Não foi possível compartilhar. Copie o endereço da página.');
+    }
+  }
+
+  /**
+   * "Baixar roteiro" quando a equipe não anexou PDF: gera na hora um PDF com as
+   * informações e o roteiro completo (inclusive os dias recolhidos na tela).
+   * Com PDF anexado, a página oferece o arquivo da equipe e isto não é usado.
+   */
+  async downloadPdf(): Promise<void> {
+    if (!this.isBrowser || !this.trip || this.downloadingPdf) return;
+    const trip = this.trip;
+    const url = this.canonicalUrl;
+    this.downloadingPdf = true;
+    try {
+      const { createTripPdf } = await import('../../core/utils/trip-pdf');
+      const pdf = await createTripPdf(trip, url);
+      pdf.save(`unitur-${trip.slug.replace(/[^a-z0-9-]/gi, '-')}.pdf`);
+    } catch {
+      this.toast.error('Não foi possível gerar o PDF. Tente novamente.');
+    } finally {
+      this.downloadingPdf = false;
+      this.cdr.markForCheck();
     }
   }
 

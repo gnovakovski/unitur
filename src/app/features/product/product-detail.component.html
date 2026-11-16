@@ -23,8 +23,13 @@
       <p>{{ trip.summary }}</p>
       <div class="trip-actions">
         <button type="button" (click)="shareTrip()">Compartilhar roteiro</button>
+        <!-- PDF anexado pela equipe no cadastro; sem anexo, gera um PDF com o roteiro completo. -->
         @if (trip.itineraryPdfUrl) {
           <a [href]="trip.itineraryPdfUrl" [attr.download]="trip.itineraryPdfName" target="_blank" rel="noopener noreferrer">Baixar roteiro</a>
+        } @else {
+          <button type="button" (click)="downloadPdf()" [disabled]="downloadingPdf" [attr.aria-busy]="downloadingPdf">
+            {{ downloadingPdf ? 'Gerando PDF…' : 'Baixar roteiro' }}
+          </button>
         }
       </div>
       @if (showHeroTripDate) {
