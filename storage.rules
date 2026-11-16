@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// Regras do Cloud Storage do site da Unitur (bucket unitur-e7882.firebasestorage.app).
+//
+// Ficam no repositório para não depender do que estiver no console. Publicar:
+//   npx firebase-tools deploy --only storage --project unitur-e7882
+//
+// - As imagens são públicas para leitura: o site as exibe sem login.
+// - Enviar, substituir e apagar exige perfil ativo da equipe em users/{uid} no
+//   Firestore, o mesmo critério de firestore.rules. Estar logado não basta: o
+//   cadastro de contas do Firebase Auth é aberto.
+// - Só imagens, até 10 MB (o painel já limita a 5 MB antes de enviar).
+// - Listar o conteúdo do bucket: só a equipe.
+//
+// A consulta ao Firestore exige que a conta de serviço do Storage tenha o papel
+// "Firebase Rules Firestore Service Agent" no projeto (concedido em 16/11/2026).
+service firebase.storage {
+  match /b/{bucket}/o {
+    function profilePath(uid) {
+      return /databases/(default)/documents/users/$(uid);
+    }
+
+    function isStaff() {
+      return request.auth != null
+        && firestore.exists(profilePath(request.auth.uid))
+        && firestore.get(profilePath(request.auth.uid)).data.get('status', 'active') == 'active';
+    }
+
+    match /{allPaths=**} {
+      allow get: if true;
+      allow list: if isStaff();
+      allow create, update: if isStaff()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isStaff();
+    }
+  }
+}

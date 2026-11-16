@@ -1326,6 +1326,11 @@
       "statusCode": 301
     },
     {
+      "source": "/categoria-internacional/:rest*/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
       "source": "/tags/:rest*/",
       "destination": "/viagens/",
       "statusCode": 301

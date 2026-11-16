@@ -8,9 +8,9 @@ import { ADMIN_MODULES } from '../models/modules.config';
  * `permissions` do documento dele no Firestore.
  *
  * Regra central: `role === 'admin'` libera tudo; caso contrário vale a lista
- * `permissions`. Contas antigas sem `permissions` são tratadas como admin pelo
- * AuthService (fallback de compatibilidade), então aqui basta olhar o que veio
- * na sessão.
+ * `permissions`. Conta sem perfil ou desativada chega aqui sem módulo nenhum
+ * (ver `sessionUserFromProfile`), então basta olhar o que veio na sessão. As
+ * mesmas regras valem no servidor, em firestore.rules.
  */
 @Injectable({ providedIn: 'root' })
 export class PermissionService {

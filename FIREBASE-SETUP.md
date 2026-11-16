@@ -26,70 +26,40 @@ firebase: {
 
 ## Coleções usadas no Firestore
 
-- `posts`
-- `categories`
-- `trips`
-- `banners`
-- `testimonials`
+- Conteúdo público: `trips`, `tags`, `posts`, `categories`, `banners`,
+  `testimonials` e `siteContent` (header, contact, home, footer, about,
+  exchangeRates).
+- Privadas: `users` (perfis da equipe) e `newsletterSubscribers`.
 
-Os documentos usam o campo numérico `id` e o mesmo valor como ID do documento.
+Os documentos de conteúdo usam o campo numérico `id` e o mesmo valor como ID do documento.
 
-## Regras iniciais sugeridas
+## Regras de segurança
 
-Use regras restritas para escrita. Leitura pública pode ser liberada para conteúdo publicado.
+As regras ficam versionadas neste repositório e são a única fonte de verdade:
 
-```txt
-rules_version = '2';
+- `firestore.rules`: conteúdo público para leitura; gravação só para quem tem
+  perfil ativo em `users/{uid}` com o módulo correspondente (ou papel admin);
+  perfis e inscritos da newsletter fechados; coleção não listada fica bloqueada.
+- `storage.rules`: imagens públicas para leitura; enviar e apagar só com
+  perfil ativo da equipe; só imagens, até 10 MB.
 
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /posts/{document} {
-      allow read: if resource.data.status == 'published' || request.auth != null;
-      allow write: if request.auth != null;
-    }
+Publicar (com `npx firebase-tools login` feito numa conta com acesso ao projeto):
 
-    match /categories/{document} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /trips/{document} {
-      allow read: if resource.data.status == 'active' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    // Tags dos cards de viagem ("Poucas vagas restantes", etc).
-    // Leitura pública: o site precisa delas para pintar o badge.
-    match /tags/{document} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /banners/{document} {
-      allow read: if resource.data.status == 'active' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    match /testimonials/{document} {
-      allow read: if resource.data.status == 'approved' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-  }
-}
+```bash
+npx firebase-tools deploy --only firestore:rules,storage --project unitur-e7882
 ```
 
-```txt
-rules_version = '2';
+Não edite as regras pelo console: a próxima publicação daqui sobrescreve.
 
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /uploads/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-  }
-}
-```
+**Estar logado não dá acesso.** O cadastro de contas do Firebase Auth é aberto
+(o painel cria usuários pelo SDK do navegador), então toda conta da equipe
+precisa de um perfil em `users/{uid}`, criado em Admin → Usuários. Conta sem
+perfil ou com `status: inactive` não entra no painel e não grava nada.
+
+As regras do Storage consultam o perfil no Firestore. Para isso a conta de
+serviço `service-422742915300@gcp-sa-firebasestorage.iam.gserviceaccount.com`
+tem o papel `Firebase Rules Firestore Service Agent` no projeto (concedido em
+16/11/2026). Sem esse papel, todo envio de imagem é recusado.
 
 ## CORS do Firebase Storage
 

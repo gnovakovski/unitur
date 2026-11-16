@@ -1,0 +1,149 @@
+rules_version = '2';
+
+// Regras do Cloud Firestore do site da Unitur (projeto unitur-e7882).
+//
+// Ficam no repositório para não depender do que estiver no console. Publicar:
+//   npx firebase-tools deploy --only firestore:rules --project unitur-e7882
+//
+// Princípios:
+//  - Conteúdo do site (viagens, posts, banners...) é público para leitura: o
+//    site, a renderização no servidor e o sitemap leem sem login, inclusive
+//    listas sem filtro de status.
+//  - Gravar exige um perfil em users/{uid}, ativo, criado por um administrador,
+//    com o módulo correspondente liberado (ou papel admin). Estar logado NÃO
+//    basta: o cadastro de contas do Firebase Auth é aberto (o painel cria
+//    usuários pelo SDK do navegador), então qualquer pessoa consegue uma conta.
+//  - Perfis da equipe e inscritos da newsletter não são públicos.
+//  - Coleção que não aparece aqui fica bloqueada.
+//
+// Os módulos são os mesmos do painel (src/app/core/models/modules.config.ts).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Quem está pedindo ----------
+
+    function profileOf(uid) {
+      let path = /databases/$(database)/documents/users/$(uid);
+      return exists(path) ? get(path).data : null;
+    }
+
+    function isActive(profile) {
+      return profile.get('status', 'active') == 'active';
+    }
+
+    // Perfil ativo da pessoa logada, ou null (sem login, sem perfil ou desativada).
+    function activeProfile() {
+      let profile = request.auth != null ? profileOf(request.auth.uid) : null;
+      return profile != null && isActive(profile) ? profile : null;
+    }
+
+    // Perfis antigos sem papel valem como admin (mesma regra do AuthService).
+    function roleOf(profile) {
+      return profile.get('role', 'admin');
+    }
+
+    function isAdmin() {
+      let profile = activeProfile();
+      return profile != null && roleOf(profile) == 'admin';
+    }
+
+    // Pode usar o módulo do painel? Admin pode tudo; os demais, os módulos marcados.
+    function can(module) {
+      let profile = activeProfile();
+      return profile != null
+        && (roleOf(profile) == 'admin' || module in profile.get('permissions', []));
+    }
+
+    // Quem não é admin só cria/edita perfis não-admin e só concede módulos que
+    // ele mesmo tem (não consegue se promover por meio de outra conta).
+    function grantsWithinOwn() {
+      let mine = activeProfile();
+      let wanted = request.resource.data;
+      return mine != null
+        && roleOf(wanted) != 'admin'
+        && wanted.get('permissions', []).hasOnly(mine.get('permissions', []));
+    }
+
+    // ---------- Conteúdo público do site ----------
+
+    match /trips/{tripId} {
+      allow read: if true;
+      allow write: if can('viagens');
+    }
+
+    // Selos dos cards de viagem; criados no formulário de viagem.
+    match /tags/{tagId} {
+      allow read: if true;
+      allow write: if can('viagens');
+    }
+
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if can('posts');
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if can('categorias');
+    }
+
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if can('banners');
+    }
+
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if can('depoimentos');
+    }
+
+    // header, contact, home, footer e about: módulo "Conteúdo do site".
+    // exchangeRates: módulo "Cotações de câmbio".
+    match /siteContent/{docId} {
+      allow read: if true;
+      allow write: if can(docId == 'exchangeRates' ? 'moeda' : 'conteudo');
+    }
+
+    // ---------- Dados privados ----------
+
+    match /users/{userId} {
+      // Cada pessoa lê o próprio perfil: o login precisa dele para saber as permissões.
+      allow get: if request.auth != null && request.auth.uid == userId;
+      // A lista e os perfis dos outros: quem gerencia usuários.
+      allow read: if can('usuarios');
+
+      // Administrador gerencia todos os perfis.
+      allow create, update, delete: if isAdmin();
+
+      // Quem tem só o módulo "Usuários" gerencia os outros, sem mexer no próprio
+      // perfil nem em administradores.
+      allow create: if can('usuarios')
+        && userId != request.auth.uid
+        && grantsWithinOwn();
+      allow update: if can('usuarios')
+        && userId != request.auth.uid
+        && roleOf(resource.data) != 'admin'
+        && grantsWithinOwn();
+      allow delete: if can('usuarios')
+        && userId != request.auth.uid
+        && roleOf(resource.data) != 'admin';
+    }
+
+    // Formulário da home: qualquer visitante se inscreve, ninguém de fora lê.
+    match /newsletterSubscribers/{subscriberId} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'consent', 'source', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'consent', 'source', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.email.matches('[^\\s@]+@[^\\s@]+[.][^\\s@]+')
+        && request.resource.data.consent == true
+        && request.resource.data.source == 'home'
+        && request.resource.data.createdAt == request.time;
+
+      allow read, delete: if can('conteudo');
+    }
+  }
+}
