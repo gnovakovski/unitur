@@ -70,6 +70,52 @@ export class UploadService {
     return this.uploadMultipleToEntity(files, 'uploads');
   }
 
+  /** PDF original, sem conversão, com download direto pelo navegador. */
+  uploadTripPdf(file: File, tripId: number | string): Observable<UploadResponse> {
+    return from((async () => {
+      const validation = await this.validatePdf(file);
+      if (!validation.valid) throw new Error(validation.error);
+      const filename = this.getFilename(file);
+      const path = `${this.folderFor('viagens', tripId)}/${filename}`;
+      let url: string;
+      try {
+        url = await this.putFile(path, file, {
+          contentType: 'application/pdf',
+          contentDisposition: `attachment; filename="${filename}"`
+        });
+      } catch (error) {
+        const code = (error as { code?: string })?.code;
+        if (code === 'storage/unauthorized') {
+          throw new Error('O Firebase Storage não autorizou o envio do PDF. Confira as regras do Storage para PDFs na pasta viagens e a permissão do usuário. (storage/unauthorized)');
+        }
+        if (code === 'storage/unauthenticated') {
+          throw new Error('Sua sessão de upload expirou. Entre novamente no painel e tente enviar o PDF.');
+        }
+        throw error;
+      }
+      return { url, filename: file.name, size: file.size, mimetype: 'application/pdf', path };
+    })());
+  }
+
+  async validatePdf(file: File): Promise<{ valid: boolean; error?: string }> {
+    if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== 'application/pdf')) {
+      return { valid: false, error: 'Selecione um arquivo PDF.' };
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      return { valid: false, error: 'PDF muito grande. Máximo 20 MB.' };
+    }
+    // Confere também o conteúdo: renomear uma imagem para .pdf não é suficiente.
+    const signature = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Não foi possível ler o PDF. Selecione o arquivo novamente.'));
+      reader.readAsText(file.slice(0, 5));
+    });
+    return signature === '%PDF-'
+      ? { valid: true }
+      : { valid: false, error: 'O arquivo selecionado não contém um PDF válido.' };
+  }
+
   /**
    * Salva a imagem em várias larguras (ver RESPONSIVE_PRESETS) e devolve a URL
    * padrão e o `srcset`. Usado nos banners da home: o celular baixa a versão de
@@ -161,13 +207,14 @@ export class UploadService {
     };
   }
 
-  private async putFile(path: string, data: Blob): Promise<string> {
+  private async putFile(path: string, data: Blob, metadata: { contentDisposition?: string; contentType?: string } = {}): Promise<string> {
     const [storage, { ref, uploadBytes, getDownloadURL }] = await Promise.all([
       this.firebaseService.getStorage(),
       import('firebase/storage')
     ]);
     const snapshot = await uploadBytes(ref(storage as FirebaseStorage, path), data, {
       contentType: data.type,
+      ...metadata,
       // Sem isto o Storage responde `private, max-age=0` e a imagem é baixada de
       // novo a cada visita.
       cacheControl: IMMUTABLE_CACHE

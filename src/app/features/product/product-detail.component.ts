@@ -47,6 +47,8 @@ interface ProductTrip {
   experienceImages?: string[];
   highlights: string[];
   itinerary: Array<{ day: string; title: string; description: string }>;
+  itineraryPdfUrl: string;
+  itineraryPdfName: string;
   hotels?: Array<{ name: string; image: string }>;
   paymentMethods?: Array<{ title: string; description?: string }>;
   cancellationPolicy?: string;
@@ -70,7 +72,6 @@ export class ProductDetailComponent implements OnInit {
   galleryLightboxOpen = false;
   hotelIndex = 0;
   hotelLightboxOpen = false;
-  downloadingPdf = false;
   private canonicalUrl = '';
   /** Tags cadastradas, para resolver o badge desta viagem por `tagId`. */
   tags: TripTag[] = [];
@@ -94,23 +95,6 @@ export class ProductDetailComponent implements OnInit {
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       this.toast.error('Não foi possível compartilhar. Copie o endereço da página.');
-    }
-  }
-
-  async downloadPdf(): Promise<void> {
-    if (!this.isBrowser || !this.trip || this.downloadingPdf) return;
-    const trip = this.trip;
-    const url = this.canonicalUrl;
-    this.downloadingPdf = true;
-    try {
-      const { createTripPdf } = await import('../../core/utils/trip-pdf');
-      const pdf = await createTripPdf(trip, url);
-      pdf.save(`unitur-${trip.slug.replace(/[^a-z0-9-]/gi, '-')}.pdf`);
-    } catch {
-      this.toast.error('Não foi possível gerar o PDF. Tente novamente.');
-    } finally {
-      this.downloadingPdf = false;
-      this.cdr.markForCheck();
     }
   }
 
@@ -448,6 +432,8 @@ export class ProductDetailComponent implements OnInit {
       tagId: trip.tagId ?? null,
       title: trip.title,
       menuIds: resolveTripMenuIds(trip),
+      itineraryPdfUrl: trip.itineraryPdfUrl || '',
+      itineraryPdfName: trip.itineraryPdfName || 'roteiro.pdf',
       destination,
       date: formatTripDates(trip.startDate, trip.endDate, trip.period),
       duration,

@@ -12,7 +12,11 @@ $dark: #1a1a2e;
   gap: 0.75rem;
   margin-top: 1.25rem;
 
-  button {
+  button, a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
     font: inherit;
     font-weight: 600;
     color: $white;

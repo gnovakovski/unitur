@@ -23,9 +23,9 @@
       <p>{{ trip.summary }}</p>
       <div class="trip-actions">
         <button type="button" (click)="shareTrip()">Compartilhar roteiro</button>
-        <button type="button" (click)="downloadPdf()" [disabled]="downloadingPdf" [attr.aria-busy]="downloadingPdf">
-          {{ downloadingPdf ? 'Gerando PDF…' : 'Baixar PDF' }}
-        </button>
+        @if (trip.itineraryPdfUrl) {
+          <a [href]="trip.itineraryPdfUrl" [attr.download]="trip.itineraryPdfName" target="_blank" rel="noopener noreferrer">Baixar roteiro</a>
+        }
       </div>
       @if (showHeroTripDate) {
         <div class="hero-trip-date" aria-label="Data e período da viagem">

@@ -43,6 +43,8 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   tripId: number | null = null;
   saving = false;
   savingStep = '';
+  validatingPdf = false;
+  pdfError = '';
   error = '';
   exchangeRateText = '';
   itineraryDays: Array<{ title: string; description: string }> = [];
@@ -82,6 +84,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
     experienceImages: 'Galeria da experiência',
     hotels: 'Hotéis',
     itinerary: 'Roteiro',
+    itineraryPdf: 'Arquivo PDF do roteiro',
+    itineraryPdfUrl: 'PDF do roteiro',
+    itineraryPdfName: 'Nome do PDF',
     paymentMethods: 'Formas de pagamento',
     includedText: 'Incluso',
     notIncludedText: 'Não incluso',
@@ -139,6 +144,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       experienceImages: [[] as GalleryItem[]],
       hotels: [[] as HotelItem[]],
       itinerary: [''],
+      itineraryPdf: [null as File | null],
+      itineraryPdfUrl: [''],
+      itineraryPdfName: [''],
       includedText: [''],
       notIncludedText: [''],
       cancellationPolicy: [''],
@@ -152,7 +160,41 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   get canSaveTrip(): boolean {
-    return this.tripForm.valid;
+    return this.tripForm.valid && !this.validatingPdf;
+  }
+
+  get itineraryPdfName(): string {
+    return this.tripForm.get('itineraryPdf')?.value?.name || this.tripForm.get('itineraryPdfName')?.value || 'Roteiro em PDF';
+  }
+
+  async onItineraryPdfSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.saving || this.validatingPdf) return;
+    this.validatingPdf = true;
+    this.pdfError = '';
+    try {
+      const validation = await this.uploadService.validatePdf(file);
+      if (!validation.valid) {
+        this.pdfError = validation.error || 'Selecione um PDF válido.';
+        return;
+      }
+      this.tripForm.get('itineraryPdf')?.setValue(file);
+      this.tripForm.get('itineraryPdf')?.markAsDirty();
+    } catch (error) {
+      this.pdfError = error instanceof Error ? error.message : 'Não foi possível ler o PDF.';
+    } finally {
+      this.validatingPdf = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  removeItineraryPdf(): void {
+    if (this.saving || this.validatingPdf) return;
+    this.tripForm.patchValue({ itineraryPdf: null, itineraryPdfUrl: '', itineraryPdfName: '' });
+    this.tripForm.markAsDirty();
+    this.pdfError = '';
   }
 
   /** Preço base em reais formatado (ex.: R$ 28.354,40) para exibição readonly. */
@@ -304,6 +346,9 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           experienceImages: (trip.experienceImages || trip.gallery || []) as GalleryItem[],
           hotels: (trip.hotels || []).map(h => ({ name: h.name, image: h.image })) as HotelItem[],
           itinerary: trip.itinerary || '',
+          itineraryPdf: null,
+          itineraryPdfUrl: trip.itineraryPdfUrl || '',
+          itineraryPdfName: trip.itineraryPdfName || '',
           includedText: (trip.included || []).join('\n'),
           notIncludedText: (trip.notIncluded || []).join('\n'),
           cancellationPolicy: trip.cancellationPolicy || '',
@@ -328,6 +373,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   async saveTrip() {
+    if (this.saving || this.validatingPdf) return;
     if (this.tripForm.invalid) {
       this.tripForm.markAllAsTouched();
       return;
@@ -363,6 +409,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         mainImage,
         experienceImages,
         hotels,
+        itineraryPdf,
         ...baseValue
       } = value;
 
@@ -413,25 +460,32 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       };
 
       const saved = this.isEditMode && this.tripId
-        ? await firstValueFrom(this.tripService.updateTrip(this.tripId, tripData))
-        : await firstValueFrom(this.tripService.createTrip(tripData));
+        ? await firstValueFrom(this.tripService.updateTrip(this.tripId, tripData, true))
+        : await firstValueFrom(this.tripService.createTrip(tripData, true));
 
       const tripIdToUse = saved?.id || this.tripId;
+      // Se um upload falhar, a próxima tentativa atualiza a viagem já criada.
+      if (tripIdToUse) {
+        this.tripId = tripIdToUse;
+        this.isEditMode = true;
+      }
 
       const pendingExperienceFiles = galleryItems.filter(item => item instanceof File) as File[];
       const pendingHotelItems = hotelItems.filter(item => item.image instanceof File);
 
-      const hasUploads = mainImageFile || pendingExperienceFiles.length > 0 || pendingHotelItems.length > 0;
+      const pdfFile = itineraryPdf instanceof File ? itineraryPdf : null;
+      const hasUploads = mainImageFile || pdfFile || pendingExperienceFiles.length > 0 || pendingHotelItems.length > 0;
 
       if (hasUploads && tripIdToUse) {
-        const totalUploads = (mainImageFile ? 1 : 0) + pendingExperienceFiles.length + pendingHotelItems.length;
+        const totalUploads = (mainImageFile ? 1 : 0) + (pdfFile ? 1 : 0) + pendingExperienceFiles.length + pendingHotelItems.length;
         let done = 0;
         const updateStep = () => {
           done++;
-          this.savingStep = `Enviando imagens (${done}/${totalUploads})...`;
+          this.savingStep = `Enviando arquivos (${done}/${totalUploads})...`;
+          this.cdr.markForCheck();
         };
 
-        this.savingStep = `Enviando imagens (0/${totalUploads})...`;
+        this.savingStep = `Enviando arquivos (0/${totalUploads})...`;
         const updates: Partial<Trip> = {};
 
         try {
@@ -481,16 +535,26 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
             updates.hotels = resolvedHotels;
           }
 
+          if (pdfFile) {
+            this.savingStep = 'Enviando PDF do roteiro...';
+            this.cdr.markForCheck();
+            const uploaded = await firstValueFrom(this.uploadService.uploadTripPdf(pdfFile, tripIdToUse).pipe(timeout(120000)));
+            updates.itineraryPdfUrl = uploaded.url;
+            updates.itineraryPdfName = uploaded.filename;
+            updateStep();
+          }
+
           if (Object.keys(updates).length > 0) {
             this.savingStep = 'Finalizando...';
-            await firstValueFrom(this.tripService.updateTrip(tripIdToUse, updates));
+            await firstValueFrom(this.tripService.updateTrip(tripIdToUse, updates, true));
           }
         } catch (uploadErr: any) {
-          this.error = `Viagem salva, mas falhou o upload de uma imagem: ${uploadErr?.message || 'erro desconhecido'}. Edite a viagem para tentar novamente.`;
+          this.error = `Viagem salva, mas não foi possível concluir os anexos: ${uploadErr?.message || 'erro desconhecido'}`;
           console.error('Upload error', uploadErr);
           this.saving = false;
           this.savingStep = '';
-          return;
+          this.markSaving(false, false);
+          throw uploadErr;
         }
       }
 
@@ -498,12 +562,13 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       this.markSaving(false, true);
       this.router.navigate(['/admin/viagens']);
     } catch (err: any) {
-      this.error = err?.message || 'Erro ao salvar viagem. Verifique permissão do Firestore.';
+      this.error ||= err?.message || 'Erro ao salvar viagem. Verifique permissão do Firestore.';
       this.markSaving(false, false);
       throw err;
     } finally {
       this.saving = false;
       this.savingStep = '';
+      this.cdr.markForCheck();
     }
   }
 

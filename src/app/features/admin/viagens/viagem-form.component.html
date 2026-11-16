@@ -274,6 +274,29 @@
       </div>
 
       <div class="af-field">
+        <label class="af-label" for="itinerary-pdf">PDF do roteiro</label>
+        <p class="af-hint" id="itinerary-pdf-help">Anexe o PDF que o visitante poderá baixar na página da viagem. Máximo 20 MB. A alteração será publicada ao salvar a viagem.</p>
+        <input id="itinerary-pdf" class="af-input" type="file" accept=".pdf,application/pdf"
+          aria-describedby="itinerary-pdf-help" [disabled]="saving || validatingPdf"
+          (change)="onItineraryPdfSelected($event)">
+        @if (validatingPdf) { <p class="af-hint" role="status">Verificando PDF...</p> }
+        @if (pdfError) { <p class="af-alert af-alert--error" role="alert">{{ pdfError }}</p> }
+        @if (tripForm.get('itineraryPdf')?.value || tripForm.get('itineraryPdfUrl')?.value) {
+          <div class="itinerary-pdf-attachment">
+            <div>
+              <strong>{{ itineraryPdfName }}</strong>
+              @if (tripForm.get('itineraryPdf')?.value) {
+                <p class="af-hint">Novo arquivo selecionado. Salve a viagem para disponibilizá-lo no site.</p>
+              } @else {
+                <a [href]="tripForm.get('itineraryPdfUrl')?.value" target="_blank" rel="noopener noreferrer">Baixar PDF atual</a>
+              }
+            </div>
+            <button class="af-btn af-btn--secondary" type="button" [disabled]="saving || validatingPdf" (click)="removeItineraryPdf()">Remover PDF</button>
+          </div>
+        }
+      </div>
+
+      <div class="af-field">
         <label class="af-label">Roteiro detalhado por dia</label>
         <p class="af-hint">Cada item abaixo é um dia do roteiro exibido no site.</p>
 
