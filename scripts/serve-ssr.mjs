@@ -9,9 +9,11 @@
  *
  * Reproduz as regras do vercel.json que importam para conferir a renderização
  * no servidor (SSR):
- *   1. arquivo estático de dist/angular-app/browser, se existir;
+ *   1. arquivo estático de dist/angular-app/browser, se existir — inclusive um
+ *      `index*.html` em "/", que a Vercel entrega como página inicial antes do
+ *      SSR (por isso o pós-build renomeia o index.csr.html);
  *   2. /sitemap.xml            -> api/sitemap.js;
- *   3. /admin, /administrador  -> index.csr.html (painel, só no navegador);
+ *   3. /admin, /administrador  -> client-shell.html (painel, só no navegador);
  *   4. todo o resto            -> api/ssr.mjs (a mesma função usada na Vercel).
  *
  * Também força a barra final (trailingSlash: true). Os redirects 301 do
@@ -81,7 +83,13 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://localhost:${PORT}`);
     const { pathname, search } = url;
 
-    const file = await findStaticFile(pathname);
+    // Igual à Vercel: um index*.html na raiz da pasta pública vira a home estática.
+    const file = pathname === '/'
+      ? (await findStaticFile('/index.html')) || (await findStaticFile('/index.csr.html'))
+      : await findStaticFile(pathname);
+    if (file && pathname === '/') {
+      console.warn('Atenção: "/" saiu como arquivo estático, sem SSR. Rode `npm run build` (o pós-build renomeia o index.csr.html).');
+    }
     if (file) return sendFile(res, file);
 
     // trailingSlash: true — páginas sempre com a barra final.
@@ -94,7 +102,7 @@ const server = createServer(async (req, res) => {
     if (pathname === '/sitemap.xml') return sitemapHandler(req, res);
 
     if (/^\/(?:admin|administrador)(?:\/|$)/.test(pathname)) {
-      return sendFile(res, join(BROWSER_DIR, 'index.csr.html'), { 'X-Robots-Tag': 'noindex, nofollow' });
+      return sendFile(res, join(BROWSER_DIR, 'client-shell.html'), { 'X-Robots-Tag': 'noindex, nofollow' });
     }
 
     return await ssrHandler(req, res);

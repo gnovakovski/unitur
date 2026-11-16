@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node scripts/rename-client-shell.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:sitemap": "node --test scripts/tests/sitemap.test.cjs",

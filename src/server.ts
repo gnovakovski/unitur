@@ -17,7 +17,7 @@ import { DEGRADED_RENDER_HEADER } from './app/core/ssr/ssr-signals';
  *
  * Quando a renderização não é possível (erro, Firestore fora do ar, tempo
  * esgotado), `renderPage` devolve `null` e quem chamou entrega o
- * `index.csr.html` — o site como SPA, que carrega tudo no navegador. O site
+ * `client-shell.html` — o site como SPA, que carrega tudo no navegador. O site
  * nunca sai do ar por causa do SSR.
  */
 
@@ -127,7 +127,7 @@ export async function renderPage(rawUrl: string): Promise<RenderedPage | null> {
 
 /**
  * Atende uma requisição Node (função da Vercel, `ng serve`, servidor local).
- * Devolve `false` se não respondeu — aí quem chamou entrega o `index.csr.html`.
+ * Devolve `false` se não respondeu — aí quem chamou entrega o `client-shell.html`.
  */
 export async function handleNodeRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const method = (req.method || 'GET').toUpperCase();

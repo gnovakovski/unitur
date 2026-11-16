@@ -8,13 +8,17 @@
  * plano B.
  *
  * Plano B: se o servidor não conseguir montar a página (erro no build do SSR,
- * Firestore fora do ar, tempo esgotado), entrega o `index.csr.html` — o site
+ * Firestore fora do ar, tempo esgotado), entrega o `client-shell.html` — o site
  * como SPA, que carrega tudo no navegador, exatamente como funcionava antes do
  * SSR. O visitante nunca vê uma página de erro por causa da renderização.
+ *
+ * `client-shell.html` é o `index.csr.html` do Angular renomeado no pós-build
+ * (scripts/rename-client-shell.mjs): com o nome original, a Vercel o entregava
+ * em "/" como arquivo estático e a home não passava por aqui.
  */
 import { readFile } from 'node:fs/promises';
 
-const CLIENT_SHELL = new URL('../dist/angular-app/browser/index.csr.html', import.meta.url);
+const CLIENT_SHELL = new URL('../dist/angular-app/browser/client-shell.html', import.meta.url);
 
 /** Módulo do servidor, carregado uma vez por instância da função. */
 let serverModule;
@@ -65,7 +69,7 @@ export default async function handler(req, res) {
   try {
     await sendClientShell(res, method);
   } catch (error) {
-    console.error('[ssr] falha ao ler o index.csr.html:', error);
+    console.error('[ssr] falha ao ler o client-shell.html:', error);
     res.statusCode = 500;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
