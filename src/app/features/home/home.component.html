@@ -96,7 +96,7 @@
     <div class="trip-grid">
       @for (trip of section.trips; track trip.slug) {
         <article class="trip-card">
-          <a class="trip-card__media" [routerLink]="['/viagens', trip.slug]">
+          <a class="trip-card__media" [routerLink]="trip.path">
             @if (heroSettled) {
             <img [src]="trip.image" [alt]="trip.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async"
                  [style.object-fit]="trip.imageFit || 'cover'"
@@ -163,7 +163,7 @@
             }
 
             <div class="trip-card__footer">
-              <a class="trip-card__cta" [routerLink]="['/viagens', trip.slug]">
+              <a class="trip-card__cta" [routerLink]="trip.path">
                 Reservar
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -206,7 +206,7 @@
               <span class="tag">{{ tag }}</span>
             }
           </div>
-          <a class="btn-curadoria" [routerLink]="['/viagens', item.slug]">Quero Conhecer</a>
+          <a class="btn-curadoria" [routerLink]="item.path">Quero Conhecer</a>
         </div>
         <div class="curadoria-image">
           @if (heroSettled) { <img [src]="item.image" [alt]="item.title" (error)="useFallbackImage($event)" loading="lazy" decoding="async"> }
@@ -288,7 +288,7 @@
           }
         </div>
       }
-      <a routerLink="/about" class="btn-about">Conhe&ccedil;a nossa hist&oacute;ria</a>
+      <a routerLink="/sobre/sobre-a-unitur" class="btn-about">Conhe&ccedil;a nossa hist&oacute;ria</a>
     </div>
     <div class="about-image">
       @if (heroSettled) { <img [src]="homeAbout.imageUrl" alt="Sobre a Unitur" loading="lazy" decoding="async"> }

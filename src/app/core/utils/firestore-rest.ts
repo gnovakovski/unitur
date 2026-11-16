@@ -42,9 +42,20 @@ export function decodeRestFields(fields: Record<string, unknown>): Record<string
  * falha, para quem chama decidir o fallback.
  */
 export interface SelectQueryOptions {
+  /** Filtro de igualdade em um campo (usa o índice automático do Firestore). */
+  where?: { field: string; equals: string | number | boolean };
   /** Ordenação (campo único: usa o índice automático do Firestore). */
   orderBy?: { field: string; direction: 'ASCENDING' | 'DESCENDING' };
   limit?: number;
+}
+
+/** Converte um valor JS simples no formato Value da API REST. */
+function encodeRestValue(value: string | number | boolean): Record<string, unknown> {
+  if (typeof value === 'boolean') return { booleanValue: value };
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  return { stringValue: value };
 }
 
 export async function runSelectQuery(
@@ -61,6 +72,9 @@ export async function runSelectQuery(
       structuredQuery: {
         from: [{ collectionId }],
         select: { fields: fields.map(fieldPath => ({ fieldPath })) },
+        ...(options.where
+          ? { where: { fieldFilter: { field: { fieldPath: options.where.field }, op: 'EQUAL', value: encodeRestValue(options.where.equals) } } }
+          : {}),
         ...(options.orderBy ? { orderBy: [{ field: { fieldPath: options.orderBy.field }, direction: options.orderBy.direction }] } : {}),
         ...(options.limit ? { limit: options.limit } : {})
       }

@@ -409,12 +409,19 @@
       <span class="gallery-lightbox__counter">{{ hotelIndex + 1 }} / {{ hotelItems.length }}</span>
     </div>
   }
-} @else if (loading) {
+}
+
+<!-- Blocos separados (e não @else do bloco acima) de propósito: na hidratação, o
+     "carregando" aparece por um instante sem descartar a página que veio pronta
+     do servidor, e a viagem assume o HTML existente em vez de ser redesenhada. -->
+@if (!trip && loading) {
   <section class="not-found">
     <p class="loading-title">Carregando viagem...</p>
     <p>Buscando os detalhes do pacote.</p>
   </section>
-} @else {
+}
+
+@if (!trip && !loading) {
   <section class="not-found">
     <h1>Viagem não encontrada</h1>
     <p>O pacote solicitado não está disponível no momento. Confira as viagens ativas.</p>

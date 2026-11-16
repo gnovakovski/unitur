@@ -128,7 +128,7 @@
                 <h3>Viagens relacionadas</h3>
                 <div class="related-list">
                   @for (trip of relatedTrips; track trip.id) {
-                    <a [routerLink]="['/viagens', trip.slug || trip.id]" class="related-item">
+                    <a [routerLink]="tripPath(trip)" class="related-item">
                       @if (trip.mainImage) { <img [src]="trip.mainImage" [alt]="trip.title"> }
                       <div class="related-content"><h4>{{ trip.title }}</h4><span class="related-date">{{ trip.country || trip.destination }}</span></div>
                     </a>

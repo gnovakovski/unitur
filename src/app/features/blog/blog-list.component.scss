@@ -395,6 +395,12 @@ $soft: #f5f8fc;
   -webkit-line-clamp: 2;
 }
 
+// O link do título herda o visual do título (o card inteiro já é clicável).
+.post-title__link {
+  color: inherit;
+  text-decoration: none;
+}
+
 .post-excerpt {
   display: -webkit-box;
   overflow: hidden;

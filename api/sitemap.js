@@ -10,8 +10,18 @@
  * faz no navegador — e fica em cache na CDN por 1 hora, então post ou viagem
  * nova entra no sitemap sem precisar de deploy.
  *
- * As regras de URL espelham o front: `/blog/<slug>/` e
- * `tripCanonicalPath()` de src/app/core/utils/trip-scope.ts. Se mudarem lá,
+ * O que entra:
+ *   - páginas fixas (home, /viagens/, /blog/, sobre, contato);
+ *   - listagens dos menus do cabeçalho (/viagens/<slug>/);
+ *   - cada viagem publicada, no endereço canônico (/roteiros-.../<slug>/);
+ *   - cada categoria do blog que tem post publicado (/blog/categoria/<slug>/);
+ *   - cada post publicado (/blog/<slug>/).
+ * Cada página leva as suas imagens (capa, galeria, hotéis, fotos do post) e os
+ * vídeos do YouTube/Vimeo incorporados nos posts, para o Google Imagens e Vídeos.
+ *
+ * Só entram endereços que respondem 200 e são o canonical da própria página.
+ * As regras de URL espelham o front: `/blog/<slug>/`, `/blog/categoria/<slug>/`
+ * e `tripCanonicalPath()` de src/app/core/utils/trip-scope.ts. Se mudarem lá,
  * mudar aqui também.
  */
 
@@ -208,16 +218,19 @@ function renderXml(entries) {
 }
 
 async function buildEntries() {
-  const [posts, trips, menus, banners, about] = await Promise.all([
-    listCollection('posts', ['slug', 'status', 'publishedAt', 'updatedAt', 'featuredImage', 'contentImages', 'content', 'excerpt']),
+  const [posts, trips, menus, banners, about, categories] = await Promise.all([
+    listCollection('posts', ['slug', 'status', 'categoryId', 'publishedAt', 'updatedAt', 'featuredImage', 'contentImages', 'content', 'excerpt']),
     listCollection('trips', ['slug', 'status', 'scope', 'country', 'destination', 'updatedAt', 'mainImage', 'experienceImages', 'gallery', 'hotels']),
     menuPaths().catch(() => []),
     listCollection('banners', ['status', 'imageUrl', 'imageUrlMobile']).catch(() => []),
     fetchJson(`${FIRESTORE}/siteContent/about`).then(doc => decodeFields(doc.fields || {})).catch(() => ({})),
+    // Sem as categorias o sitemap ainda sai completo no resto.
+    listCollection('categories', ['id', 'slug', 'type']).catch(() => []),
   ]);
 
+  // Igual ao site: viagem sem status é tratada como ativa (TripService.applyClientFilters).
   const tripEntries = trips
-    .filter(trip => trip.slug && trip.status === 'active')
+    .filter(trip => trip.slug && (trip.status || 'active') === 'active')
     .map(trip => ({ path: tripPath(trip), lastmod: isoDate(trip.updatedAt), changefreq: 'weekly', priority: '0.8',
       images: imageUrls([trip.mainImage, ...(trip.experienceImages || trip.gallery || []), ...(trip.hotels || []).map(hotel => hotel.image)]) }));
 
@@ -228,6 +241,28 @@ async function buildEntries() {
     images: imageUrls([post.featuredImage, ...(post.contentImages || []), ...contentImages(post.content)]) }));
   await attachVideos(publishedPosts, postEntries);
 
+  // Categorias do blog com ao menos um post publicado (as vazias mostram uma
+  // listagem sem conteúdo). `lastmod` = post mais recente da categoria.
+  const latestByCategory = new Map();
+  for (const post of publishedPosts) {
+    const id = Number(post.categoryId);
+    if (!id) continue;
+    const when = isoDate(post.publishedAt, post.updatedAt);
+    if (!latestByCategory.has(id) || (when && when > (latestByCategory.get(id) || ''))) {
+      latestByCategory.set(id, when);
+    }
+  }
+  const categoryEntries = categories
+    .filter(category => category.slug && (category.type === 'blog' || category.type === 'both'))
+    .filter(category => latestByCategory.has(Number(category.id)))
+    .sort((a, b) => String(a.slug).localeCompare(String(b.slug)))
+    .map(category => ({
+      path: `/blog/categoria/${category.slug}/`,
+      lastmod: latestByCategory.get(Number(category.id)),
+      changefreq: 'weekly',
+      priority: '0.5',
+    }));
+
   const menuEntries = menus.map(path => ({ path, changefreq: 'daily', priority: '0.9' }));
 
   const staticEntries = STATIC_PAGES.map(entry => ({ ...entry }));
@@ -236,7 +271,7 @@ async function buildEntries() {
     about.home?.imageUrl
   ]);
   staticEntries.find(entry => entry.path === '/sobre/sobre-a-unitur/').images = imageUrls([about.about?.storyImageUrl]);
-  return [...staticEntries, ...menuEntries, ...tripEntries, ...postEntries];
+  return [...staticEntries, ...menuEntries, ...tripEntries, ...categoryEntries, ...postEntries];
 }
 
 module.exports = async function handler(req, res) {

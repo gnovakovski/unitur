@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { Component, PLATFORM_ID, inject } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
@@ -20,11 +20,15 @@ export class App {
   title = 'angular-app';
   isAdminRoute = false;
   private readonly document = inject(DOCUMENT);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor(private router: Router) {
-    injectVercelAnalytics();
     this.updateRouteVisibility(this.router.url);
-    this.trackWhatsappClicks();
+    // Medição e rastreio de cliques só existem no navegador (não no SSR).
+    if (this.isBrowser) {
+      injectVercelAnalytics();
+      this.trackWhatsappClicks();
+    }
 
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {

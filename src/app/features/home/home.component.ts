@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy, NgZone, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, NgZone, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -22,9 +22,13 @@ import { SeoService } from '../../core/services/seo.service';
 import { srcsetForImage } from '../../core/utils/responsive-image';
 import { NewsletterSignupComponent } from '../../shared/components/newsletter-signup/newsletter-signup.component';
 import { compareHomeTripMenus } from '../../core/utils/trip-menu';
+import { tripLinkPath } from '../../core/utils/trip-scope';
+import { SsrFetchCache } from '../../core/ssr/fetch-cache.browser';
 
 interface HomeTripCard {
   slug: string;
+  /** Endereço canônico da viagem, usado nos links do card. */
+  path: string;
   tagId?: number | null;
   title: string;
   country: string;
@@ -75,6 +79,8 @@ interface HomeBannerSlide {
 
 interface HomeCuradoriaCard {
   slug: string;
+  /** Endereço canônico da viagem, usado no link do card. */
+  path: string;
   title: string;
   subtitle: string;
   description: string;
@@ -124,6 +130,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   searchEndDate = '';
   private slideInterval: any;
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly ssrFetchCache = inject(SsrFetchCache);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor(
     private tripService: TripService,
@@ -187,13 +195,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadBanners();
     this.loadHeaderMenus();
     this.loadHomeContent();
-    // Seções de baixo (viagens, blog, depoimentos, sobre): esperam o banner
-    // aparecer — ver settleHero(). Rede de segurança: no máximo 4 s.
-    if (this.isBrowser) {
-      this.heroTimer = setTimeout(() => this.settleHero(), 4000);
-    } else {
-      this.settleHero();
+    if (!this.isBrowser) {
+      // Servidor (SSR): carrega os dados de todas as seções, para o texto delas
+      // sair no HTML. `heroSettled` continua false, então as fotos dessas
+      // seções não vão no HTML — só a do 1º banner, que é a imagem principal.
+      this.loadBelowTheFold();
+      return;
     }
+
+    if (this.ssrFetchCache.active) {
+      // A página veio pronta do servidor e os dados das seções estão dentro do
+      // HTML (sem rede). Carrega já: se esperasse o banner, as seções que o
+      // visitante já está vendo sumiriam e voltariam logo depois.
+      this.loadBelowTheFold();
+    }
+    // Seções de baixo (viagens, blog, depoimentos, sobre): os dados (quando não
+    // vieram do servidor) e as fotos esperam o banner aparecer — ver
+    // settleHero(). Rede de segurança: no máximo 4 s.
+    this.heroTimer = setTimeout(() => this.settleHero(), 4000);
   }
 
   /**
@@ -339,6 +358,23 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private belowTheFoldLoaded = false;
 
+  /**
+   * Na hidratação, a imagem do 1º banner veio no HTML do servidor e pode ter
+   * terminado de carregar antes de o app existir — aí o evento `load` já passou
+   * e ninguém avisaria que o banner apareceu. Confere o estado atual da imagem.
+   */
+  private checkFirstSlideAlreadyLoaded() {
+    if (!this.isBrowser || this.heroSettled || this.bannerSlides.length === 0) return;
+    const image = this.host.nativeElement.querySelector<HTMLImageElement>('.carousel-slide img');
+    if (!image || !image.complete) return;
+
+    if (image.naturalWidth > 0) {
+      this.onSlideImageLoad(0, this.bannerSlides[0].id, { target: image } as unknown as Event);
+    } else {
+      this.settleHero(); // a imagem falhou antes de o app assumir a página
+    }
+  }
+
   /** Dados das seções abaixo do banner. Roda uma vez só. */
   private loadBelowTheFold() {
     if (this.belowTheFoldLoaded) return;
@@ -396,7 +432,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       hasNextPage: false
     };
 
-    this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
+    this.tripService.getTrips({ status: 'active', limit: 100, light: true }).pipe(
       catchError(() => of(emptyResponse))
     ).subscribe(response => {
       this.activeTrips = response.data;
@@ -496,6 +532,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.startSlideShow();
       }
       this.cdr.detectChanges();
+      this.checkFirstSlideAlreadyLoaded();
     });
   }
 
@@ -544,8 +581,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private mapTripCard(trip: Trip, guideRole: string): HomeTripCard {
+    const slug = trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id);
     const card: HomeTripCard = {
-      slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      slug,
+      path: tripLinkPath(trip, slug),
       tagId: trip.tagId ?? null,
       title: trip.title,
       country: trip.country || trip.destination || 'A definir',
@@ -566,9 +605,11 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private mapCuradoriaCard(trip: Trip): HomeCuradoriaCard {
     const destination = trip.country || trip.destination || 'Destino a definir';
+    const slug = trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id);
 
     return {
-      slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      slug,
+      path: tripLinkPath(trip, slug),
       title: trip.title,
       subtitle: destination,
       description: trip.shortDescription || trip.description || 'Roteiro selecionado pela curadoria Unitur.',

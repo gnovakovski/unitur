@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
-import { viagensCategoryMatcher } from './core/routing/viagens-category.matcher';
+import { viagensMenuGuard } from './core/routing/viagens-menu.guard';
 
 export const routes: Routes = [
   // Public routes
@@ -32,8 +32,11 @@ export const routes: Routes = [
     path: 'categoria-internacional/:cat',
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
+  // /viagens/<slug> é a listagem de um menu do cabeçalho quando <slug> é de um
+  // menu cadastrado (viagensMenuGuard); senão cai na rota de detalhe, mais abaixo.
   {
-    matcher: viagensCategoryMatcher,
+    path: 'viagens/:slug',
+    canMatch: [viagensMenuGuard],
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
   // Detalhe da viagem nos caminhos do WordPress antigo (preserva ranking).
