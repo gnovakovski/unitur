@@ -1,3 +1,6 @@
+@if (notFound) {
+  <app-not-found />
+} @else {
 <div class="blog-page">
   <!-- Hero Section -->
   <section class="blog-hero">
@@ -94,7 +97,7 @@
     }
 
     <!-- Loading State -->
-    @if (loading) {
+    @if (showSkeleton) {
       <div class="loading-grid">
         @for (item of [1,2,3,4,5,6]; track item) {
           <div class="skeleton-card">
@@ -113,7 +116,7 @@
     @if (!loading && posts.length > 0) {
       <div class="posts-grid">
         @for (post of posts; track post.id) {
-          <article class="post-card" [routerLink]="['/blog', post.slug]" [queryParams]="{ origin: blogOrigin }">
+          <article class="post-card" [routerLink]="['/blog', post.slug]" [queryParams]="postQueryParams">
             <div class="post-image">
               @if (post.featuredImage) {
                 <img [src]="post.featuredImage" [alt]="post.title">
@@ -131,7 +134,13 @@
                 <span class="post-date">{{ formatDate(post.publishedAt || post.createdAt) }}</span>
                 <span class="post-author">Por {{ authorName(post) }}</span>
               </div>
-              <h2 class="post-title">{{ post.title }}</h2>
+              <!-- Link de verdade (<a href>) no título: o card inteiro é clicável, mas
+                   só um <a> é seguido pelo Google até o post. O clique não sobe para o
+                   card, para não navegar duas vezes. -->
+              <h2 class="post-title">
+                <a class="post-title__link" [routerLink]="['/blog', post.slug]" [queryParams]="postQueryParams"
+                   (click)="$event.stopPropagation()">{{ post.title }}</a>
+              </h2>
               <p class="post-excerpt">{{ post.excerpt }}</p>
               <div class="post-footer">
                 @if (post.tags && post.tags.length > 0) {
@@ -222,3 +231,4 @@
     }
   </div>
 </div>
+}

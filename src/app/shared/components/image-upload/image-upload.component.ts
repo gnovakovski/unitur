@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UploadService } from '../../../core/services/upload.service';
 import { ImageCropperModalComponent } from '../image-cropper-modal/image-cropper-modal.component';
+import { ImageLibraryModalComponent } from '../image-library-modal/image-library-modal.component';
+import { LibraryImage } from '../../../core/services/image-library.service';
 
 @Component({
   selector: 'app-image-upload',
   standalone: true,
-  imports: [CommonModule, ImageCropperModalComponent],
+  imports: [CommonModule, ImageCropperModalComponent, ImageLibraryModalComponent],
   templateUrl: './image-upload.component.html',
   styleUrl: './image-upload.component.scss',
   providers: [
@@ -27,8 +29,11 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
   @Input() compact = false;
   @Input() cropRatio?: number;
   @Input() enableCrop = true;
+  /** Mostra o botão "Escolher do banco de imagens" (fotos já enviadas nas viagens). */
+  @Input() libraryEnabled = false;
   @Output() uploaded = new EventEmitter<File>();
 
+  libraryOpen = false;
   pendingFile: File | null = null;
 
   imageUrl: string | null = null;
@@ -149,6 +154,23 @@ export class ImageUploadComponent implements ControlValueAccessor, OnDestroy {
     this.clearObjectUrl();
     this.onChange(null);
     this.error = null;
+  }
+
+  openLibrary(event?: Event): void {
+    event?.stopPropagation();
+    if (this.uploading) return;
+    this.error = null;
+    this.libraryOpen = true;
+  }
+
+  /** Foto escolhida no banco: vira o valor do campo como endereço pronto, sem upload. */
+  onLibraryConfirmed(images: LibraryImage[]): void {
+    this.libraryOpen = false;
+    const url = images[0]?.url;
+    if (!url) return;
+    this.writeValue(url);
+    this.onChange(url);
+    this.onTouched();
   }
 
   replaceImage(event?: Event): void {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ImageCroppedEvent, ImageCropperComponent, ImageTransform, LoadedImage } from 'ngx-image-cropper';
 
 @Component({
@@ -9,7 +9,7 @@ import { ImageCroppedEvent, ImageCropperComponent, ImageTransform, LoadedImage }
   templateUrl: './image-cropper-modal.component.html',
   styleUrl: './image-cropper-modal.component.scss'
 })
-export class ImageCropperModalComponent implements OnInit {
+export class ImageCropperModalComponent implements OnChanges {
   @Input() file!: File;
   @Input() aspectRatio?: number;
   @Input() title = 'Ajustar imagem';
@@ -22,12 +22,33 @@ export class ImageCropperModalComponent implements OnInit {
   transform: ImageTransform = { scale: 1 };
   maintainAspectRatio = false;
 
-  ngOnInit(): void {
-    this.imageFile = this.file;
-    this.maintainAspectRatio = !!this.aspectRatio && this.aspectRatio > 0;
+  /**
+   * Roda na abertura e também a cada troca de `file`.
+   *
+   * Ao enviar várias fotos de uma vez, quem usa esta janela a mantém aberta e só
+   * troca o arquivo (fila de recorte). Antes o arquivo era lido uma única vez,
+   * na criação: a janela continuava mostrando a 1ª foto e devolvia o recorte
+   * dela para todas as seguintes — a galeria ficava com a mesma foto repetida.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['file']) {
+      this.imageFile = this.file;
+      // Zera o recorte da foto anterior: o botão "Aplicar recorte" só volta a
+      // ficar ativo quando a foto nova terminar de carregar.
+      this.cropped = null;
+      this.loading = true;
+      this.transform = { scale: 1 };
+    }
+    if (changes['aspectRatio']?.firstChange || changes['file']?.firstChange) {
+      this.maintainAspectRatio = !!this.aspectRatio && this.aspectRatio > 0;
+    }
   }
 
   onImageCropped(event: ImageCroppedEvent) {
+    // Enquanto a foto nova carrega, um recorte que chegue atrasado só pode ser da
+    // foto anterior da fila (o recorte em blob é assíncrono): descarta, para não
+    // repetir a foto anterior no lugar desta.
+    if (this.loading) return;
     this.cropped = event.blob ?? null;
   }
 

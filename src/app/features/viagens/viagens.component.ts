@@ -13,9 +13,12 @@ import { SiteContentService } from '../../core/services/site-content.service';
 import { SeoService } from '../../core/services/seo.service';
 import { slugFromHeaderRoute } from '../../core/models/site-content.model';
 import { resolveTripMenuIds, tripMenuLabel } from '../../core/utils/trip-menu';
+import { tripLinkPath } from '../../core/utils/trip-scope';
 
 interface ViagemCard {
   slug: string;
+  /** Endereço canônico da viagem, usado no link do card. */
+  path: string;
   title: string;
   location: string;
   date: string;
@@ -323,7 +326,7 @@ export class ViagensComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
 
-    this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
+    this.tripService.getTrips({ status: 'active', limit: 100, light: true }).pipe(
       catchError((err) => {
         console.error('Erro ao carregar viagens publicas', err);
         this.error = 'Não foi possível carregar as viagens cadastradas.';
@@ -352,8 +355,10 @@ export class ViagensComponent implements OnInit, OnDestroy {
   }
 
   private mapTrip(trip: Trip): ViagemCard {
+    const slug = trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id);
     const card: ViagemCard = {
-      slug: trip.slug || this.tripService.generateSlug(trip.title) || String(trip.id),
+      slug,
+      path: tripLinkPath(trip, slug),
       title: trip.title,
       location: trip.country || trip.destination || 'A definir',
       date: trip.period || this.formatPeriod(trip.startDate),

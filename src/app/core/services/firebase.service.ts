@@ -4,6 +4,7 @@ import type { Auth } from 'firebase/auth';
 import { Firestore, getFirestore, Timestamp } from 'firebase/firestore/lite';
 import type { FirebaseStorage } from 'firebase/storage';
 import { environment } from '../../../environments/environment';
+import { ServerResponseService } from './server-response.service';
 
 /**
  * Ponto único de acesso ao Firebase.
@@ -27,6 +28,7 @@ export class FirebaseService {
   // a app de "estabilizar" (e serializar o HTML) antes dos dados chegarem,
   // garantindo que o conteúdo e as meta tags saiam renderizados no servidor.
   private readonly pendingTasks = inject(PendingTasks);
+  private readonly serverResponse = inject(ServerResponseService);
 
   private app: FirebaseApp | null = null;
   private firestoreDb: Firestore | null = null;
@@ -90,10 +92,18 @@ export class FirebaseService {
       timer = setTimeout(() => reject(new Error(message)), ms);
     });
     // clearTimeout + removeTask evitam que o timer pendente atrase a estabilização.
-    return Promise.race([promise, timeout]).finally(() => {
-      clearTimeout(timer);
-      removeTask();
-    });
+    return Promise.race([promise, timeout])
+      .catch(error => {
+        // No SSR, uma leitura que falhou deixaria a página incompleta (e ela
+        // ficaria assim no cache da CDN). Avisa o servidor, que descarta este
+        // HTML e entrega a versão que carrega os dados no navegador.
+        this.serverResponse.markDegraded();
+        throw error;
+      })
+      .finally(() => {
+        clearTimeout(timer);
+        removeTask();
+      });
   }
 
   private getApp(): FirebaseApp {

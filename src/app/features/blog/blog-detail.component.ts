@@ -2,14 +2,16 @@ import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener, 
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, of, timeout } from 'rxjs';
+import { TimeoutError, catchError, of, timeout } from 'rxjs';
 import { PostService } from '../../core/services/post.service';
 import { TripService } from '../../core/services/trip.service';
+import { ServerResponseService } from '../../core/services/server-response.service';
 import { Post } from '../../core/models/post.model';
 import { Trip } from '../../core/models/trip.model';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
 import { postSeo } from '../../core/utils/seo-fallback';
+import { tripLinkPath } from '../../core/utils/trip-scope';
 import { renderPostHtml } from '../../core/utils/post-content';
 import { isInstitutionalAuthor, postAuthorName } from '../../core/utils/post-author';
 
@@ -55,7 +57,8 @@ export class BlogDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private seo: SeoService,
     private sanitizer: DomSanitizer,
     private host: ElementRef<HTMLElement>,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private serverResponse: ServerResponseService
   ) {}
 
   get preview(): boolean {
@@ -90,21 +93,22 @@ export class BlogDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.postService.getPostBySlug(slug).pipe(
       timeout(12000),
-      catchError(() => of(null))
+      catchError(error => {
+        // Tempo esgotado ≠ post inexistente: no servidor, descarta este HTML em
+        // vez de responder 404 para um post que pode existir.
+        if (error instanceof TimeoutError) {
+          this.serverResponse.markDegraded();
+        }
+        return of(null);
+      })
     ).subscribe(post => {
       this.loading = false;
 
-      if (!post) {
-        this.error = 'Post não encontrado';
-        this.applyNotFoundSeo();
-        this.cdr.markForCheck();
-        return;
-      }
-
       // Posts sem status explícito são tratados como 'published' (compat com docs antigos).
       // Apenas rejeita explicitamente se status === 'draft'.
-      if (post.status === 'draft') {
+      if (!post || post.status === 'draft') {
         this.error = 'Post não encontrado';
+        this.serverResponse.notFound();
         this.applyNotFoundSeo();
         this.cdr.markForCheck();
         return;
@@ -203,12 +207,17 @@ export class BlogDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.tripService.getTrips({ status: 'active', limit: 100 }).pipe(
+    this.tripService.getTrips({ status: 'active', limit: 100, light: true }).pipe(
       catchError(() => of({ data: [] as Trip[], total: 0, page: 1, limit: 100, totalPages: 1, hasNextPage: false }))
     ).subscribe(response => {
       this.relatedTrips = response.data.filter(trip => ids.includes(Number(trip.id))).slice(0, 3);
       this.cdr.markForCheck();
     });
+  }
+
+  /** Endereço canônico da viagem (/roteiros-nacionais|internacionais/<slug>/). */
+  tripPath(trip: Trip): string {
+    return tripLinkPath(trip, String(trip.id));
   }
 
   formatDate(date: Date | string): string {

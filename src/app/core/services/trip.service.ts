@@ -1,10 +1,30 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, concat, from, map, of, tap } from 'rxjs';
-import { QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter } from 'firebase/firestore/lite';
+import { Observable, catchError, concat, defer, from, map, of, switchMap, tap } from 'rxjs';
+import { QueryDocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, startAfter, where } from 'firebase/firestore/lite';
 import { Trip } from '../models/trip.model';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
 import { inferTripScope } from '../utils/trip-scope';
+import { runSelectQuery } from '../utils/firestore-rest';
+import { environment } from '../../../environments/environment';
+
+/**
+ * Campos que as listagens públicas usam (cards da home, de /viagens e das
+ * "viagens relacionadas" do blog, filtros, ordenação e URL canônica).
+ *
+ * Fica de fora o conteúdo da página da viagem — roteiro dia a dia, galeria,
+ * hotéis, o que inclui, formas de pagamento, política de cancelamento e a
+ * descrição longa —, que é ~90% do peso: a coleção inteira passa de 900 KB e
+ * este índice fica em torno de 60 KB.
+ */
+const TRIP_INDEX_FIELDS = [
+  'id', 'title', 'slug', 'status', 'scope', 'tripType', 'menuIds', 'tagId', 'categoryId',
+  'destination', 'country', 'period', 'startDate', 'endDate', 'duration', 'shortDescription',
+  'mainImage', 'mainImagePosition', 'mainImageFit', 'mainImageRotation',
+  'price', 'foreignPrice', 'foreignCurrency', 'foreignExchangeRate',
+  'availableSpots', 'showAvailableSpots', 'spiritualGuide', 'coordinator',
+  'featured', 'showOnHome', 'createdAt', 'updatedAt'
+] as const;
 
 export interface TripFilters {
   search?: string;
@@ -14,6 +34,12 @@ export interface TripFilters {
   limit?: number;
   /** Quando true, aplica paginação server-side com limit() + startAfter(). */
   adminPagination?: boolean;
+  /**
+   * Quando true, lê só os campos de listagem (TRIP_INDEX_FIELDS) em vez dos
+   * documentos inteiros. Para as telas públicas que mostram cards. Não use em
+   * telas que editam a viagem: os campos que ficam de fora vêm indefinidos.
+   */
+  light?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -31,6 +57,12 @@ export interface PaginatedResponse<T> {
 export class TripService {
   private readonly collectionName = 'trips';
   private readonly localTripsKey = 'unitur_admin_trips';
+  /**
+   * Cache local do índice leve. Chave separada da `localTripsKey` de propósito:
+   * aquela guarda viagens completas e serve de reserva ao formulário do admin;
+   * misturar o índice ali faria uma viagem "voltar" sem roteiro nem hotéis.
+   */
+  private readonly localTripIndexKey = 'unitur_trips_index';
 
   // Cursor para paginação server-side nas telas de admin.
   private adminCursor: QueryDocumentSnapshot | null = null;
@@ -72,20 +104,28 @@ export class TripService {
     const pageSize = filters?.limit ?? 100;
     const constraints: Parameters<typeof query>[1][] = [limit(pageSize)];
 
-    const firestoreTrips$ = from(this.firebaseService.withTimeout(getDocs(
+    // defer: a consulta só dispara se alguém assinar (no modo leve ela é apenas
+    // o plano B; sem isto os ~900 KB seriam baixados sempre).
+    const fullTrips$ = defer(() => from(this.firebaseService.withTimeout(getDocs(
       query(collection(this.firebaseService.firestore, this.collectionName), ...constraints)
-    ), 'Tempo esgotado ao carregar viagens do Firestore.')).pipe(
+    ), 'Tempo esgotado ao carregar viagens do Firestore.'))).pipe(
       map(snapshot => snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip)),
       tap(trips => {
         if (trips.length > 0) {
           this.replaceLocalTrips(trips);
         }
-      }),
-      catchError(() => of([] as Trip[]))
+      })
     );
 
+    // Listagens públicas: índice leve. Se ele falhar, cai na leitura completa
+    // (comportamento anterior), então a listagem nunca fica vazia por causa dele.
+    const firestoreTrips$ = (filters?.light
+      ? this.fetchTripIndex(pageSize).pipe(catchError(() => fullTrips$))
+      : fullTrips$
+    ).pipe(catchError(() => of([] as Trip[])));
+
     return concat(
-      of(this.getLocalTrips()),
+      of(filters?.light ? this.getLocalTripIndex() : this.getLocalTrips()),
       firestoreTrips$
     ).pipe(
       map(trips => this.sortTrips(trips)),
@@ -197,6 +237,13 @@ export class TripService {
     );
   }
 
+  /**
+   * Antes cada visita a uma viagem lia a coleção inteira (~900 KB). Agora busca
+   * só o documento pelo slug (1 leitura). O catálogo — e só o índice leve dele —
+   * é lido apenas quando o slug não bate com uma viagem publicada: para achar
+   * slugs legados (gerados do título, ou o id) e para findActiveReplacement()
+   * saber se há uma viagem equivalente.
+   */
   getTripBySlug(slug: string): Observable<Trip | null> {
     const normalized = String(slug || '').trim().toLowerCase();
 
@@ -204,26 +251,71 @@ export class TripService {
       return of(null);
     }
 
-    // Tenta primeiro o cache local (rápido) — se achar, retorna.
-    // Em paralelo, busca no Firestore e atualiza o cache.
-    return from(this.firebaseService.withTimeout(
-      getDocs(collection(this.firebaseService.firestore, this.collectionName)),
-      'Tempo esgotado ao carregar viagem do Firestore.'
-    )).pipe(
-      map(snapshot => {
-        const trips = snapshot.docs.map(item => this.firebaseService.normalizeDates(item.data()) as Trip);
-        if (trips.length > 0) {
-          this.replaceLocalTrips(trips);
+    this.catalogFresh = false;
+
+    return this.fetchTripBySlug(normalized).pipe(
+      switchMap(trip => {
+        if (trip && trip.status !== 'inactive' && trip.status !== 'draft') {
+          return of(trip);
         }
-        this.catalogFresh = trips.length > 0;
-        this.catalog = trips;
-        const candidates = this.dedupeTrips([...trips, ...this.getLocalTrips()]);
-        return candidates.find(item => this.matchesSlug(item, normalized)) || null;
+
+        return this.loadCatalog().pipe(
+          switchMap(catalog => {
+            // Viagem encerrada ou rascunho: devolve mesmo assim; quem chama
+            // decide o que fazer, já com o catálogo disponível.
+            if (trip) return of(trip);
+
+            const match = catalog.find(item => this.matchesSlug(item, normalized));
+            if (!match) return of(null);
+
+            // Slug legado: o índice não tem roteiro, hotéis etc. — busca a viagem completa.
+            return this.getTrip(Number(match.id)).pipe(catchError(() => of(null)));
+          })
+        );
       }),
       catchError(() => {
         this.catalogFresh = false;
         const trip = this.getLocalTrips().find(item => this.matchesSlug(item, normalized));
         return of(trip || null);
+      })
+    );
+  }
+
+  /** Viagem com exatamente este slug (1 leitura), ou null. Erros sobem para quem chama. */
+  private fetchTripBySlug(slug: string): Observable<Trip | null> {
+    return from(this.firebaseService.withTimeout(
+      getDocs(query(
+        collection(this.firebaseService.firestore, this.collectionName),
+        where('slug', '==', slug),
+        limit(1)
+      )),
+      'Tempo esgotado ao carregar viagem do Firestore.'
+    )).pipe(
+      map(snapshot => snapshot.empty ? null : this.firebaseService.normalizeDates(snapshot.docs[0].data()) as Trip)
+    );
+  }
+
+  /** Índice leve de todas as viagens, guardado como catálogo da última leitura. */
+  private loadCatalog(): Observable<Trip[]> {
+    return this.fetchTripIndex().pipe(
+      tap(trips => {
+        this.catalog = trips;
+        this.catalogFresh = trips.length > 0;
+      })
+    );
+  }
+
+  /** Lê o índice leve (TRIP_INDEX_FIELDS) pela API REST. Erros sobem para quem chama. */
+  private fetchTripIndex(max = 500): Observable<Trip[]> {
+    return from(this.firebaseService.withTimeout(
+      runSelectQuery(environment.firebase.projectId, this.collectionName, TRIP_INDEX_FIELDS, { limit: max }),
+      'Tempo esgotado ao carregar viagens do Firestore.'
+    )).pipe(
+      map(rows => rows.map(([, data]) => data as unknown as Trip)),
+      tap(trips => {
+        if (trips.length > 0) {
+          this.storage.setItem(this.localTripIndexKey, JSON.stringify(trips));
+        }
       })
     );
   }
@@ -438,9 +530,22 @@ export class TripService {
     }, [] as Trip[]);
   }
 
+  /**
+   * Índice leve em cache, para a listagem aparecer na hora nas visitas seguintes.
+   * Sem ele (1ª visita depois desta versão), usa o cache antigo de viagens completas.
+   */
+  private getLocalTripIndex(): Trip[] {
+    const index = this.readLocalTrips(this.localTripIndexKey);
+    return index.length > 0 ? index : this.getLocalTrips();
+  }
+
   private getLocalTrips(): Trip[] {
+    return this.readLocalTrips(this.localTripsKey);
+  }
+
+  private readLocalTrips(key: string): Trip[] {
     try {
-      const rawTrips = JSON.parse(this.storage.getItem(this.localTripsKey) || '[]') as Trip[];
+      const rawTrips = JSON.parse(this.storage.getItem(key) || '[]') as Trip[];
       return rawTrips.map(trip => ({
         ...trip,
         startDate: trip.startDate ? new Date(trip.startDate) : new Date(),
@@ -496,4 +601,13 @@ export function legacyBaseSlug(slug: string | null | undefined): string {
     .toLowerCase()
     .replace(/(?:-\d+)+-*$/, '')
     .replace(/-+$/, '');
+}
+
+/**
+ * true quando o slug termina no código numérico que o WordPress antigo colocava
+ * nos roteiros ("gramado-e-canela-2664", "...-2625-11"): sinal de endereço de
+ * um roteiro antigo, e não de um endereço que nunca existiu.
+ */
+export function hasLegacyTripCode(slug: string | null | undefined): boolean {
+  return /(?:-\d+)+-*$/.test(String(slug || '').trim());
 }

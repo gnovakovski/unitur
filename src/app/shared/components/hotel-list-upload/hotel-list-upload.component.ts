@@ -3,6 +3,8 @@ import { Component, forwardRef, Input, OnDestroy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UploadService } from '../../../core/services/upload.service';
 import { ImageCropperModalComponent } from '../image-cropper-modal/image-cropper-modal.component';
+import { ImageLibraryModalComponent } from '../image-library-modal/image-library-modal.component';
+import { LibraryImage } from '../../../core/services/image-library.service';
 
 export interface HotelItem {
   name: string;
@@ -13,7 +15,7 @@ export interface HotelItem {
 @Component({
   selector: 'app-hotel-list-upload',
   standalone: true,
-  imports: [CommonModule, ImageCropperModalComponent],
+  imports: [CommonModule, ImageCropperModalComponent, ImageLibraryModalComponent],
   templateUrl: './hotel-list-upload.component.html',
   styleUrl: './hotel-list-upload.component.scss',
   providers: [
@@ -32,7 +34,10 @@ export class HotelListUploadComponent implements ControlValueAccessor, OnDestroy
   @Input() maxItems = 15;
   @Input() cropRatio?: number = 16 / 10;
   @Input() enableCrop = true;
+  /** Mostra o botão "Escolher do banco de imagens" (hotéis já cadastrados em outras viagens). */
+  @Input() libraryEnabled = false;
 
+  libraryOpen = false;
   items: HotelItem[] = [];
   previews: string[] = [];
   error: string | null = null;
@@ -133,6 +138,44 @@ export class HotelListUploadComponent implements ControlValueAccessor, OnDestroy
 
   isLocal(item: HotelItem): boolean {
     return item.image instanceof File;
+  }
+
+  /** Quantos hotéis ainda cabem na lista. */
+  get remainingSlots(): number {
+    return Math.max(0, this.maxItems - this.items.length);
+  }
+
+  /** Fotos que já estão na lista (a janela do banco as mostra como "já adicionada"). */
+  get existingUrls(): string[] {
+    return this.items.map(item => item.image).filter((image): image is string => typeof image === 'string');
+  }
+
+  openLibrary(event?: Event): void {
+    event?.stopPropagation();
+    this.error = null;
+    if (this.remainingSlots === 0) {
+      this.error = `Limite de ${this.maxItems} hotéis atingido.`;
+      return;
+    }
+    this.libraryOpen = true;
+  }
+
+  /**
+   * Hotéis escolhidos no banco: entram com a foto pronta (sem novo upload) e
+   * com o nome que já tinham na outra viagem, que continua editável.
+   */
+  onLibraryConfirmed(images: LibraryImage[]): void {
+    this.libraryOpen = false;
+    const existing = new Set(this.existingUrls);
+    for (const image of images) {
+      if (this.remainingSlots === 0) break;
+      if (existing.has(image.url)) continue;
+      existing.add(image.url);
+      this.items.push({ name: image.hotelName, image: image.url });
+      this.previews.push(image.url);
+    }
+    this.emit();
+    this.onTouched();
   }
 
   ngOnDestroy(): void {

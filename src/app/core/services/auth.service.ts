@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore/lite';
 import { FirebaseService } from './firebase.service';
 import { BrowserStorageService } from './browser-storage.service';
 import { ModuleKey } from '../models/user.model';
+import { StoredProfile, sessionUserFromProfile } from '../utils/session-user';
 
 export interface LoginCredentials {
   email: string;
@@ -161,45 +162,19 @@ export class AuthService {
   /**
    * Monta o usuário da sessão a partir do perfil gravado no Firestore
    * (coleção `users`, doc = uid), de onde vêm o `role` e as `permissions` reais.
+   * Conta sem perfil ou desativada fica sem acesso (ver `sessionUserFromProfile`).
    *
-   * Fallback de compatibilidade: se o documento NÃO EXISTIR (conta seed antiga,
-   * primeiro admin criado direto no console), o usuário é tratado como `admin`
-   * para não travar o acesso que já funcionava antes desta feature.
-   *
-   * IMPORTANTE (segurança): uma FALHA de leitura (timeout, regra do Firestore,
-   * rede) NÃO cai no fallback admin — isso seria fail-open / escalada de
-   * privilégio (qualquer glitch de rede promoveria um editor a admin). Nesse
-   * caso o erro é propagado e quem chama trata como falha de autenticação.
+   * Uma FALHA de leitura (timeout, regra do Firestore, rede) propaga o erro e
+   * quem chama trata como falha de autenticação.
    */
   private async buildSessionUser(firebaseUser: FirebaseUser): Promise<SessionUser> {
-    const fallbackName = firebaseUser.displayName || firebaseUser.email || 'Administrador';
-    const email = firebaseUser.email || '';
-
     const ref = doc(this.firebaseService.firestore, 'users', firebaseUser.uid);
     const snapshot = await this.firebaseService.withTimeout(
       getDoc(ref),
       'Tempo esgotado ao carregar o perfil do usuário.'
     );
 
-    if (snapshot.exists()) {
-      const data = snapshot.data() as { name?: string; role?: string; permissions?: ModuleKey[] };
-      return {
-        id: firebaseUser.uid,
-        name: data.name || fallbackName,
-        email,
-        role: data.role || 'admin',
-        permissions: Array.isArray(data.permissions) ? data.permissions : []
-      };
-    }
-
-    // Doc genuinamente ausente → fallback admin (compatibilidade).
-    return {
-      id: firebaseUser.uid,
-      name: fallbackName,
-      email,
-      role: 'admin',
-      permissions: []
-    };
+    return sessionUserFromProfile(firebaseUser, snapshot.exists() ? snapshot.data() as StoredProfile : null);
   }
 
   private setSession(authResult: AuthResponse): void {

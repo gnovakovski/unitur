@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
-import { viagensCategoryMatcher } from './core/routing/viagens-category.matcher';
+import { viagensMenuGuard } from './core/routing/viagens-menu.guard';
 
 export const routes: Routes = [
   // Public routes
@@ -27,13 +27,20 @@ export const routes: Routes = [
     path: 'viagens',
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
-  // Listagem por categoria, padrão WordPress: /categoria-internacional/<cat>
+  // Categoria do WordPress antigo (/categoria-internacional/<cat>): vai para a
+  // listagem geral, como /categoria-nacional/. Na Vercel o 301 sai do
+  // vercel.json; esta rota cobre o servidor local. Antes a rota abria a
+  // listagem com status 200 e canonical próprio para qualquer <cat>, o que
+  // gerava cópias de /viagens/ para o Google.
   {
     path: 'categoria-internacional/:cat',
-    loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
+    redirectTo: '/viagens'
   },
+  // /viagens/<slug> é a listagem de um menu do cabeçalho quando <slug> é de um
+  // menu cadastrado (viagensMenuGuard); senão cai na rota de detalhe, mais abaixo.
   {
-    matcher: viagensCategoryMatcher,
+    path: 'viagens/:slug',
+    canMatch: [viagensMenuGuard],
     loadComponent: () => import('./features/viagens/viagens.component').then(m => m.ViagensComponent)
   },
   // Detalhe da viagem nos caminhos do WordPress antigo (preserva ranking).

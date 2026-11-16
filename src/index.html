@@ -15,9 +15,10 @@
   <meta name="description" content="A Unitur é uma agência de viagens especializada em peregrinações e roteiros para grupos pelo Brasil e diversos destinos internacionais.">
   <meta name="theme-color" content="#0a3d62">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <!-- Sem tag de URL canônica aqui de propósito: este HTML é servido para TODAS
-       as rotas (SPA), e uma canônica fixa apontava todas as páginas para a home.
-       O SeoService cria a canônica correta de cada página no navegador. -->
+  <!-- Sem tag de URL canônica aqui de propósito: este HTML é o molde de TODAS as
+       rotas, e uma canônica fixa apontava todas as páginas para a home. O título,
+       a descrição e a canônica de cada página são definidos pelo SeoService já
+       no servidor (SSR); os valores acima são só o padrão do painel /admin. -->
   <!-- Conexões antecipadas: dados (Firestore) e imagens (Storage) do Firebase. -->
   <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://firebasestorage.googleapis.com">

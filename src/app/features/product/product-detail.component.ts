@@ -3,7 +3,8 @@ import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, PLATFORM_ID
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of, timeout } from 'rxjs';
 import { Trip } from '../../core/models/trip.model';
-import { TripService } from '../../core/services/trip.service';
+import { TripService, hasLegacyTripCode } from '../../core/services/trip.service';
+import { ServerResponseService } from '../../core/services/server-response.service';
 import { ResolvedTripPrice, formatTripBRL, formatTripForeign } from '../../core/utils/trip-pricing';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { safeScrollToTop } from '../../core/utils/browser';
@@ -107,7 +108,8 @@ export class ProductDetailComponent implements OnInit {
     private ngZone: NgZone,
     private seo: SeoService,
     private siteContentService: SiteContentService,
-    private tagService: TagService
+    private tagService: TagService,
+    private serverResponse: ServerResponseService
   ) {}
 
   /** Badge da tag desta viagem, exibido acima do título. */
@@ -140,25 +142,49 @@ export class ProductDetailComponent implements OnInit {
     const links = this.siteContentService.getCurrentHeaderLinks();
     const isMenu = links.some(l => slugFromHeaderRoute(l.route) === slug);
     if (!isMenu) return false;
-    this.router.navigate(['/viagens', slug], { replaceUrl: true });
+    this.loading = true; // mantém "carregando" até a listagem assumir
+    // O endereço é o mesmo; 'reload' faz o roteador reavaliar as rotas (agora
+    // com os menus carregados) em vez de ignorar a navegação.
+    this.router.navigate(['/viagens', slug], { replaceUrl: true, onSameUrlNavigation: 'reload' });
     return true;
   }
 
   /**
-   * Endereço de viagem que não está publicada: roteiro antigo do WordPress,
-   * viagem encerrada ou rascunho. Em vez de "Viagem não encontrada", leva para a
-   * mesma viagem com o slug novo (ex.: "...-2664" → "gramado-e-canela") ou, se
-   * não houver equivalente, para a listagem de viagens.
+   * Endereço de viagem que não está publicada. Em vez de "Viagem não
+   * encontrada", redireciona quando há para onde ir:
    *
-   * Os endereços antigos conhecidos já têm redirect 301 no vercel.json; este
-   * fallback cobre os demais. Não redireciona se o catálogo não pôde ser lido
-   * (erro/timeout), para não tirar do ar uma viagem que existe.
+   *  - existe uma viagem publicada equivalente (mesmo slug sem o código do
+   *    WordPress, ex.: "...-2664" → "gramado-e-canela"): vai para ela, 301;
+   *  - roteiro antigo do WordPress (slug com código numérico) sem equivalente:
+   *    vai para a listagem de viagens, 301 — igual aos redirects do vercel.json,
+   *    que cobrem os endereços antigos conhecidos;
+   *  - viagem que existe mas está encerrada ou em rascunho (`retired`): vai para
+   *    a listagem, 302 (temporário: ela pode voltar a ser publicada).
+   *
+   * Um endereço que nunca existiu NÃO é redirecionado: devolve false e a página
+   * mostra o erro com status 404, que é o que o Google espera nesse caso.
+   * Também não redireciona se o catálogo não pôde ser lido (erro/timeout), para
+   * não tirar do ar uma viagem que existe.
+   *
+   * No navegador é só uma troca de rota; o status vale para o servidor (SSR).
    */
-  private redirectRetiredTrip(slug: string): boolean {
+  private redirectRetiredTrip(slug: string, retired: boolean): boolean {
     const replacement = this.tripService.findActiveReplacement(slug);
     if (replacement === undefined) return false;
-    const target = replacement ? tripCanonicalPath(replacement) : '/viagens/';
-    this.router.navigateByUrl(target, { replaceUrl: true });
+
+    if (replacement) {
+      this.loading = true; // mantém "carregando" até a outra página assumir
+      this.serverResponse.permanentRedirect();
+      this.router.navigateByUrl(tripCanonicalPath(replacement), { replaceUrl: true });
+      return true;
+    }
+
+    const legacy = hasLegacyTripCode(slug);
+    if (!retired && !legacy) return false;
+
+    this.loading = true;
+    if (legacy) this.serverResponse.permanentRedirect();
+    this.router.navigateByUrl('/viagens/', { replaceUrl: true });
     return true;
   }
 
@@ -318,8 +344,7 @@ export class ProductDetailComponent implements OnInit {
     this.notFound = false;
 
     if (!slug) {
-      this.trip = null;
-      this.notFound = true;
+      this.showNotFound();
       return;
     }
 
@@ -329,7 +354,11 @@ export class ProductDetailComponent implements OnInit {
 
     this.tripService.getTripBySlug(slug).pipe(
       timeout(15000),
-      catchError(() => of(null))
+      catchError(() => {
+        // Tempo esgotado ≠ viagem inexistente: no servidor, descarta este HTML.
+        this.serverResponse.markDegraded();
+        return of(null);
+      })
     ).subscribe({
       next: (trip) => {
         this.ngZone.run(() => {
@@ -340,19 +369,15 @@ export class ProductDetailComponent implements OnInit {
             if (this.redirectIfMenuSlug(slug)) {
               return;
             }
-            if (this.redirectRetiredTrip(slug)) {
+            if (this.redirectRetiredTrip(slug, false)) {
               return;
             }
-            this.trip = null;
-            this.notFound = true;
-            this.applyNotFoundSeo();
+            this.showNotFound();
           } else if (trip.status === 'inactive' || trip.status === 'draft') {
-            if (this.redirectRetiredTrip(slug)) {
+            if (this.redirectRetiredTrip(slug, true)) {
               return;
             }
-            this.trip = null;
-            this.notFound = true;
-            this.applyNotFoundSeo();
+            this.showNotFound();
           } else {
             this.trip = this.mapFirestoreTrip(trip);
             this.applyTripSeo(trip);
@@ -367,6 +392,9 @@ export class ProductDetailComponent implements OnInit {
           console.error('[ProductDetail] subscribe.error:', err);
           this.loading = false;
           this.notFound = true;
+          // Falha de leitura, não "endereço inexistente": no servidor, descarta
+          // este HTML em vez de responder 404 para uma viagem que pode existir.
+          this.serverResponse.markDegraded();
           this.cdr.detectChanges();
         });
       }
@@ -414,7 +442,11 @@ export class ProductDetailComponent implements OnInit {
     ]));
   }
 
-  private applyNotFoundSeo(): void {
+  /** Estado de "viagem não encontrada": tela de erro, noindex e status 404 no servidor. */
+  private showNotFound(): void {
+    this.trip = null;
+    this.notFound = true;
+    this.serverResponse.notFound();
     this.seo.setMeta({
       title: 'Viagem não encontrada',
       description: 'A viagem que você procura não está mais disponível.',

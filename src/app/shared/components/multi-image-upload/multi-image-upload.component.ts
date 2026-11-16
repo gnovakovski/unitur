@@ -3,6 +3,8 @@ import { Component, forwardRef, Input, OnDestroy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UploadService } from '../../../core/services/upload.service';
 import { ImageCropperModalComponent } from '../image-cropper-modal/image-cropper-modal.component';
+import { ImageLibraryModalComponent } from '../image-library-modal/image-library-modal.component';
+import { LibraryImage } from '../../../core/services/image-library.service';
 
 /**
  * Item da galeria: pode ser uma string (URL já no Storage) ou um File local
@@ -13,7 +15,7 @@ export type GalleryItem = string | File;
 @Component({
   selector: 'app-multi-image-upload',
   standalone: true,
-  imports: [CommonModule, ImageCropperModalComponent],
+  imports: [CommonModule, ImageCropperModalComponent, ImageLibraryModalComponent],
   templateUrl: './multi-image-upload.component.html',
   styleUrl: './multi-image-upload.component.scss',
   providers: [
@@ -32,7 +34,10 @@ export class MultiImageUploadComponent implements ControlValueAccessor, OnDestro
   @Input() maxItems = 20;
   @Input() cropRatio?: number;
   @Input() enableCrop = true;
+  /** Mostra o botão "Escolher do banco de imagens" (fotos já enviadas em outras viagens). */
+  @Input() libraryEnabled = false;
 
+  libraryOpen = false;
   items: GalleryItem[] = [];
   previews: string[] = [];
   error: string | null = null;
@@ -128,6 +133,41 @@ export class MultiImageUploadComponent implements ControlValueAccessor, OnDestro
 
   isLocal(item: GalleryItem): boolean {
     return item instanceof File;
+  }
+
+  /** Quantas fotos ainda cabem na galeria. */
+  get remainingSlots(): number {
+    return Math.max(0, this.maxItems - this.items.length);
+  }
+
+  /** Fotos que já estão na galeria (a janela do banco as mostra como "já adicionada"). */
+  get existingUrls(): string[] {
+    return this.items.filter((item): item is string => typeof item === 'string');
+  }
+
+  openLibrary(event?: Event): void {
+    event?.stopPropagation();
+    this.error = null;
+    if (this.remainingSlots === 0) {
+      this.error = `Limite de ${this.maxItems} imagens atingido.`;
+      return;
+    }
+    this.libraryOpen = true;
+  }
+
+  /** Fotos escolhidas no banco: entram como endereço pronto, sem novo upload. */
+  onLibraryConfirmed(images: LibraryImage[]): void {
+    this.libraryOpen = false;
+    const existing = new Set(this.existingUrls);
+    for (const image of images) {
+      if (this.remainingSlots === 0) break;
+      if (existing.has(image.url)) continue;
+      existing.add(image.url);
+      this.items.push(image.url);
+      this.previews.push(image.url);
+    }
+    this.emit();
+    this.onTouched();
   }
 
   formatSize(bytes: number): string {

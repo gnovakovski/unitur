@@ -26,57 +26,10 @@ firebase: {
 
 ## Coleções usadas no Firestore
 
-- `posts`
-- `categories`
-- `trips`
-- `banners`
-- `testimonials`
-
-Os documentos usam o campo numérico `id` e o mesmo valor como ID do documento.
-
-## Regras iniciais sugeridas
-
-Use regras restritas para escrita. Leitura pública pode ser liberada para conteúdo publicado.
-
-```txt
-rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /posts/{document} {
-      allow read: if resource.data.status == 'published' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    match /categories/{document} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /trips/{document} {
-      allow read: if resource.data.status == 'active' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    // Tags dos cards de viagem ("Poucas vagas restantes", etc).
-    // Leitura pública: o site precisa delas para pintar o badge.
-    match /tags/{document} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /banners/{document} {
-      allow read: if resource.data.status == 'active' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    match /testimonials/{document} {
-      allow read: if resource.data.status == 'approved' || request.auth != null;
-      allow write: if request.auth != null;
-    }
-  }
-}
-```
+- Conteúdo público: `trips`, `tags`, `posts`, `categories`, `banners`,
+  `testimonials` e `siteContent` (header, contact, home, footer, about,
+  exchangeRates).
+- Privadas: `users` (perfis da equipe) e `newsletterSubscribers`.
 
 ### Regras do Storage e PDFs dos roteiros
 

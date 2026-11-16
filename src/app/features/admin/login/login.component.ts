@@ -66,11 +66,12 @@ export class LoginComponent {
 
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
-        // Usuário ativo mas sem nenhum módulo liberado: não há para onde ir.
-        // Desloga e avisa, em vez de cair em loop de redirect para o login.
-        if (!this.returnUrl && !this.permissionService.hasAnyAccess()) {
+        // Sem nenhum módulo liberado (inclui conta sem perfil ou desativada):
+        // não há para onde ir. Desloga e avisa, em vez de cair em loop de
+        // redirect para o login — com ou sem URL de retorno.
+        if (!this.permissionService.hasAnyAccess()) {
           this.authService.logout();
-          this.error = 'Seu usuário ainda não tem acesso a nenhum módulo. Solicite a um administrador que libere suas permissões.';
+          this.error = 'Seu usuário não tem acesso ao painel. Solicite a um administrador que libere suas permissões.';
           this.loading = false;
           this.cdr.markForCheck();
           return;

@@ -47,3 +47,16 @@ export function tripCanonicalPath(trip: TripScopeFields): string {
   const base = tripScope(trip) === 'nacional' ? 'roteiros-nacionais' : 'roteiros-internacionais';
   return `/${base}/${trip.slug}/`;
 }
+
+/**
+ * Endereço usado nos links internos para a viagem: o caminho canônico, o mesmo
+ * que vai no sitemap e na tag canonical. Os links apontavam para
+ * `/viagens/<slug>/`, que abre a mesma página mas é um endereço alternativo —
+ * o Google encontrava a viagem por um caminho e era mandado para outro.
+ *
+ * Viagem antiga sem slug gravado não tem caminho canônico: usa a rota genérica
+ * `/viagens/<fallbackSlug>/` (slug gerado do título, ou o id).
+ */
+export function tripLinkPath(trip: TripScopeFields, fallbackSlug: string): string {
+  return trip.slug ? tripCanonicalPath(trip) : `/viagens/${fallbackSlug}/`;
+}

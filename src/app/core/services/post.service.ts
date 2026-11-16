@@ -22,6 +22,11 @@ const POST_INDEX_FIELDS = [
 /** Campos dos cards de "últimos posts" da home (o índice + a 1ª imagem do texto como capa reserva). */
 const POST_CARD_FIELDS = [...POST_INDEX_FIELDS, 'contentImages'] as const;
 
+/** Campos do card de "posts relacionados" na lateral de um post. */
+const POST_RELATED_FIELDS = [
+  'id', 'slug', 'title', 'featuredImage', 'categoryId', 'status', 'publishedAt', 'createdAt'
+] as const;
+
 export interface PostFilters {
   search?: string;
   categoryId?: number;
@@ -299,17 +304,24 @@ export class PostService {
   /**
    * Antes cada visita a um post lia a coleção inteira (~356 documentos). Agora:
    * se a coleção já foi carregada na sessão, reaproveita; senão busca só o
-   * documento pelo slug (1 leitura) e só cai na leitura completa quando o slug
-   * não bate exatamente (slugs legados gerados a partir do título ou do id).
+   * documento pelo slug (1 leitura). Quando o slug não bate exatamente (slugs
+   * legados gerados a partir do título ou do id), procura no índice leve do
+   * blog e busca só o post encontrado — nunca a coleção inteira (4+ MB), que um
+   * endereço inexistente de /blog/ faria o servidor baixar a cada visita.
    */
   getPostBySlug(slug: string): Observable<Post> {
     const normalized = String(slug || '').trim().toLowerCase();
     const fromCollection$ = () => this.loadAllPosts().pipe(
       map(posts => this.findBySlug(posts, normalized) ?? this.findBySlug(this.getLocalPosts(), normalized))
     );
+    const fromIndex$ = () => this.loadPostIndex().pipe(
+      map(posts => this.findBySlug(posts, normalized) ?? this.findBySlug(this.getLocalPosts(), normalized)),
+      // O índice não tem o texto do post: busca o documento completo do que achou.
+      switchMap(match => match ? this.fetchFullPost(match) : of(undefined))
+    );
     const source$ = this.allPosts$
       ? fromCollection$()
-      : this.fetchPostBySlug(normalized).pipe(switchMap(post => post ? of(post) : fromCollection$()));
+      : this.fetchPostBySlug(normalized).pipe(switchMap(post => post ? of(post) : fromIndex$()));
 
     return source$.pipe(
       map(post => {
@@ -376,16 +388,37 @@ export class PostService {
       return of([]);
     }
 
+    // Só os campos do card lateral (título, capa, data): alguns KB, em vez de
+    // ~150 KB com o texto de cada post. Se a leitura leve falhar, usa a
+    // consulta completa (comportamento anterior).
+    const light$ = from(runSelectQuery(environment.firebase.projectId, this.collectionName, POST_RELATED_FIELDS, {
+      where: { field: 'categoryId', equals: Number(post.categoryId) },
+      limit: count * 4
+    })).pipe(map(rows => rows.map(([id, data]) => this.mapFirestorePost(id, data))));
+    const full$ = defer(() => from(getDocs(query(
+      collection(this.firebaseService.firestore, this.collectionName),
+      where('categoryId', '==', Number(post.categoryId)),
+      limit(count * 4)
+    )))).pipe(map(snapshot => snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data()))));
+
     return from(this.firebaseService.withTimeout(
-      getDocs(query(
-        collection(this.firebaseService.firestore, this.collectionName),
-        where('categoryId', '==', Number(post.categoryId)),
-        limit(count * 4)
-      )),
+      firstValueFrom(light$.pipe(catchError(() => full$))),
       'Tempo esgotado ao carregar posts relacionados do Firestore.'
     )).pipe(
-      map(snapshot => pick(snapshot.docs.map(item => this.mapFirestorePost(item.id, item.data())))),
+      map(pick),
       catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Documento completo de um post achado no índice leve: pelo slug gravado
+   * (1 leitura) ou, se ele não bater exatamente, pelo id.
+   */
+  private fetchFullPost(match: Post): Observable<Post | undefined> {
+    const bySlug$ = match.slug ? this.fetchPostBySlug(match.slug) : of(null);
+    return bySlug$.pipe(
+      switchMap(post => post ? of(post) : this.getPost(Number(match.id))),
+      catchError(() => of(undefined))
     );
   }
 

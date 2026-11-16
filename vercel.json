@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
   "trailingSlash": true,
   "headers": [
     {
@@ -8,6 +9,33 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/:area(admin|administrador)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/:area(admin|administrador)/:rest(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/client-shell.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     }
@@ -389,6 +417,21 @@
       "statusCode": 301
     },
     {
+      "source": "/category/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:year(\\d{4})/:month(\\d{2})/:rest*/",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/:slug((?!categoria|page)[^/]+)/:variant(amp|feed)/",
+      "destination": "/blog/:slug/",
+      "statusCode": 301
+    },
+    {
       "source": "/dicas/seguro-viagens/",
       "destination": "/blog/seguro-viagem-do-cartao-de-credito-e-o-suficiente/",
       "statusCode": 301
@@ -585,7 +628,7 @@
     },
     {
       "source": "/roteiros-nacionais/minas-gerais-nos-passos-da-fe-2649/",
-      "destination": "/roteiros-nacionais/minas-gerais-nos-passos-da-fe-/",
+      "destination": "/viagens/",
       "statusCode": 301
     },
     {
@@ -600,11 +643,6 @@
     },
     {
       "source": "/roteiros-internacionais/turquia-e-grecia-fe-cultura-e-historia-2703/",
-      "destination": "/viagens/",
-      "statusCode": 301
-    },
-    {
-      "source": "/roteiros-internacionais/egito-e-terra-santa-uma-peregrinacao-pelos-caminhos-da-fe/",
       "destination": "/viagens/",
       "statusCode": 301
     },
@@ -1289,6 +1327,11 @@
       "statusCode": 301
     },
     {
+      "source": "/categoria-internacional/:rest*/",
+      "destination": "/viagens/",
+      "statusCode": 301
+    },
+    {
       "source": "/tags/:rest*/",
       "destination": "/viagens/",
       "statusCode": 301
@@ -1319,23 +1362,53 @@
       "statusCode": 301
     },
     {
-      "source": "/destinos/portugal/",
-      "destination": "/viagens/?destination=portugal",
-      "statusCode": 301
-    },
-    {
-      "source": "/destinos/franca/",
-      "destination": "/viagens/?destination=franca",
-      "statusCode": 301
-    },
-    {
-      "source": "/destinos/italia/",
-      "destination": "/viagens/?destination=italia",
+      "source": "/destinos/alemanha/",
+      "destination": "/blog/alemanha/",
       "statusCode": 301
     },
     {
       "source": "/destinos/espanha/",
-      "destination": "/viagens/?destination=espanha",
+      "destination": "/blog/espanha/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/franca/",
+      "destination": "/blog/franca/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/grecia/",
+      "destination": "/blog/grecia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/holanda/",
+      "destination": "/blog/holanda/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/israel/",
+      "destination": "/blog/israel/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/italia/",
+      "destination": "/blog/italia/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/jordania/",
+      "destination": "/blog/jordania/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/portugal/",
+      "destination": "/blog/portugal/",
+      "statusCode": 301
+    },
+    {
+      "source": "/destinos/russia/",
+      "destination": "/blog/russia/",
       "statusCode": 301
     },
     {
@@ -1355,8 +1428,22 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/:area(admin|administrador)",
+      "destination": "/client-shell.html"
+    },
+    {
+      "source": "/:area(admin|administrador)/:rest(.*)",
+      "destination": "/client-shell.html"
+    },
+    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/api/ssr"
     }
-  ]
+  ],
+  "functions": {
+    "api/ssr.mjs": {
+      "includeFiles": "dist/angular-app/**",
+      "maxDuration": 30
+    }
+  }
 }

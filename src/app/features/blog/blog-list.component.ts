@@ -9,12 +9,15 @@ import { Post, Category } from '../../core/models/post.model';
 import { Subject, Subscription, catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, map, of, timeout } from 'rxjs';
 import { safeScrollToTop } from '../../core/utils/browser';
 import { SeoService } from '../../core/services/seo.service';
+import { ServerResponseService } from '../../core/services/server-response.service';
 import { postAuthorName } from '../../core/utils/post-author';
+import { NotFoundComponent } from '../not-found/not-found.component';
+import { SsrFetchCache } from '../../core/ssr/fetch-cache.browser';
 
 @Component({
   selector: 'app-blog-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, NotFoundComponent],
   templateUrl: './blog-list.component.html',
   styleUrl: './blog-list.component.scss'
 })
@@ -43,6 +46,22 @@ export class BlogListComponent implements OnInit {
   blogOrigin = 'blog';
   /** Slug da categoria quando acessado por /blog/categoria/:cat (paridade WP). */
   categorySlug: string | null = null;
+  /** Nome real da categoria da URL, depois que as categorias chegam. */
+  private categoryName = '';
+  /**
+   * O endereço não existe: categoria que não está cadastrada ou página além da
+   * última (/blog/page/999/). Mostra a página de erro, com status 404.
+   */
+  notFound = false;
+  /** A última leitura dos posts falhou (não dá para afirmar que a página não existe). */
+  private postsLoadFailed = false;
+  /**
+   * true enquanto a lista que veio pronta do servidor está na tela e o app ainda
+   * não carregou os posts. O índice do blog é grande demais para viajar dentro
+   * do HTML, então no navegador ele ainda é buscado; até chegar, a lista do
+   * servidor continua visível e os "cards cinza" de carregamento não aparecem.
+   */
+  private keepServerList = inject(SsrFetchCache).active;
   private readonly blogRequestTimeout = 12000;
 
   constructor(
@@ -50,8 +69,22 @@ export class BlogListComponent implements OnInit {
     private categoryService: CategoryService,
     private route: ActivatedRoute,
     private seo: SeoService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private serverResponse: ServerResponseService
   ) {}
+
+  /** Cards de carregamento: só quando não há uma lista do servidor na tela. */
+  get showSkeleton(): boolean {
+    return this.loading && !this.keepServerList;
+  }
+
+  /**
+   * Parâmetro que diz ao post de onde o visitante veio (para o "Voltar"). Vindo
+   * do próprio blog não precisa: é o padrão do post, e o link fica limpo.
+   */
+  get postQueryParams(): { origin: string } | null {
+    return this.blogOrigin === 'blog' ? null : { origin: this.blogOrigin };
+  }
 
   ngOnInit() {
     safeScrollToTop();
@@ -87,12 +120,16 @@ export class BlogListComponent implements OnInit {
 
     if (this.categorySlug) {
       canonicalPath = `/blog/categoria/${this.categorySlug}/`;
-      const nome = this.categorySlug.replace(/-/g, ' ');
+      // Nome cadastrado da categoria; até ele chegar, o slug sem os hífens.
+      const nome = this.categoryName || this.categorySlug.replace(/-/g, ' ');
       title = `${nome} | Blog Unitur`;
-      description = `Artigos do blog da Unitur sobre ${nome}.`;
+      description = `Artigos do blog da Unitur sobre ${nome}: destinos, peregrinações e dicas de viagem.`;
     } else if (this.currentPage > 1) {
-      // Páginas 2+ recebem canonical próprio (evita conteúdo duplicado com /blog/).
+      // Páginas 2+ recebem canonical, título e descrição próprios (evita
+      // conteúdo duplicado com /blog/).
       canonicalPath = `/blog/page/${this.currentPage}/`;
+      title = `Blog Unitur - Página ${this.currentPage} | Dicas de Viagem, Destinos e Peregrinações`;
+      description = `Página ${this.currentPage} do blog da Unitur: conteúdo sobre destinos, peregrinações, santuários e dicas de viagem.`;
     }
 
     this.seo.setMeta({ title, description, canonicalPath, type: 'website' });
@@ -113,9 +150,21 @@ export class BlogListComponent implements OnInit {
         // Resolve o slug da URL (/blog/categoria/:cat) para o categoryId do filtro.
         if (this.categorySlug) {
           const match = blogCategories.find(c => c.slug === this.categorySlug);
-          if (match && this.selectedCategory !== match.id) {
-            this.selectedCategory = match.id;
-            this.loadPosts();
+          if (match) {
+            this.notFound = false;
+            if (this.categoryName !== match.name) {
+              this.categoryName = match.name;
+              this.applySeo();
+            }
+            if (this.selectedCategory !== match.id) {
+              this.selectedCategory = match.id;
+              this.loadPosts();
+            }
+          } else if (categories.length > 0) {
+            // As categorias chegaram e esta não existe (endereço digitado errado
+            // ou categoria antiga): página de erro, e não o blog inteiro com
+            // outro título. Com a lista vazia (falha de leitura) não dá para afirmar.
+            this.showNotFound();
           }
         }
         // Só lista categorias com posts publicados (sem contagem, mostra todas).
@@ -145,9 +194,15 @@ export class BlogListComponent implements OnInit {
     return this.searchTerm.trim();
   }
 
+  private showNotFound() {
+    this.notFound = true;
+    this.serverResponse.notFound();
+  }
+
   loadPosts(scrollToTop = true) {
     this.postsSubscription?.unsubscribe();
     this.loading = true;
+    this.postsLoadFailed = false;
 
     const filters: PostFilters = {
       status: 'published',
@@ -166,14 +221,19 @@ export class BlogListComponent implements OnInit {
 
     this.postsSubscription = this.postService.getPosts(filters).pipe(
       timeout(this.blogRequestTimeout),
-      catchError(() => of({
-        data: [] as Post[],
-        total: 0,
-        page: this.currentPage,
-        limit: this.itemsPerPage,
-        totalPages: 1,
-        hasNextPage: false
-      })),
+      catchError(() => {
+        this.postsLoadFailed = true;
+        // No servidor, descarta este HTML em vez de publicar um blog vazio.
+        this.serverResponse.markDegraded();
+        return of({
+          data: [] as Post[],
+          total: 0,
+          page: this.currentPage,
+          limit: this.itemsPerPage,
+          totalPages: 1,
+          hasNextPage: false
+        });
+      }),
       finalize(() => {
         this.loading = false;
         this.loaded = true;
@@ -186,6 +246,15 @@ export class BlogListComponent implements OnInit {
         this.totalResults = response.total;
         if (scrollToTop && (this.currentPage > 1 || this.selectedCategory)) {
           safeScrollToTop('smooth');
+        }
+      },
+      // Só ao terminar (a 1ª resposta é o cache local, que pode estar vazio):
+      // página além da última, como /blog/page/999/, não existe.
+      complete: () => {
+        this.keepServerList = false;
+        if (!this.postsLoadFailed && !this.activeSearch && this.posts.length === 0 && this.currentPage > this.totalPages) {
+          this.showNotFound();
+          this.cdr.markForCheck();
         }
       }
     });

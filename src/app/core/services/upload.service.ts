@@ -346,7 +346,10 @@ export class UploadService {
       .replace(/^-|-$/g, '')
       .toLowerCase()
       .slice(0, 40) || 'imagem';
-    const stamp = Date.now().toString(36);
+    // Carimbo de tempo + trecho aleatório: duas fotos com o mesmo nome enviadas
+    // no mesmo instante (envio em paralelo) não podem cair no mesmo arquivo —
+    // uma sobrescreveria a outra e as duas apareceriam iguais.
+    const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     return ext ? `${stamp}-${base}.${ext.toLowerCase()}` : `${stamp}-${base}`;
   }
 }
