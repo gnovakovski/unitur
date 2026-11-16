@@ -31,35 +31,39 @@ firebase: {
   exchangeRates).
 - Privadas: `users` (perfis da equipe) e `newsletterSubscribers`.
 
-Os documentos de conteúdo usam o campo numérico `id` e o mesmo valor como ID do documento.
+### Regras do Storage e PDFs dos roteiros
 
-## Regras de segurança
+As regras do bucket `unitur-e7882.firebasestorage.app` ficam em
+[`storage.rules`](storage.rules), com configuração de publicação em `firebase.json`.
+Use esse arquivo também ao publicar pelo console do Firebase.
 
-As regras ficam versionadas neste repositório e são a única fonte de verdade:
+As permissões de imagens existentes são preservadas. A exceção para PDF permite
+criar e substituir somente `viagens/<id numérico>/<arquivo>.pdf`, com MIME
+`application/pdf`, tamanho maior que zero e até 20 MB. O usuário precisa estar
+autenticado e ter perfil ativo em `users/{uid}` no Firestore. A consulta exige
+manter o papel **Firebase Rules Firestore Service Agent** já concedido à conta de
+serviço do Storage.
 
-- `firestore.rules`: conteúdo público para leitura; gravação só para quem tem
-  perfil ativo em `users/{uid}` com o módulo correspondente (ou papel admin);
-  perfis e inscritos da newsletter fechados; coleção não listada fica bloqueada.
-- `storage.rules`: imagens públicas para leitura; enviar e apagar só com
-  perfil ativo da equipe; só imagens, até 10 MB.
+Publique usando uma conta com acesso ao projeto:
 
-Publicar (com `npx firebase-tools login` feito numa conta com acesso ao projeto):
-
-```bash
-npx firebase-tools deploy --only firestore:rules,storage --project unitur-e7882
+```sh
+firebase deploy --only storage --project unitur-e7882
 ```
 
-Não edite as regras pelo console: a próxima publicação daqui sobrescreve.
+Ou substitua o conteúdo de **Firebase Console → Storage → Rules** pelo arquivo
+`storage.rules` e clique em **Publicar**. Salvar o arquivo localmente não muda
+as regras em produção; o teste pelo site local também usa o bucket remoto.
 
-**Estar logado não dá acesso.** O cadastro de contas do Firebase Auth é aberto
-(o painel cria usuários pelo SDK do navegador), então toda conta da equipe
-precisa de um perfil em `users/{uid}`, criado em Admin → Usuários. Conta sem
-perfil ou com `status: inactive` não entra no painel e não grava nada.
+Para validar as permissões nos emuladores, com Firebase CLI 14 e Java 17 ou
+superior instalados:
 
-As regras do Storage consultam o perfil no Firestore. Para isso a conta de
-serviço `service-422742915300@gcp-sa-firebasestorage.iam.gserviceaccount.com`
-tem o papel `Firebase Rules Firestore Service Agent` no projeto (concedido em
-16/11/2026). Sem esse papel, todo envio de imagem é recusado.
+```sh
+npm run test:storage-rules
+```
+
+Esse teste utiliza apenas o projeto fictício `demo-unitur-storage`. A configuração
+`firebase.storage-test.json` e as regras auxiliares de Firestore são exclusivas
+dos testes e não devem ser publicadas em produção.
 
 ## CORS do Firebase Storage
 

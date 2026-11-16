@@ -78,6 +78,9 @@ export interface Trip {
   included: string[];
   notIncluded: string[];
   itinerary?: string; // HTML ou Markdown
+  /** PDF original anexado pela equipe e disponibilizado no detalhe da viagem. */
+  itineraryPdfUrl?: string;
+  itineraryPdfName?: string;
   status: 'active' | 'inactive' | 'draft';
   featured: boolean;
   /**
