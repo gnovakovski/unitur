@@ -244,6 +244,7 @@
           label="Imagem principal da viagem"
           helper="Aparece no card, na home e no topo da página da viagem. Recomendado 1600×900."
           [cropRatio]="16/9"
+          [libraryEnabled]="true"
           formControlName="mainImage">
         </app-image-upload>
       </div>
@@ -261,6 +262,7 @@
           label="Galeria da experiência"
           helper="Adicione várias fotos da viagem. Elas viram um carrossel no site público. Você pode reordenar."
           [cropRatio]="16/9"
+          [libraryEnabled]="true"
           formControlName="experienceImages">
         </app-multi-image-upload>
       </div>
@@ -269,6 +271,7 @@
         <app-hotel-list-upload
           label="Hotéis do grupo"
           helper="Adicione fotos dos hotéis e o nome de cada um. Aparecem em cards no detalhe da viagem."
+          [libraryEnabled]="true"
           formControlName="hotels">
         </app-hotel-list-upload>
       </div>

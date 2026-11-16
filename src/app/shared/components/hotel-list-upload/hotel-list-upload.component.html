@@ -30,6 +30,21 @@
     (change)="onFileSelected($event)"
     class="hu-file-input">
 
+  @if (libraryEnabled) {
+    <div class="hu-library">
+      <button type="button" class="hu-library__btn" (click)="openLibrary($event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+      </svg>
+        Escolher do banco de imagens
+      </button>
+      <span class="hu-library__hint">Hotéis já cadastrados em outras viagens vêm com foto e nome.</span>
+    </div>
+  }
+
   @if (items.length > 0) {
     <div class="hu-list">
       @for (item of items; track $index; let i = $index) {
@@ -104,5 +119,16 @@
       (confirmed)="onCropConfirmed($event)"
       (cancelled)="onCropCancelled()">
     </app-image-cropper-modal>
+  }
+
+  @if (libraryOpen) {
+    <app-image-library-modal
+      mode="hotels"
+      title="Banco de imagens — hotéis"
+      [excluded]="existingUrls"
+      [maxSelectable]="remainingSlots"
+      (confirmed)="onLibraryConfirmed($event)"
+      (cancelled)="libraryOpen = false">
+    </app-image-library-modal>
   }
 </div>

@@ -295,3 +295,44 @@ $bg: #f7f8fb;
     max-width: 140px;
   }
 }
+
+// ----- Banco de imagens ------------------------------------------------------
+.iu-library {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.iu-library__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #ff812c;
+  border-radius: 10px;
+  background: #fff;
+  color: #d9650f;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  svg { width: 16px; height: 16px; }
+
+  &:hover:not(:disabled) {
+    background: #ff812c;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.iu-library__hint {
+  color: #6b7280;
+  font-size: 0.78rem;
+}

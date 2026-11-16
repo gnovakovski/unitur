@@ -1,0 +1,134 @@
+<div class="library__backdrop" (click)="cancel()"></div>
+
+<div class="library" role="dialog" aria-modal="true" [attr.aria-label]="title">
+  <header class="library__header">
+    <div>
+      <h3>{{ title }}</h3>
+      <p>Fotos já enviadas em qualquer viagem. Escolha as que quiser reaproveitar — não precisa importar de novo.</p>
+    </div>
+    <button type="button" class="library__close" (click)="cancel()" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </header>
+
+  <div class="library__toolbar">
+    <div class="library__search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="search"
+        [value]="search"
+        (input)="onSearch($any($event.target).value)"
+        placeholder="Buscar por viagem, país ou hotel..."
+        aria-label="Buscar no banco de imagens"
+        autocomplete="off">
+    </div>
+
+    <div class="library__filters" role="tablist" aria-label="Tipo de foto">
+      <button type="button" role="tab" class="library__filter" [class.is-active]="filter === 'trip'"
+              [attr.aria-selected]="filter === 'trip'" (click)="setFilter('trip')">
+        Fotos de viagem <span>{{ count('trip') }}</span>
+      </button>
+      <button type="button" role="tab" class="library__filter" [class.is-active]="filter === 'hotel'"
+              [attr.aria-selected]="filter === 'hotel'" (click)="setFilter('hotel')">
+        Hotéis <span>{{ count('hotel') }}</span>
+      </button>
+      <button type="button" role="tab" class="library__filter" [class.is-active]="filter === 'all'"
+              [attr.aria-selected]="filter === 'all'" (click)="setFilter('all')">
+        Todas <span>{{ count('all') }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="library__body">
+    @if (loading) {
+      <div class="library__state">Carregando fotos...</div>
+    }
+
+    @if (!loading && error) {
+      <div class="library__state library__state--error" role="alert">
+        <p>{{ error }}</p>
+        <button type="button" class="library__btn library__btn--ghost" (click)="load(true)">Tentar de novo</button>
+      </div>
+    }
+
+    @if (!loading && !error && images.length === 0) {
+      <div class="library__state">
+        <p>Ainda não há fotos no banco.</p>
+        <p class="library__state-hint">Ele é formado pelas fotos enviadas nas viagens: assim que uma viagem for salva com fotos, elas aparecem aqui.</p>
+      </div>
+    }
+
+    @if (!loading && !error && images.length > 0 && filtered.length === 0) {
+      <div class="library__state">
+        <p>Nenhuma foto encontrada{{ search ? ' para “' + search + '”' : '' }}.</p>
+        @if (search) {
+          <button type="button" class="library__btn library__btn--ghost" (click)="onSearch('')">Limpar busca</button>
+        }
+      </div>
+    }
+
+    @if (!loading && !error && filtered.length > 0) {
+      <div class="library__grid">
+        @for (image of visible; track image.url) {
+          <button
+            type="button"
+            class="library__item"
+            [class.is-selected]="isSelected(image)"
+            [class.is-excluded]="isExcluded(image)"
+            [class.is-blocked]="isBlocked(image)"
+            [disabled]="isExcluded(image) || isBlocked(image)"
+            [attr.aria-pressed]="isSelected(image)"
+            [title]="tooltip(image)"
+            (click)="toggle(image)">
+            <span class="library__thumb">
+              <img [src]="image.url" [alt]="caption(image)" loading="lazy" decoding="async">
+              @if (isSelected(image)) {
+                <span class="library__check">{{ multiple ? selectionOrder(image) : '✓' }}</span>
+              }
+              @if (isExcluded(image)) {
+                <span class="library__tag">Já adicionada</span>
+              }
+            </span>
+            <span class="library__caption">{{ caption(image) }}</span>
+            @if (usage(image)) {
+              <span class="library__usage">{{ usage(image) }}</span>
+            }
+          </button>
+        }
+      </div>
+
+      @if (hasMore) {
+        <div class="library__more">
+          <button type="button" class="library__btn library__btn--ghost" (click)="showMore()">
+            Mostrar mais ({{ filtered.length - visible.length }} restantes)
+          </button>
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="library__footer">
+    <span class="library__summary">
+      @if (multiple) {
+        {{ selected.length }} selecionada{{ selected.length === 1 ? '' : 's' }}
+        @if (maxSelectable !== undefined) {
+          · cabem mais {{ maxSelectable - selected.length }}
+        }
+      } @else {
+        {{ selected.length ? '1 foto selecionada' : 'Escolha uma foto' }}
+      }
+    </span>
+    <div class="library__actions">
+      <button type="button" class="library__btn library__btn--ghost" (click)="cancel()">Cancelar</button>
+      <button type="button" class="library__btn library__btn--primary" (click)="confirm()" [disabled]="selected.length === 0">
+        {{ confirmLabel }}
+      </button>
+    </div>
+  </footer>
+</div>

@@ -213,3 +213,44 @@ $success: #1f9d55;
   font-weight: 600;
   border: 1px solid rgba($error, 0.15);
 }
+
+// ----- Banco de imagens ------------------------------------------------------
+.mu-library {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.mu-library__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #ff812c;
+  border-radius: 10px;
+  background: #fff;
+  color: #d9650f;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  svg { width: 16px; height: 16px; }
+
+  &:hover:not(:disabled) {
+    background: #ff812c;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.mu-library__hint {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
