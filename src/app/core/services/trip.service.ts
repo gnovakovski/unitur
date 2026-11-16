@@ -345,7 +345,8 @@ export class TripService {
     ) || null;
   }
 
-  createTrip(trip: Partial<Trip>): Observable<Trip> {
+  /** requireRemote impede confirmar anexos no site apenas com um cache local. */
+  createTrip(trip: Partial<Trip>, requireRemote = false): Observable<Trip> {
     const id = Date.now();
     const now = new Date();
     const newTrip: Trip = {
@@ -384,6 +385,8 @@ export class TripService {
       included: trip.included || [],
       notIncluded: trip.notIncluded || [],
       itinerary: trip.itinerary,
+      itineraryPdfUrl: trip.itineraryPdfUrl || '',
+      itineraryPdfName: trip.itineraryPdfName || '',
       status: trip.status || 'active',
       featured: Boolean(trip.featured),
       showOnHome: trip.showOnHome !== false,
@@ -394,20 +397,22 @@ export class TripService {
       updatedAt: now
     };
 
-    this.upsertLocalTrip(newTrip);
+    if (!requireRemote) this.upsertLocalTrip(newTrip);
 
     return from(this.firebaseService.withTimeout(
       setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined(newTrip)).then(() => newTrip),
       'Tempo esgotado ao salvar viagem no Firestore.'
     )).pipe(
+      tap(() => { if (requireRemote) this.upsertLocalTrip(newTrip); }),
       catchError(err => {
+        if (requireRemote) throw err;
         console.warn('Viagem salva localmente, mas nao foi possivel persistir no Firestore.', err);
         return of(newTrip);
       })
     );
   }
 
-  updateTrip(id: number, trip: Partial<Trip>): Observable<Trip> {
+  updateTrip(id: number, trip: Partial<Trip>, requireRemote = false): Observable<Trip> {
     const updatedTrip = {
       ...trip,
       slug: trip.slug || (trip.title ? this.generateSlug(trip.title) : trip.slug),
@@ -421,7 +426,7 @@ export class TripService {
       ...updatedTrip
     } as Trip;
 
-    this.upsertLocalTrip(localTrip);
+    if (!requireRemote) this.upsertLocalTrip(localTrip);
 
     return from(this.firebaseService.withTimeout(
       setDoc(doc(this.firebaseService.firestore, this.collectionName, String(id)), this.cleanUndefined({ id, ...updatedTrip }), { merge: true }).then(() => ({
@@ -430,7 +435,9 @@ export class TripService {
       } as Trip)),
       'Tempo esgotado ao atualizar viagem no Firestore.'
     )).pipe(
+      tap(() => { if (requireRemote) this.upsertLocalTrip(localTrip); }),
       catchError(err => {
+        if (requireRemote) throw err;
         console.warn('Viagem atualizada localmente, mas nao foi possivel persistir no Firestore.', err);
         return of(localTrip);
       })
