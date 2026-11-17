@@ -59,6 +59,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
   tagError = '';
   tagForm: FormGroup;
   private lastExchangeRate: number | undefined;
+  private loadedOgImage = '';
 
   protected fieldLabels: Record<string, string> = {
     title: 'Nome da viagem',
@@ -358,6 +359,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
           metaDescription: trip.metaDescription || '',
           ogImage: trip.ogImage || ''
         });
+        this.loadedOgImage = trip.ogImage || '';
         this.itineraryDays = this.parseItineraryDays(trip.itinerary || '');
         this.paymentBlocks = this.parsePaymentBlocks(trip.paymentMethods);
         this.tripForm.markAsPristine();
@@ -410,11 +412,15 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         experienceImages,
         hotels,
         itineraryPdf,
+        ogImage,
         ...baseValue
       } = value;
 
       const mainImageFile = mainImage instanceof File ? mainImage : null;
       const existingMainImage = mainImage instanceof File ? '' : String(mainImage || '');
+      const ogImageFile = ogImage instanceof File ? ogImage : null;
+      // Mantém a imagem publicada enquanto uma substituição está pendente.
+      const existingOgImage = ogImageFile ? this.loadedOgImage : String(ogImage || '');
 
       const galleryItems = (experienceImages || []) as GalleryItem[];
       const hotelItems = (hotels || []) as HotelItem[];
@@ -441,6 +447,7 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         // null (e não undefined) para o "Sem tag" apagar a tag ao editar.
         tagId: baseValue.tagId ?? null,
         mainImage: existingMainImage,
+        ogImage: existingOgImage,
         foreignPrice: baseValue.foreignCurrency ? (parseForeignAmount(baseValue.foreignPrice) ?? '') : '',
         // `null` e não `undefined`: o update usa merge, então undefined seria
         // removido do payload e a cotação antiga continuaria gravada no doc.
@@ -474,10 +481,10 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
       const pendingHotelItems = hotelItems.filter(item => item.image instanceof File);
 
       const pdfFile = itineraryPdf instanceof File ? itineraryPdf : null;
-      const hasUploads = mainImageFile || pdfFile || pendingExperienceFiles.length > 0 || pendingHotelItems.length > 0;
+      const hasUploads = mainImageFile || ogImageFile || pdfFile || pendingExperienceFiles.length > 0 || pendingHotelItems.length > 0;
 
       if (hasUploads && tripIdToUse) {
-        const totalUploads = (mainImageFile ? 1 : 0) + (pdfFile ? 1 : 0) + pendingExperienceFiles.length + pendingHotelItems.length;
+        const totalUploads = (mainImageFile ? 1 : 0) + (ogImageFile ? 1 : 0) + (pdfFile ? 1 : 0) + pendingExperienceFiles.length + pendingHotelItems.length;
         let done = 0;
         const updateStep = () => {
           done++;
@@ -489,6 +496,14 @@ export class ViagemFormComponent extends UnsavedFormBase implements OnInit {
         const updates: Partial<Trip> = {};
 
         try {
+          if (ogImageFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(ogImageFile, 'viagens', tripIdToUse).pipe(timeout(60000))
+            );
+            updates.ogImage = uploaded.url;
+            updateStep();
+          }
+
           if (mainImageFile) {
             const uploaded = await firstValueFrom(
               this.uploadService.uploadToEntity(mainImageFile, 'viagens', tripIdToUse).pipe(timeout(60000))

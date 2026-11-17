@@ -61,6 +61,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
   /** Assinaturas oferecidas no formulário (+ a atual do post, se for outra). */
   authorOptions: string[] = [...POST_AUTHOR_OPTIONS];
   private loadedAuthor: Post['author'] | null = null;
+  private loadedOgImage = '';
 
   /** Post montado a partir do formulário para a pré-visualização (null = fechada). */
   previewPost: Post | null = null;
@@ -143,6 +144,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
           metaDescription: post.metaDescription || '',
           ogImage: post.ogImage || ''
         });
+        this.loadedOgImage = post.ogImage || '';
         this.postForm.markAsPristine();
         this.loading = false;
         this.cdr.markForCheck();
@@ -213,6 +215,7 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
   }
 
   async onSubmit() {
+    if (this.saving) return;
     if (this.mediaUploading) {
       this.error = 'Aguarde o envio da imagem do conteúdo terminar antes de salvar.';
       return;
@@ -229,14 +232,17 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
 
     try {
       const formValue = this.postForm.value;
-      const { featuredImage, authorName, ...baseValue } = formValue;
+      const { featuredImage, ogImage, authorName, ...baseValue } = formValue;
 
       const featuredFile = featuredImage instanceof File ? featuredImage : null;
       const existingFeatured = featuredImage instanceof File ? '' : String(featuredImage || '');
+      const ogImageFile = ogImage instanceof File ? ogImage : null;
+      const existingOgImage = ogImageFile ? this.loadedOgImage : String(ogImage || '');
 
       const basePostData: Partial<Post> = {
         ...baseValue,
         featuredImage: existingFeatured,
+        ogImage: existingOgImage,
         // Cópia da categoria junto do post, como nos posts migrados do WordPress:
         // é o que o site exibe sem precisar consultar a coleção de categorias.
         category: this.categorySnapshot(formValue.categoryId),
@@ -252,12 +258,24 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
         : await firstValueFrom(this.postService.createPost(basePostData));
 
       const postIdToUse = saved?.id || this.postId;
+      if (postIdToUse) {
+        this.postId = postIdToUse;
+        this.isEditMode = true;
+      }
 
-      if (featuredFile && postIdToUse) {
+      if ((featuredFile || ogImageFile) && postIdToUse) {
         this.savingStep = 'Enviando imagens para o Firebase Storage...';
+        this.cdr.markForCheck();
         const updates: Partial<Post> = {};
 
         try {
+          if (ogImageFile) {
+            const uploaded = await firstValueFrom(
+              this.uploadService.uploadToEntity(ogImageFile, 'posts', postIdToUse).pipe(timeout(45000))
+            );
+            updates.ogImage = uploaded.url;
+          }
+
           if (featuredFile) {
             const uploaded = await firstValueFrom(
               this.uploadService.uploadToEntity(featuredFile, 'posts', postIdToUse).pipe(timeout(45000))
@@ -273,7 +291,8 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
           console.error('Upload error', uploadErr);
           this.saving = false;
           this.savingStep = '';
-          return;
+          this.markSaving(false, false);
+          throw uploadErr;
         }
       }
 
@@ -281,13 +300,14 @@ export class PostFormComponent extends UnsavedFormBase implements OnInit {
       this.markSaving(false, true);
       this.router.navigate(['/admin/posts']);
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Erro ao salvar post';
+      this.error ||= err instanceof Error ? err.message : 'Erro ao salvar post';
       console.error(err);
       this.markSaving(false, false);
       throw err;
     } finally {
       this.saving = false;
       this.savingStep = '';
+      this.cdr.markForCheck();
     }
   }
 

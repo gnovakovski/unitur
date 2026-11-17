@@ -244,13 +244,13 @@
           </div>
 
           <div class="af-field">
-            <label for="ogImage" class="af-label">Imagem de compartilhamento (URL)</label>
-            <input
-              id="ogImage"
-              type="text"
-              formControlName="ogImage"
-              class="af-control"
-              placeholder="https://... (1200×630). Vazio usa a imagem destacada.">
+            <app-image-upload
+              label="Imagem de compartilhamento"
+              helper="Anexe uma imagem para o compartilhamento do post. Recomendado 1200×630. Sem anexo, será usada a imagem destacada."
+              [cropRatio]="1200/630"
+              [libraryEnabled]="true"
+              formControlName="ogImage">
+            </app-image-upload>
           </div>
         </div>
 

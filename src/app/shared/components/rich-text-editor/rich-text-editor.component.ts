@@ -160,21 +160,6 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
     this.onEditorInput();
   }
 
-  insertImageFromUrl(): void {
-    if (this.disabled) return;
-    this.rememberSelection();
-    const view = this.document.defaultView;
-    const rawUrl = view?.prompt('Cole a URL pública da imagem:', 'https://')?.trim();
-    if (!rawUrl) return;
-    const url = this.normalizeUrl(rawUrl, true);
-    if (!url) {
-      this.uploadError = 'URL de imagem inválida.';
-      return;
-    }
-    const alt = view?.prompt('Texto alternativo da imagem (importante para acessibilidade e SEO):', '')?.trim() || '';
-    this.insertImage(url, alt);
-  }
-
   chooseImage(): void {
     if (this.disabled || this.uploading) return;
     this.rememberSelection();
