@@ -23,6 +23,7 @@
       <p>{{ trip.summary }}</p>
       <div class="trip-actions">
         <button type="button" (click)="shareTrip()">Compartilhar roteiro</button>
+        <!-- O download fica disponível somente quando a equipe anexa o PDF. -->
         @if (trip.itineraryPdfUrl) {
           <a [href]="trip.itineraryPdfUrl" [attr.download]="trip.itineraryPdfName" target="_blank" rel="noopener noreferrer">Baixar roteiro</a>
         }

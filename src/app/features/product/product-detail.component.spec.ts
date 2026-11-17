@@ -8,7 +8,7 @@ import { SeoService } from '../../core/services/seo.service';
 import { SiteContentService } from '../../core/services/site-content.service';
 import { TagService } from '../../core/services/tag.service';
 
-describe('ProductDetailComponent download do PDF anexado', () => {
+describe('ProductDetailComponent download somente do roteiro anexado', () => {
   beforeEach(() => {
     vi.spyOn(ProductDetailComponent.prototype, 'ngOnInit').mockImplementation(() => {});
     TestBed.configureTestingModule({ imports: [ProductDetailComponent], providers: [provideRouter([]),
@@ -28,18 +28,24 @@ describe('ProductDetailComponent download do PDF anexado', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
+  const downloadButton = (page: HTMLElement) =>
+    Array.from(page.querySelectorAll('.trip-actions button')).find(button => button.textContent?.includes('Baixar roteiro'));
+
   it('disponibiliza exatamente o arquivo anexado pela equipe', () => {
     const page = render('https://storage.example/roteiro-original.pdf');
     const link = page.querySelector('.trip-actions a') as HTMLAnchorElement;
     expect(link.textContent).toContain('Baixar roteiro');
     expect(link.href).toBe('https://storage.example/roteiro-original.pdf');
     expect(link.download).toBe('roteiro-original.pdf');
+    expect(downloadButton(page)).toBeUndefined();
   });
 
-  it('não oferece download quando não há PDF cadastrado', () => {
+  it('sem PDF cadastrado, oculta o download e mantém o compartilhamento', () => {
     const page = render('');
     expect(page.querySelector('.trip-actions a')).toBeNull();
-    expect(page.textContent).not.toContain('Baixar roteiro');
     expect(page.textContent).toContain('Compartilhar roteiro');
+
+    expect(downloadButton(page)).toBeUndefined();
+    expect(page.textContent).not.toContain('Baixar roteiro');
   });
 });
